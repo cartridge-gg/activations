@@ -1,4 +1,5 @@
 import { TrialProgress, VisualState } from '@/types';
+import { ShareButton } from './ShareButton';
 
 interface NFTPreviewProps {
   progress: TrialProgress;
@@ -48,15 +49,15 @@ export function NFTPreview({ progress }: NFTPreviewProps) {
           </div>
 
           {/* Three Slashes */}
-          <div className="relative z-10 flex items-center justify-center space-x-4">
-            {slashStates.map((slash, index) => (
+          <div className="relative z-10 flex items-center justify-center space-x-8">
+            {slashStates.map((slash) => (
               <div
                 key={slash.name}
-                className={`w-2 h-32 rounded-full transition-all duration-700 transform ${
+                className={`w-2 h-32 rounded-full transition-all duration-700 transform rotate-12 ${
                   slash.complete
                     ? 'bg-ronin-primary shadow-lg shadow-ronin-primary/50 scale-110'
                     : 'bg-ronin-secondary/20'
-                } ${index === 1 ? 'rotate-12' : index === 2 ? '-rotate-12' : ''}`}
+                }`}
                 style={{
                   transformOrigin: 'center',
                 }}
@@ -70,26 +71,6 @@ export function NFTPreview({ progress }: NFTPreviewProps) {
               <div className="w-48 h-48 bg-ronin-primary/20 rounded-full blur-3xl animate-pulse" />
             </div>
           )}
-        </div>
-
-        {/* Progress Text */}
-        <div className="text-center space-y-2">
-          <h3 className="text-2xl font-bold text-ronin-secondary">
-            The Ronin's Pact
-          </h3>
-          <div className="flex items-center justify-center space-x-2">
-            <div className="text-3xl font-bold text-ronin-primary">
-              {visualState}
-            </div>
-            <div className="text-lg text-ronin-secondary/70">/</div>
-            <div className="text-3xl font-bold text-ronin-secondary/70">3</div>
-          </div>
-          <p className="text-sm text-ronin-secondary/80">
-            {visualState === 0 && 'Begin your journey'}
-            {visualState === 1 && 'One trial complete'}
-            {visualState === 2 && 'Two trials complete'}
-            {visualState === 3 && 'Fully Forged Pact'}
-          </p>
         </div>
 
         {/* Trial Status Indicators */}
@@ -114,6 +95,24 @@ export function NFTPreview({ progress }: NFTPreviewProps) {
             </div>
           ))}
         </div>
+
+        {/* Congratulations Message (shown when all trials complete) */}
+        {visualState === 3 && (
+          <div className="w-full space-y-4 pt-4 border-t border-ronin-primary/30">
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-bold text-ronin-secondary">
+                Congratulations, Ronin!
+              </h3>
+              <p className="text-sm text-ronin-secondary/80">
+                You have forged your Pact and mastered all three trials.
+              </p>
+              <p className="text-xs text-ronin-accent">
+                Your legend is complete. Share your achievement with the world.
+              </p>
+            </div>
+            <ShareButton progress={progress} />
+          </div>
+        )}
       </div>
     </div>
   );

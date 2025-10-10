@@ -4,6 +4,7 @@ import { Contract } from 'starknet';
 import { RONIN_PACT_ADDRESS, ALLOWLISTED_COLLECTIONS } from '@/lib/constants';
 import RoninPactAbi from '@/lib/contracts/RoninPact.abi.json';
 import ERC721Abi from '@/lib/contracts/ERC721.abi.json';
+import { isMockEnabled, mockCompleteWaza, mockCheckERC721Ownership } from '@/lib/mockContracts';
 
 interface UseWazaClaimReturn {
   tryCollection: (collectionAddress: string) => Promise<void>;
@@ -18,6 +19,7 @@ export function useWazaClaim(): UseWazaClaimReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const useMock = isMockEnabled();
 
   // Contract instance for RoninPact
   const { contract: roninPactContract } = useContract({
@@ -58,7 +60,7 @@ export function useWazaClaim(): UseWazaClaimReturn {
         return;
       }
 
-      if (!roninPactContract) {
+      if (!useMock && !roninPactContract) {
         setError('Contract not initialized');
         return;
       }
@@ -68,27 +70,45 @@ export function useWazaClaim(): UseWazaClaimReturn {
       setSuccess(false);
 
       try {
-        // First check if user owns NFT from this collection
-        const ownsNFT = await checkOwnership(collectionAddress);
+        if (useMock) {
+          // Use mock implementations
+          const ownsNFT = await mockCheckERC721Ownership(collectionAddress, address);
 
-        if (!ownsNFT) {
-          setError('You do not own an NFT from this collection');
-          setIsLoading(false);
-          return;
+          if (!ownsNFT) {
+            setError('You do not own an NFT from this collection');
+            setIsLoading(false);
+            return;
+          }
+
+          // Call mock complete_waza
+          await mockCompleteWaza(collectionAddress, address);
+
+          setSuccess(true);
+          setError(null);
+        } else {
+          // Use real contract implementations
+          // First check if user owns NFT from this collection
+          const ownsNFT = await checkOwnership(collectionAddress);
+
+          if (!ownsNFT) {
+            setError('You do not own an NFT from this collection');
+            setIsLoading(false);
+            return;
+          }
+
+          // Call complete_waza on the contract
+          const tx = await account.execute({
+            contractAddress: RONIN_PACT_ADDRESS,
+            entrypoint: 'complete_waza',
+            calldata: [collectionAddress],
+          });
+
+          // Wait for transaction confirmation
+          await account.waitForTransaction(tx.transaction_hash);
+
+          setSuccess(true);
+          setError(null);
         }
-
-        // Call complete_waza on the contract
-        const tx = await account.execute({
-          contractAddress: RONIN_PACT_ADDRESS,
-          entrypoint: 'complete_waza',
-          calldata: [collectionAddress],
-        });
-
-        // Wait for transaction confirmation
-        await account.waitForTransaction(tx.transaction_hash);
-
-        setSuccess(true);
-        setError(null);
       } catch (err: any) {
         console.error('Error completing Waza trial:', err);
         setError(err?.message || 'Failed to complete Waza trial');
@@ -97,7 +117,7 @@ export function useWazaClaim(): UseWazaClaimReturn {
         setIsLoading(false);
       }
     },
-    [account, address, roninPactContract]
+    [account, address, roninPactContract, useMock]
   );
 
   // Try all allowlisted collections
@@ -112,26 +132,45 @@ export function useWazaClaim(): UseWazaClaimReturn {
     setSuccess(false);
 
     try {
-      // Check ownership for all allowlisted collections
-      for (const collection of ALLOWLISTED_COLLECTIONS) {
-        const ownsNFT = await checkOwnership(collection.address);
+      if (useMock) {
+        // Use mock implementations
+        for (const collection of ALLOWLISTED_COLLECTIONS) {
+          const ownsNFT = await mockCheckERC721Ownership(collection.address, address);
 
-        if (ownsNFT) {
-          // Found a collection the user owns, try to complete trial
-          await tryCollection(collection.address);
-          return; // Exit after first successful attempt
+          if (ownsNFT) {
+            // Found a collection the user owns, try to complete trial
+            await mockCompleteWaza(collection.address, address);
+            setSuccess(true);
+            setError(null);
+            return; // Exit after first successful attempt
+          }
         }
-      }
 
-      // If we get here, user doesn't own any allowlisted NFTs
-      setError('You do not own any NFTs from the allowlisted collections');
+        // If we get here, user doesn't own any allowlisted NFTs
+        setError('You do not own any NFTs from the allowlisted collections');
+      } else {
+        // Use real contract implementations
+        // Check ownership for all allowlisted collections
+        for (const collection of ALLOWLISTED_COLLECTIONS) {
+          const ownsNFT = await checkOwnership(collection.address);
+
+          if (ownsNFT) {
+            // Found a collection the user owns, try to complete trial
+            await tryCollection(collection.address);
+            return; // Exit after first successful attempt
+          }
+        }
+
+        // If we get here, user doesn't own any allowlisted NFTs
+        setError('You do not own any NFTs from the allowlisted collections');
+      }
     } catch (err: any) {
       console.error('Error trying all collections:', err);
       setError(err?.message || 'Failed to verify collections');
     } finally {
       setIsLoading(false);
     }
-  }, [account, address, tryCollection]);
+  }, [account, address, tryCollection, useMock]);
 
   return {
     tryCollection,

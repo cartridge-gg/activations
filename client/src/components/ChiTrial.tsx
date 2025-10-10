@@ -46,7 +46,7 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
 const CORRECT_ANSWERS = [0, 0, 0];
 
 export function ChiTrial({ status, onComplete }: ChiTrialProps) {
-  const { submitAnswers, isLoading, error, success } = useChiQuiz();
+  const { submitQuiz, isLoading, error, success } = useChiQuiz();
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [localError, setLocalError] = useState<string | null>(null);
   const [showValidation, setShowValidation] = useState(false);
@@ -86,12 +86,8 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
     }
 
     // Submit to contract
-    const answerArray = QUIZ_QUESTIONS.map((q) => answers[q.id]);
-    const result = await submitAnswers(answerArray);
-
-    if (result.success) {
-      onComplete();
-    }
+    const answerArray = QUIZ_QUESTIONS.map((q) => answers[q.id].toString());
+    await submitQuiz(answerArray);
   };
 
   const isAnswerCorrect = (questionId: number, optionIndex: number): boolean | null => {
@@ -101,17 +97,7 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
   };
 
   return (
-    <div className="bg-ronin-dark/50 rounded-lg p-6 border border-ronin-light/20">
-      <div className="mb-6">
-        <h3 className="text-2xl font-bold text-ronin-primary mb-2">
-          Trial 2: Chi
-        </h3>
-        <p className="text-ronin-accent text-sm mb-2">The Way of Wisdom</p>
-        <p className="text-ronin-secondary/80 text-sm">
-          Test your knowledge of Dojo 1.7 architecture and principles.
-        </p>
-      </div>
-
+    <div className="space-y-4">
       {isCompleted ? (
         <div className="bg-ronin-primary/10 border border-ronin-primary/30 rounded-md p-4">
           <p className="text-ronin-primary font-semibold flex items-center gap-2">
@@ -244,17 +230,6 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
             Chi trial completed successfully!
-          </p>
-        </div>
-      )}
-
-      {status === 'locked' && (
-        <div className="mt-4 bg-ronin-dark/80 border border-ronin-light/10 rounded-md p-4">
-          <p className="text-ronin-accent/60 text-sm flex items-center gap-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-            </svg>
-            This trial is currently locked
           </p>
         </div>
       )}

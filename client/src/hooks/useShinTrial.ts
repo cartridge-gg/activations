@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAccount, useContract } from '@starknet-react/core';
 import { RONIN_PACT_ADDRESS } from '@/lib/constants';
 import RoninPactAbi from '@/lib/contracts/RoninPact.abi.json';
 import { SignerInfo } from '@/types';
+import { isMockEnabled, mockGetSigners, mockCompleteShin } from '@/lib/mockContracts';
 
 // Cartridge GraphQL API endpoint
 const CARTRIDGE_API_URL = 'https://api.cartridge.gg/query';
@@ -20,9 +21,12 @@ interface Signer {
 }
 
 interface UseShinTrialReturn {
-  getSigners: () => Promise<SignerInfo[]>;
-  completeTrial: (signerGuid: string) => Promise<void>;
-  signers: SignerInfo[];
+  availableSigners: SignerInfo[];
+  selectedSigner: SignerInfo | null;
+  vowText: string;
+  setVowText: (text: string) => void;
+  selectSigner: (signer: SignerInfo) => void;
+  completeVow: () => Promise<{ success: boolean }>;
   isLoading: boolean;
   error: string | null;
   success: boolean;
@@ -30,10 +34,14 @@ interface UseShinTrialReturn {
 
 export function useShinTrial(): UseShinTrialReturn {
   const { account, address } = useAccount();
-  const [signers, setSigners] = useState<SignerInfo[]>([]);
+  const [availableSigners, setAvailableSigners] = useState<SignerInfo[]>([]);
+  const [selectedSigner, setSelectedSigner] = useState<SignerInfo | null>(null);
+  const [vowText, setVowText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const useMock = isMockEnabled();
 
   // Contract instance for RoninPact
   const { contract: roninPactContract } = useContract({
@@ -68,6 +76,14 @@ export function useShinTrial(): UseShinTrialReturn {
     setError(null);
 
     try {
+      // Use mock implementation if enabled
+      if (useMock) {
+        const mockSigners = await mockGetSigners(address);
+        setAvailableSigners(mockSigners);
+        setError(null);
+        return mockSigners;
+      }
+
       // Fetch signers from Controller's GraphQL API
       const query = `
         query GetControllerSigners($address: String!) {
@@ -120,7 +136,7 @@ export function useShinTrial(): UseShinTrialReturn {
         }))
         .filter((s: SignerInfo) => !s.isRevoked);
 
-      setSigners(mappedSigners);
+      setAvailableSigners(mappedSigners);
       setError(null);
       return mappedSigners;
     } catch (err: any) {
@@ -130,24 +146,36 @@ export function useShinTrial(): UseShinTrialReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [address]);
+  }, [address, useMock]);
+
+  // Auto-fetch signers when address is available
+  useEffect(() => {
+    if (address) {
+      getSigners();
+    }
+  }, [address, getSigners]);
+
+  // Select a signer
+  const selectSigner = useCallback((signer: SignerInfo) => {
+    setSelectedSigner(signer);
+  }, []);
 
   // Complete the Shin trial with selected signer
-  const completeTrial = useCallback(
-    async (signerGuid: string) => {
+  const completeVow = useCallback(
+    async (): Promise<{ success: boolean }> => {
       if (!account || !address) {
         setError('Please connect your wallet');
-        return;
+        return { success: false };
       }
 
-      if (!roninPactContract) {
+      if (!useMock && !roninPactContract) {
         setError('Contract not initialized');
-        return;
+        return { success: false };
       }
 
-      if (!signerGuid) {
+      if (!selectedSigner) {
         setError('Please select a signer');
-        return;
+        return { success: false };
       }
 
       setIsLoading(true);
@@ -155,12 +183,20 @@ export function useShinTrial(): UseShinTrialReturn {
       setSuccess(false);
 
       try {
+        // Use mock implementation if enabled
+        if (useMock) {
+          await mockCompleteShin(address, selectedSigner.guid);
+          setSuccess(true);
+          setError(null);
+          return { success: true };
+        }
+
         // Call complete_shin with just the signer GUID
         // Contract will verify it's registered on the caller's account
         const tx = await account.execute({
           contractAddress: RONIN_PACT_ADDRESS,
           entrypoint: 'complete_shin',
-          calldata: [signerGuid], // Just the GUID, no signatures needed!
+          calldata: [selectedSigner.guid], // Just the GUID, no signatures needed!
         });
 
         // Wait for transaction confirmation
@@ -168,6 +204,7 @@ export function useShinTrial(): UseShinTrialReturn {
 
         setSuccess(true);
         setError(null);
+        return { success: true };
       } catch (err: any) {
         console.error('Error completing Shin trial:', err);
 
@@ -186,17 +223,21 @@ export function useShinTrial(): UseShinTrialReturn {
 
         setError(errorMessage);
         setSuccess(false);
+        return { success: false };
       } finally {
         setIsLoading(false);
       }
     },
-    [account, address, roninPactContract]
+    [account, address, roninPactContract, useMock, selectedSigner]
   );
 
   return {
-    getSigners,
-    completeTrial,
-    signers,
+    availableSigners,
+    selectedSigner,
+    vowText,
+    setVowText,
+    selectSigner,
+    completeVow,
     isLoading,
     error,
     success,

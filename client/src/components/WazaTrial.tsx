@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TrialStatus, AllowlistedCollection } from '@/types';
 import { ALLOWLISTED_COLLECTIONS } from '@/lib/constants';
 import { useWazaClaim } from '@/hooks/useWazaClaim';
@@ -9,40 +9,30 @@ interface WazaTrialProps {
 }
 
 export function WazaTrial({ status, onComplete }: WazaTrialProps) {
-  const { claimViaCollection, claimAll, isLoading, error, success } = useWazaClaim();
+  const { tryCollection, tryAll, isLoading, error, success } = useWazaClaim();
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (success) {
+      onComplete();
+    }
+  }, [success, onComplete]);
 
   const handleClaimViaCollection = async (collection: AllowlistedCollection) => {
     setSelectedCollection(collection.name);
-    const result = await claimViaCollection(collection.address);
-    if (result.success) {
-      onComplete();
-    }
+    await tryCollection(collection.address);
   };
 
   const handleClaimAll = async () => {
     setSelectedCollection('all');
-    const result = await claimAll();
-    if (result.success) {
-      onComplete();
-    }
+    await tryAll();
   };
 
   const isDisabled = status === 'completed' || status === 'locked';
   const isCompleted = status === 'completed';
 
   return (
-    <div className="bg-ronin-dark/50 rounded-lg p-6 border border-ronin-light/20">
-      <div className="mb-6">
-        <h3 className="text-2xl font-bold text-ronin-primary mb-2">
-          Trial 1: Waza
-        </h3>
-        <p className="text-ronin-accent text-sm mb-2">The Way of Technique</p>
-        <p className="text-ronin-secondary/80 text-sm">
-          Prove your mastery by demonstrating game ownership in a Dojo-powered world.
-        </p>
-      </div>
-
+    <div className="space-y-4">
       {isCompleted ? (
         <div className="bg-ronin-primary/10 border border-ronin-primary/30 rounded-md p-4 mb-4">
           <p className="text-ronin-primary font-semibold flex items-center gap-2">
@@ -136,16 +126,6 @@ export function WazaTrial({ status, onComplete }: WazaTrialProps) {
         </div>
       )}
 
-      {status === 'locked' && (
-        <div className="mt-4 bg-ronin-dark/80 border border-ronin-light/10 rounded-md p-4">
-          <p className="text-ronin-accent/60 text-sm flex items-center gap-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-            </svg>
-            This trial is currently locked
-          </p>
-        </div>
-      )}
     </div>
   );
 }

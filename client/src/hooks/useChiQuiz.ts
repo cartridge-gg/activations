@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAccount, useContract } from '@starknet-react/core';
 import { RONIN_PACT_ADDRESS } from '@/lib/constants';
 import RoninPactAbi from '@/lib/contracts/RoninPact.abi.json';
+import { isMockEnabled, mockCompleteChi } from '@/lib/mockContracts';
 
 interface UseChiQuizReturn {
   submitQuiz: (answers: string[]) => Promise<void>;
@@ -15,6 +16,8 @@ export function useChiQuiz(): UseChiQuizReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const useMock = isMockEnabled();
 
   // Contract instance for RoninPact
   const { contract: roninPactContract } = useContract({
@@ -30,7 +33,7 @@ export function useChiQuiz(): UseChiQuizReturn {
         return;
       }
 
-      if (!roninPactContract) {
+      if (!roninPactContract && !useMock) {
         setError('Contract not initialized');
         return;
       }
@@ -45,22 +48,30 @@ export function useChiQuiz(): UseChiQuizReturn {
       setSuccess(false);
 
       try {
-        // Convert string answers to felt252 array
-        // Answers should already be in the correct format (felt252-compatible strings)
-        const answerCalldata = answers;
+        if (useMock) {
+          // Use mock contract implementation
+          await mockCompleteChi(address, answers);
+          setSuccess(true);
+          setError(null);
+        } else {
+          // Use real contract implementation
+          // Convert string answers to felt252 array
+          // Answers should already be in the correct format (felt252-compatible strings)
+          const answerCalldata = answers;
 
-        // Call complete_chi on the contract
-        const tx = await account.execute({
-          contractAddress: RONIN_PACT_ADDRESS,
-          entrypoint: 'complete_chi',
-          calldata: answerCalldata,
-        });
+          // Call complete_chi on the contract
+          const tx = await account.execute({
+            contractAddress: RONIN_PACT_ADDRESS,
+            entrypoint: 'complete_chi',
+            calldata: answerCalldata,
+          });
 
-        // Wait for transaction confirmation
-        await account.waitForTransaction(tx.transaction_hash);
+          // Wait for transaction confirmation
+          await account.waitForTransaction(tx.transaction_hash);
 
-        setSuccess(true);
-        setError(null);
+          setSuccess(true);
+          setError(null);
+        }
       } catch (err: any) {
         console.error('Error submitting quiz:', err);
 
@@ -84,7 +95,7 @@ export function useChiQuiz(): UseChiQuizReturn {
         setIsLoading(false);
       }
     },
-    [account, address, roninPactContract]
+    [account, address, roninPactContract, useMock]
   );
 
   return {

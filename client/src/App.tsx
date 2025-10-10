@@ -4,53 +4,70 @@ import { QuestDashboard } from './components/QuestDashboard';
 import { WazaTrial } from './components/WazaTrial';
 import { ChiTrial } from './components/ChiTrial';
 import { ShinTrial } from './components/ShinTrial';
+import { ShareButton } from './components/ShareButton';
 import { useTrialProgress } from './hooks/useTrialProgress';
-import { useState } from 'react';
-import { TrialState } from './types';
+import { useState, useEffect } from 'react';
+import { TrialState, TrialProgress } from './types';
 
 function App() {
   const { address } = useAccount();
-  const { progress, isLoading, refetch } = useTrialProgress();
+  const { progress: fetchedProgress, isLoading } = useTrialProgress();
+
+  // Local progress state for instant updates
+  const [progress, setProgress] = useState<TrialProgress | null>(null);
 
   const [trialState, setTrialState] = useState<TrialState>({
-    waza: 'idle',
-    chi: 'idle',
-    shin: 'idle',
+    waza: 'available',
+    chi: 'available',
+    shin: 'available',
   });
 
-  const handleCompleteWaza = async () => {
-    setTrialState(prev => ({ ...prev, waza: 'loading' }));
-    // Trial completion is handled by the WazaTrial component
-    await refetch();
-    setTrialState(prev => ({ ...prev, waza: 'idle' }));
+  // Sync local progress with fetched progress
+  useEffect(() => {
+    if (fetchedProgress) {
+      setProgress(fetchedProgress);
+    }
+  }, [fetchedProgress]);
+
+  const handleCompleteWaza = () => {
+    // Optimistically update progress immediately
+    setProgress(prev => prev ? { ...prev, waza_complete: true } : null);
+    setTrialState(prev => ({ ...prev, waza: 'available' }));
   };
 
-  const handleCompleteChi = async () => {
-    setTrialState(prev => ({ ...prev, chi: 'loading' }));
-    await refetch();
-    setTrialState(prev => ({ ...prev, chi: 'idle' }));
+  const handleCompleteChi = () => {
+    // Optimistically update progress immediately
+    setProgress(prev => prev ? { ...prev, chi_complete: true } : null);
+    setTrialState(prev => ({ ...prev, chi: 'available' }));
   };
 
-  const handleCompleteShin = async () => {
-    setTrialState(prev => ({ ...prev, shin: 'loading' }));
-    await refetch();
-    setTrialState(prev => ({ ...prev, shin: 'idle' }));
+  const handleCompleteShin = () => {
+    // Optimistically update progress immediately
+    setProgress(prev => prev ? { ...prev, shin_complete: true } : null);
+    setTrialState(prev => ({ ...prev, shin: 'available' }));
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-ronin-dark to-gray-900 text-ronin-secondary">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <header className="flex justify-between items-center mb-12">
-          <div>
-            <h1 className="text-4xl font-bold text-ronin-primary mb-2">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
+          <div className="flex-shrink-0">
+            <h1 className="text-3xl sm:text-4xl font-bold text-ronin-primary mb-2">
               The Rōnin's Pact
             </h1>
-            <p className="text-ronin-accent text-lg">
+            <p className="text-ronin-accent text-base sm:text-lg">
               Forge your path through three trials
             </p>
           </div>
-          <ConnectWallet />
+          <div className="flex items-center gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
+            {progress && (
+              <div className="w-40 sm:w-48">
+                <ShareButton progress={progress} />
+              </div>
+            )}
+            <ConnectWallet />
+          </div>
         </header>
 
         {/* Main Content */}
