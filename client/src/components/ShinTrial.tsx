@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { TrialStatus, SignerInfo } from '@/types';
 import { useShinTrial } from '@/hooks/useShinTrial';
+import { useTrialCompletion } from '@/hooks/useTrialCompletion';
+import { StatusMessage, LoadingSpinner } from './TrialStatus';
 
 interface ShinTrialProps {
   status: TrialStatus;
@@ -25,11 +27,7 @@ export function ShinTrial({ status, onComplete }: ShinTrialProps) {
   const isDisabled = status === 'completed' || status === 'locked';
   const isCompleted = status === 'completed';
 
-  useEffect(() => {
-    if (success) {
-      onComplete();
-    }
-  }, [success, onComplete]);
+  useTrialCompletion(success, onComplete);
 
   const handleSignerSelect = (signer: SignerInfo) => {
     if (isDisabled || signer.isRevoked) return;
@@ -100,17 +98,11 @@ export function ShinTrial({ status, onComplete }: ShinTrialProps) {
   return (
     <div className="space-y-4">
       {isCompleted ? (
-        <div className="bg-ronin-primary/10 border border-ronin-primary/30 rounded-md p-4">
-          <p className="text-ronin-primary font-semibold flex items-center gap-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            Trial Complete
-          </p>
-          <p className="text-ronin-secondary/70 text-sm mt-1">
-            Your spirit has been pledged
-          </p>
-        </div>
+        <StatusMessage
+          type="info"
+          message="Trial Complete"
+          detail="Your spirit has been pledged"
+        />
       ) : (
         <>
           {/* Vow Text Input */}
@@ -139,10 +131,7 @@ export function ShinTrial({ status, onComplete }: ShinTrialProps) {
             {availableSigners.length === 0 ? (
               <div className="bg-ronin-dark/30 border border-ronin-light/10 rounded-md p-4">
                 <p className="text-ronin-accent/60 text-sm flex items-center gap-2">
-                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  <LoadingSpinner />
                   Loading available signers...
                 </p>
               </div>
@@ -209,10 +198,7 @@ export function ShinTrial({ status, onComplete }: ShinTrialProps) {
           >
             {isLoading ? (
               <>
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <LoadingSpinner />
                 Completing Vow...
               </>
             ) : (
@@ -228,25 +214,17 @@ export function ShinTrial({ status, onComplete }: ShinTrialProps) {
       )}
 
       {(error || localError) && !isCompleted && (
-        <div className="mt-4 bg-red-900/20 border border-red-500/30 rounded-md p-4">
-          <p className="text-red-400 text-sm font-semibold flex items-center gap-2">
-            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            {error || localError}
-          </p>
-        </div>
+        <StatusMessage
+          type="error"
+          message={error || localError || ''}
+        />
       )}
 
       {success && !isCompleted && (
-        <div className="mt-4 bg-green-900/20 border border-green-500/30 rounded-md p-4">
-          <p className="text-green-400 text-sm font-semibold flex items-center gap-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            Shin trial completed successfully!
-          </p>
-        </div>
+        <StatusMessage
+          type="success"
+          message="Shin trial completed successfully!"
+        />
       )}
     </div>
   );

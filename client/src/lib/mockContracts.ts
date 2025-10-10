@@ -54,11 +54,12 @@ export async function mockMintNFT(address: string): Promise<{ transaction_hash: 
  * Mock: Complete Waza trial (game ownership verification)
  */
 export async function mockCompleteWaza(
+  address: string,
   collectionAddress: string
 ): Promise<{ transaction_hash: string; success: boolean }> {
   await delay(800);
 
-  console.log('[MOCK] Attempting Waza trial with collection:', collectionAddress);
+  console.log('[MOCK] Attempting Waza trial for:', address, 'with collection:', collectionAddress);
 
   // Simulate: First collection succeeds, others fail
   const success = collectionAddress.includes('pistols') || Math.random() > 0.5;

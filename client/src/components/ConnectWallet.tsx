@@ -72,10 +72,9 @@ export function ConnectWallet() {
       <button
         onClick={handleConnect}
         className="
-          px-6 py-3 rounded-lg font-semibold
+          w-full px-6 py-4 rounded-lg font-semibold
           transition-all duration-200
           bg-ronin-primary hover:bg-red-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105
-          md:px-8 md:py-3 text-sm md:text-base
         "
       >
         Connect with Controller
@@ -85,19 +84,18 @@ export function ConnectWallet() {
 
   // If connected, show address and dropdown
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative w-full" ref={dropdownRef}>
       <button
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         className="
-          px-4 py-2 md:px-6 md:py-3
+          w-full px-6 py-4
           bg-ronin-dark hover:bg-ronin-light
           border-2 border-ronin-accent
           rounded-lg font-semibold
           text-ronin-secondary
           transition-all duration-200
           shadow-lg hover:shadow-xl
-          flex items-center gap-2
-          text-sm md:text-base
+          flex items-center justify-center gap-2
         "
       >
         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />

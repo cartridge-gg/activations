@@ -81,7 +81,7 @@ export function useWazaClaim(): UseWazaClaimReturn {
           }
 
           // Call mock complete_waza
-          await mockCompleteWaza(collectionAddress, address);
+          await mockCompleteWaza(address, collectionAddress);
 
           setSuccess(true);
           setError(null);
@@ -139,7 +139,7 @@ export function useWazaClaim(): UseWazaClaimReturn {
 
           if (ownsNFT) {
             // Found a collection the user owns, try to complete trial
-            await mockCompleteWaza(collection.address, address);
+            await mockCompleteWaza(address, collection.address);
             setSuccess(true);
             setError(null);
             return; // Exit after first successful attempt

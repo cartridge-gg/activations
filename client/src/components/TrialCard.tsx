@@ -1,17 +1,13 @@
-import { useState, cloneElement, isValidElement } from 'react';
+import { useState } from 'react';
 import { TrialStatus, TrialProgress } from '@/types';
-import {
-  TRIAL_NAMES,
-  TRIAL_SUBTITLES,
-  TRIAL_DESCRIPTIONS,
-} from '@/lib/constants';
+import { TRIALS, TrialName } from '@/lib/constants';
 
 interface TrialCardProps {
-  trialName: 'waza' | 'chi' | 'shin';
+  trialName: TrialName;
   status: TrialStatus;
   progress: TrialProgress;
   onComplete: () => void;
-  children?: React.ReactNode;
+  children: (props: { status: TrialStatus; onComplete: () => void }) => React.ReactNode;
 }
 
 export function TrialCard({
@@ -23,36 +19,8 @@ export function TrialCard({
 }: TrialCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const isComplete = progress[`${trialName}_complete`];
-  const title = TRIAL_NAMES[trialName];
-  const subtitle = TRIAL_SUBTITLES[trialName];
-  const description = TRIAL_DESCRIPTIONS[trialName];
-
-  // Status badge configuration
-  const statusConfig = {
-    locked: {
-      label: 'Locked',
-      className: 'bg-ronin-secondary/20 text-ronin-secondary/50',
-      icon: '🔒',
-    },
-    available: {
-      label: 'Available',
-      className: 'bg-ronin-accent/30 text-ronin-accent',
-      icon: '✓',
-    },
-    in_progress: {
-      label: 'In Progress',
-      className: 'bg-ronin-light/30 text-ronin-light',
-      icon: '⏳',
-    },
-    completed: {
-      label: 'Completed',
-      className: 'bg-ronin-primary/30 text-ronin-primary',
-      icon: '✓',
-    },
-  };
-
-  const currentStatus = isComplete ? 'completed' : status;
-  const statusInfo = statusConfig[currentStatus];
+  const trial = TRIALS[trialName];
+  const { name: title, subtitle } = trial;
 
   return (
     <div
@@ -109,8 +77,7 @@ export function TrialCard({
             </div>
           )}
 
-          {status !== 'locked' && !isComplete && children && isValidElement(children) &&
-            cloneElement(children, { status, onComplete })}
+          {status !== 'locked' && !isComplete && children({ status, onComplete })}
 
           {isComplete && (
             <div className="bg-ronin-primary/10 border border-ronin-primary/30 rounded-lg p-4 text-center">

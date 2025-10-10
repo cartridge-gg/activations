@@ -8,12 +8,6 @@ export interface TrialProgress {
 
 export type TrialStatus = 'locked' | 'available' | 'in_progress' | 'completed';
 
-export interface TrialState {
-  waza: TrialStatus;
-  chi: TrialStatus;
-  shin: TrialStatus;
-}
-
 export interface QuizQuestion {
   id: number;
   text: string;

@@ -33,21 +33,23 @@ export const ALLOWLISTED_COLLECTIONS: AllowlistedCollection[] = [
 export const SHARE_URL = 'https://ronin-pact.xyz'; // TODO: Update with actual URL
 export const SHARE_HASHTAGS = ['RoninsPact', 'DojoEngine', 'Starknet'];
 
-// Trial metadata
-export const TRIAL_NAMES = {
-  waza: 'Waza',
-  chi: 'Chi',
-  shin: 'Shin',
+// Trial metadata - consolidated structure
+export const TRIALS = {
+  waza: {
+    name: 'Waza',
+    subtitle: 'The Way of Technique',
+    description: 'Prove your mastery by demonstrating game ownership in a Dojo-powered world.',
+  },
+  chi: {
+    name: 'Chi',
+    subtitle: 'The Way of Wisdom',
+    description: 'Test your knowledge of Dojo 1.7 architecture and principles.',
+  },
+  shin: {
+    name: 'Shin',
+    subtitle: 'The Way of Spirit',
+    description: 'Pledge your vow and commit your spirit to the journey ahead.',
+  },
 } as const;
 
-export const TRIAL_SUBTITLES = {
-  waza: 'The Way of Technique',
-  chi: 'The Way of Wisdom',
-  shin: 'The Way of Spirit',
-} as const;
-
-export const TRIAL_DESCRIPTIONS = {
-  waza: 'Prove your mastery by demonstrating game ownership in a Dojo-powered world.',
-  chi: 'Test your knowledge of Dojo 1.7 architecture and principles.',
-  shin: 'Pledge your vow and commit your spirit to the journey ahead.',
-} as const;
+export type TrialName = keyof typeof TRIALS;

@@ -1,21 +1,19 @@
-import { TrialProgress, TrialState } from '@/types';
+import { TrialProgress, TrialStatus } from '@/types';
 import { NFTPreview } from './NFTPreview';
 import { TrialCard } from './TrialCard';
 
 interface QuestDashboardProps {
   progress: TrialProgress;
-  trialState: TrialState;
   onCompleteWaza: () => void;
   onCompleteChi: () => void;
   onCompleteShin: () => void;
-  wazaContent?: React.ReactNode;
-  chiContent?: React.ReactNode;
-  shinContent?: React.ReactNode;
+  wazaContent: (props: { status: TrialStatus; onComplete: () => void }) => React.ReactNode;
+  chiContent: (props: { status: TrialStatus; onComplete: () => void }) => React.ReactNode;
+  shinContent: (props: { status: TrialStatus; onComplete: () => void }) => React.ReactNode;
 }
 
 export function QuestDashboard({
   progress,
-  trialState,
   onCompleteWaza,
   onCompleteChi,
   onCompleteShin,
@@ -48,7 +46,7 @@ export function QuestDashboard({
             {/* Trial 1: Waza */}
             <TrialCard
               trialName="waza"
-              status={trialState.waza}
+              status="available"
               progress={progress}
               onComplete={onCompleteWaza}
             >
@@ -58,7 +56,7 @@ export function QuestDashboard({
             {/* Trial 2: Chi */}
             <TrialCard
               trialName="chi"
-              status={trialState.chi}
+              status="available"
               progress={progress}
               onComplete={onCompleteChi}
             >
@@ -68,7 +66,7 @@ export function QuestDashboard({
             {/* Trial 3: Shin */}
             <TrialCard
               trialName="shin"
-              status={trialState.shin}
+              status="available"
               progress={progress}
               onComplete={onCompleteShin}
             >

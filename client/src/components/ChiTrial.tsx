@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { TrialStatus, QuizQuestion } from '@/types';
 import { useChiQuiz } from '@/hooks/useChiQuiz';
+import { useTrialCompletion } from '@/hooks/useTrialCompletion';
+import { StatusMessage, LoadingSpinner } from './TrialStatus';
 
 interface ChiTrialProps {
   status: TrialStatus;
@@ -55,11 +57,7 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
   const isCompleted = status === 'completed';
   const allAnswered = QUIZ_QUESTIONS.every((q) => answers[q.id] !== undefined);
 
-  useEffect(() => {
-    if (success) {
-      onComplete();
-    }
-  }, [success, onComplete]);
+  useTrialCompletion(success, onComplete);
 
   const handleAnswerSelect = (questionId: number, optionIndex: number) => {
     if (isDisabled) return;
@@ -99,17 +97,11 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
   return (
     <div className="space-y-4">
       {isCompleted ? (
-        <div className="bg-ronin-primary/10 border border-ronin-primary/30 rounded-md p-4">
-          <p className="text-ronin-primary font-semibold flex items-center gap-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            Trial Complete
-          </p>
-          <p className="text-ronin-secondary/70 text-sm mt-1">
-            Your wisdom has been demonstrated
-          </p>
-        </div>
+        <StatusMessage
+          type="info"
+          message="Trial Complete"
+          detail="Your wisdom has been demonstrated"
+        />
       ) : (
         <>
           <div className="space-y-6 mb-6">
@@ -189,10 +181,7 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
           >
             {isLoading ? (
               <>
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <LoadingSpinner />
                 Submitting...
               </>
             ) : (
@@ -208,30 +197,18 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
       )}
 
       {(error || localError) && !isCompleted && (
-        <div className="mt-4 bg-red-900/20 border border-red-500/30 rounded-md p-4">
-          <p className="text-red-400 text-sm font-semibold flex items-center gap-2">
-            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            {error || localError}
-          </p>
-          {showValidation && (
-            <p className="text-red-400/70 text-xs mt-1">
-              You can retake the quiz as many times as needed
-            </p>
-          )}
-        </div>
+        <StatusMessage
+          type="error"
+          message={error || localError || ''}
+          detail={showValidation ? "You can retake the quiz as many times as needed" : undefined}
+        />
       )}
 
       {success && !isCompleted && (
-        <div className="mt-4 bg-green-900/20 border border-green-500/30 rounded-md p-4">
-          <p className="text-green-400 text-sm font-semibold flex items-center gap-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            Chi trial completed successfully!
-          </p>
-        </div>
+        <StatusMessage
+          type="success"
+          message="Chi trial completed successfully!"
+        />
       )}
     </div>
   );

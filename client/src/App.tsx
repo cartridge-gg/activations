@@ -6,8 +6,9 @@ import { ChiTrial } from './components/ChiTrial';
 import { ShinTrial } from './components/ShinTrial';
 import { ShareButton } from './components/ShareButton';
 import { useTrialProgress } from './hooks/useTrialProgress';
-import { useState, useEffect } from 'react';
-import { TrialState, TrialProgress } from './types';
+import { useState, useEffect, useCallback } from 'react';
+import { TrialProgress } from './types';
+import { TrialName } from './lib/constants';
 
 function App() {
   const { address } = useAccount();
@@ -16,12 +17,6 @@ function App() {
   // Local progress state for instant updates
   const [progress, setProgress] = useState<TrialProgress | null>(null);
 
-  const [trialState, setTrialState] = useState<TrialState>({
-    waza: 'available',
-    chi: 'available',
-    shin: 'available',
-  });
-
   // Sync local progress with fetched progress
   useEffect(() => {
     if (fetchedProgress) {
@@ -29,29 +24,16 @@ function App() {
     }
   }, [fetchedProgress]);
 
-  const handleCompleteWaza = () => {
-    // Optimistically update progress immediately
-    setProgress(prev => prev ? { ...prev, waza_complete: true } : null);
-    setTrialState(prev => ({ ...prev, waza: 'available' }));
-  };
-
-  const handleCompleteChi = () => {
-    // Optimistically update progress immediately
-    setProgress(prev => prev ? { ...prev, chi_complete: true } : null);
-    setTrialState(prev => ({ ...prev, chi: 'available' }));
-  };
-
-  const handleCompleteShin = () => {
-    // Optimistically update progress immediately
-    setProgress(prev => prev ? { ...prev, shin_complete: true } : null);
-    setTrialState(prev => ({ ...prev, shin: 'available' }));
-  };
+  // Generic trial completion handler
+  const handleTrialComplete = useCallback((trial: TrialName) => {
+    setProgress(prev => prev ? { ...prev, [`${trial}_complete`]: true } : null);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-ronin-dark to-gray-900 text-ronin-secondary">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
+        <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-6 mb-12">
           <div className="flex-shrink-0">
             <h1 className="text-3xl sm:text-4xl font-bold text-ronin-primary mb-2">
               The Rōnin's Pact
@@ -60,13 +42,15 @@ function App() {
               Forge your path through three trials
             </p>
           </div>
-          <div className="flex items-center gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
             {progress && (
-              <div className="w-40 sm:w-48">
+              <div className="w-full sm:w-48 flex-shrink-0">
                 <ShareButton progress={progress} />
               </div>
             )}
-            <ConnectWallet />
+            <div className="w-full sm:w-48 flex-shrink-0">
+              <ConnectWallet />
+            </div>
           </div>
         </header>
 
@@ -81,13 +65,12 @@ function App() {
             ) : progress ? (
               <QuestDashboard
                 progress={progress}
-                trialState={trialState}
-                onCompleteWaza={handleCompleteWaza}
-                onCompleteChi={handleCompleteChi}
-                onCompleteShin={handleCompleteShin}
-                wazaContent={<WazaTrial />}
-                chiContent={<ChiTrial />}
-                shinContent={<ShinTrial />}
+                onCompleteWaza={() => handleTrialComplete('waza')}
+                onCompleteChi={() => handleTrialComplete('chi')}
+                onCompleteShin={() => handleTrialComplete('shin')}
+                wazaContent={(props) => <WazaTrial {...props} />}
+                chiContent={(props) => <ChiTrial {...props} />}
+                shinContent={(props) => <ShinTrial {...props} />}
               />
             ) : (
               <div className="text-center py-20">
