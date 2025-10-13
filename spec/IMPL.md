@@ -57,17 +57,21 @@
 - **Testing**: Starknet Foundry (snforge) for contract tests
 
 ### Frontend
-- **Framework**: Vite + React (single-page application)
+- **Framework**: Vite + React 18 + TypeScript (single-page application)
+- **Package Manager**: pnpm (for faster installs and strict dependency resolution)
 - **Wallet Integration**:
   - `@cartridge/connector` - Controller wallet connector
   - `@cartridge/controller` - Controller SDK
-  - `@cartridge/ui` - Cartridge UI components and utilities
+  - `@cartridge/ui` - Cartridge UI utilities
   - `@starknet-react/core` - React hooks for Starknet
   - `@starknet-react/chains` - Chain configurations
-  - `starknet.js` - Core Starknet interactions
-- **UI Library**: Tailwind CSS + Cartridge UI components
+  - `starknet` (v6.x) - Core Starknet interactions
+- **UI Library**: Tailwind CSS (custom ronin color scheme)
 - **State Management**: React hooks + Starknet React context
 - **Build**: Static site generation for serverless deployment
+- **Dev Tools**:
+  - `vite-plugin-mkcert` - HTTPS support for local development (required for WebAuthn)
+  - Mock contract system for frontend testing without deployed contracts
 
 ### Infrastructure
 - **Hosting**: Vercel, Netlify, or GitHub Pages (fully static)
@@ -293,34 +297,56 @@ fn token_uri(token_id: u256) -> ByteArray {
 
 ### 3.1 Application Structure
 
+**Implemented Structure** (Vite + React):
+
 ```
-src/
-├── app/                   # Next.js app router (if using Next.js)
-│   ├── layout.tsx
-│   ├── page.tsx           # Main quest dashboard
-│   └── globals.css
-├── components/
-│   ├── ConnectWallet.tsx   # Controller connection UI
-│   ├── QuestDashboard.tsx  # Main dashboard component
-│   ├── NFTPreview.tsx      # Live NFT artwork display
-│   ├── TrialCard.tsx       # Reusable trial card component
-│   ├── WazaTrial.tsx       # Trial 1 UI
-│   ├── ChiTrial.tsx        # Trial 2 UI
-│   ├── ShinTrial.tsx       # Trial 3 UI
-│   └── ShareButton.tsx     # Twitter/X share button
-├── lib/
-│   ├── contracts/          # Contract ABIs and addresses
-│   ├── starknet.ts         # Starknet provider config
-│   ├── controller.ts       # Controller connector setup
-│   └── constants.ts        # App constants (contract addresses, etc.)
-├── hooks/
-│   ├── useTrialProgress.ts # Hook to fetch user progress
-│   ├── useWazaClaim.ts     # Hook for Waza trial interactions
-│   ├── useChiQuiz.ts       # Hook for Chi trial interactions
-│   └── useShinTrial.ts     # Hook for Shin trial interactions
-└── types/
-    └── index.ts            # TypeScript type definitions
+client/
+├── src/
+│   ├── components/
+│   │   ├── ConnectWallet.tsx        # Controller connection UI
+│   │   ├── QuestDashboard.tsx       # Main quest dashboard
+│   │   ├── NFTPreview.tsx           # Live NFT artwork display
+│   │   ├── TrialCard.tsx            # Reusable trial card component
+│   │   ├── WazaTrial.tsx            # Trial 1: Game ownership
+│   │   ├── ChiTrial.tsx             # Trial 2: Quiz
+│   │   ├── ShinTrial.tsx            # Trial 3: Signer verification
+│   │   ├── ShareButton.tsx          # Twitter/X share button
+│   │   └── providers/
+│   │       └── StarknetProvider.tsx # Starknet + Cartridge setup
+│   ├── hooks/
+│   │   ├── index.ts                 # Hook exports
+│   │   ├── useTrialProgress.ts      # Fetch trial progress
+│   │   ├── useWazaClaim.ts          # Waza trial logic
+│   │   ├── useChiQuiz.ts            # Chi trial logic
+│   │   ├── useShinTrial.ts          # Shin trial logic
+│   │   └── useTrialCompletion.ts    # Completion callback utility
+│   ├── lib/
+│   │   ├── contracts/
+│   │   │   ├── RoninPact.abi.json   # Main contract ABI
+│   │   │   └── ERC721.abi.json      # ERC721 interface
+│   │   ├── starknet.ts              # Starknet provider config
+│   │   ├── controller.ts            # Controller connector setup
+│   │   ├── constants.ts             # App constants
+│   │   └── mockContracts.ts         # Mock contract implementations
+│   ├── types/
+│   │   └── index.ts                 # TypeScript type definitions
+│   ├── App.tsx                      # Main app component
+│   ├── main.tsx                     # App entry point
+│   └── index.css                    # Global styles + Tailwind
+├── package.json
+├── vite.config.ts
+├── tsconfig.json
+├── tailwind.config.js
+├── .env.example
+└── README.md
 ```
+
+**Key Differences from Original Plan:**
+- Using Vite (not Next.js) for simpler SPA architecture
+- `StarknetProvider.tsx` in `providers/` subdirectory for cleaner organization
+- Added `mockContracts.ts` for development without deployed contracts
+- Added `useTrialCompletion.ts` utility hook
+- Using `pnpm` instead of npm/yarn
 
 ### 3.2 Cartridge Controller Integration
 
@@ -351,32 +377,43 @@ export const controllerConnector = new ControllerConnector({
 });
 ```
 
-**Provider Setup** (`app/layout.tsx` or `_app.tsx`):
+**Provider Setup** (`components/providers/StarknetProvider.tsx`):
 ```typescript
 import { StarknetConfig, jsonRpcProvider } from "@starknet-react/core";
 import { sepolia, mainnet } from "@starknet-react/chains";
-import { controllerConnector } from "@/lib/controller";
+import { controller } from "@/lib/controller";
+import { RPC_URL } from "@/lib/constants";
 
-function provider(chain) {
+function rpcProvider() {
   return jsonRpcProvider({
-    rpc: () => ({ nodeUrl: "YOUR_RPC_URL" }),
+    rpc: () => ({ nodeUrl: RPC_URL }),
   });
 }
 
-export default function RootLayout({ children }) {
+export function StarknetProvider({ children }: { children: React.ReactNode }) {
   return (
-    <html>
-      <body>
-        <StarknetConfig
-          autoConnect
-          chains={[mainnet, sepolia]}
-          provider={provider}
-          connectors={[controllerConnector]}
-        >
-          {children}
-        </StarknetConfig>
-      </body>
-    </html>
+    <StarknetConfig
+      autoConnect
+      chains={[mainnet, sepolia]}
+      provider={rpcProvider}
+      connectors={[controller]}
+    >
+      {children}
+    </StarknetConfig>
+  );
+}
+```
+
+**Usage in App** (`App.tsx`):
+```typescript
+import { StarknetProvider } from "@/components/providers/StarknetProvider";
+import { QuestDashboard } from "@/components/QuestDashboard";
+
+export function App() {
+  return (
+    <StarknetProvider>
+      <QuestDashboard />
+    </StarknetProvider>
   );
 }
 ```
@@ -505,17 +542,23 @@ export function useChiQuiz() {
 6. Contract verifies signer is registered on the user's Controller account
 7. Show success and update progress
 
-**Hook**: `useShinTrial.ts`
+**Hook**: `useShinTrial.ts` (Actual Implementation)
 ```typescript
-import { useAccount } from "@starknet-react/core";
-import { useContract } from "@starknet-react/core";
-import { cartridgeClient } from "@cartridge/ui/utils/api/cartridge";
+import { useState, useCallback, useEffect } from 'react';
+import { useAccount, useContract } from '@starknet-react/core';
+import { RONIN_PACT_ADDRESS } from '@/lib/constants';
+import RoninPactAbi from '@/lib/contracts/RoninPact.abi.json';
+import { SignerInfo } from '@/types';
+import { isMockEnabled, mockGetSigners, mockCompleteShin } from '@/lib/mockContracts';
+
+// Cartridge GraphQL API endpoint
+const CARTRIDGE_API_URL = 'https://api.cartridge.gg/query';
 
 // Type definitions from Controller codebase
-type CredentialType = "WebauthnCredentials" | "Eip191Credentials";
+type CredentialType = 'WebauthnCredentials' | 'Eip191Credentials';
 
 interface Signer {
-  guid: string;  // The signer GUID (felt252 hash)
+  guid: string;
   metadata: {
     __typename: CredentialType;
     eip191?: Array<{ provider: string }>;
@@ -525,80 +568,171 @@ interface Signer {
 
 export function useShinTrial() {
   const { account, address } = useAccount();
-  const contract = useContract({ address: RONIN_PACT_ADDRESS, abi: ABI });
+  const [availableSigners, setAvailableSigners] = useState<SignerInfo[]>([]);
+  const [selectedSigner, setSelectedSigner] = useState<SignerInfo | null>(null);
+  const [vowText, setVowText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-  // Query signers via GraphQL API
-  async function getSigners(): Promise<Array<{
-    guid: string;
-    type: string;  // "discord", "webauthn", "google", "metamask", etc.
-    isRevoked: boolean;
-  }>> {
-    if (!address) return [];
+  const useMock = isMockEnabled();
 
-    // Fetch signers from Controller's GraphQL API
-    const query = `
-      query GetControllerSigners($address: String!) {
-        controller(address: $address) {
-          signers {
-            guid
-            metadata {
-              __typename
-              ... on Eip191Credentials {
-                eip191 {
-                  provider
-                }
-              }
-            }
-            isRevoked
-          }
-        }
-      }
-    `;
-
-    const response = await cartridgeClient.request(query, { address });
-    const signers = response?.controller?.signers || [];
-
-    // Map to simplified signer info with GUIDs
-    return signers
-      .map((signer: Signer) => ({
-        guid: signer.guid,
-        type: credentialToAuthType(signer.metadata),
-        isRevoked: signer.isRevoked,
-      }))
-      .filter((s) => !s.isRevoked);
-  }
+  const { contract: roninPactContract } = useContract({
+    address: RONIN_PACT_ADDRESS,
+    abi: RoninPactAbi,
+  });
 
   // Helper function to determine signer type for display
-  function credentialToAuthType(metadata: Signer['metadata']): string {
+  const credentialToAuthType = (metadata: Signer['metadata']): string => {
     switch (metadata.__typename) {
-      case "Eip191Credentials":
-        return metadata.eip191?.[0]?.provider || "eip191";
-      case "WebauthnCredentials":
-        return "webauthn";
+      case 'Eip191Credentials':
+        if (metadata.eip191?.[0]?.provider) {
+          return metadata.eip191[0].provider;
+        }
+        return 'eip191';
+      case 'WebauthnCredentials':
+        return 'webauthn';
       default:
-        return "unknown";
+        return 'unknown';
     }
-  }
+  };
 
-  // Complete the Shin trial with selected signer
-  async function completeTrial(signerGuid: string) {
-    if (!account) throw new Error("No account connected");
+  // Query signers via GraphQL API
+  const getSigners = useCallback(async (): Promise<SignerInfo[]> => {
+    if (!address) {
+      setError('Please connect your wallet');
+      return [];
+    }
 
-    // Call complete_shin with just the signer GUID
-    // Contract will verify it's registered on the caller's account
-    const tx = await account.execute({
-      contractAddress: RONIN_PACT_ADDRESS,
-      entrypoint: "complete_shin",
-      calldata: [signerGuid],  // Just the GUID, no signatures needed!
-    });
+    setIsLoading(true);
+    setError(null);
 
-    await account.waitForTransaction(tx.transaction_hash);
-    return tx;
-  }
+    try {
+      if (useMock) {
+        const mockSigners = await mockGetSigners(address);
+        setAvailableSigners(mockSigners);
+        return mockSigners;
+      }
 
-  return { completeTrial, getSigners, isLoading, error };
+      // Fetch signers from Controller's GraphQL API
+      const query = `
+        query GetControllerSigners($address: String!) {
+          controller(address: $address) {
+            signers {
+              guid
+              metadata {
+                __typename
+                ... on Eip191Credentials {
+                  eip191 {
+                    provider
+                  }
+                }
+              }
+              isRevoked
+            }
+          }
+        }
+      `;
+
+      const response = await fetch(CARTRIDGE_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables: { address } }),
+      });
+
+      const data = await response.json();
+      const fetchedSigners = data?.data?.controller?.signers || [];
+
+      // Map to simplified signer info
+      const mappedSigners: SignerInfo[] = fetchedSigners
+        .map((signer: Signer) => ({
+          guid: signer.guid,
+          type: credentialToAuthType(signer.metadata),
+          isRevoked: signer.isRevoked,
+        }))
+        .filter((s: SignerInfo) => !s.isRevoked);
+
+      setAvailableSigners(mappedSigners);
+      return mappedSigners;
+    } catch (err: any) {
+      setError(err?.message || 'Failed to fetch signers');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, [address, useMock]);
+
+  // Auto-fetch signers when address is available
+  useEffect(() => {
+    if (address) {
+      getSigners();
+    }
+  }, [address, getSigners]);
+
+  // Complete the Shin trial
+  const completeVow = useCallback(
+    async (): Promise<{ success: boolean }> => {
+      if (!account || !address) {
+        setError('Please connect your wallet');
+        return { success: false };
+      }
+
+      if (!selectedSigner) {
+        setError('Please select a signer');
+        return { success: false };
+      }
+
+      setIsLoading(true);
+      setError(null);
+      setSuccess(false);
+
+      try {
+        if (useMock) {
+          await mockCompleteShin(address, selectedSigner.guid);
+          setSuccess(true);
+          return { success: true };
+        }
+
+        // Call complete_shin with signer GUID
+        const tx = await account.execute({
+          contractAddress: RONIN_PACT_ADDRESS,
+          entrypoint: 'complete_shin',
+          calldata: [selectedSigner.guid],
+        });
+
+        await account.waitForTransaction(tx.transaction_hash);
+        setSuccess(true);
+        return { success: true };
+      } catch (err: any) {
+        setError(err?.message || 'Failed to complete Shin trial');
+        return { success: false };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [account, address, roninPactContract, useMock, selectedSigner]
+  );
+
+  return {
+    availableSigners,
+    selectedSigner,
+    vowText,
+    setVowText,
+    selectSigner: setSelectedSigner,
+    completeVow,
+    isLoading,
+    error,
+    success,
+  };
 }
 ```
+
+**Key Implementation Details:**
+- Auto-fetches signers on mount via `useEffect`
+- Direct GraphQL fetch to `https://api.cartridge.gg/query` (not using `cartridgeClient`)
+- Returns richer state including `selectedSigner`, `vowText` (UI-only), and `availableSigners`
+- `completeVow()` instead of `completeTrial()` for semantic clarity
+- Full mock mode support via `isMockEnabled()`
 
 **Signer Detection Implementation**:
 
@@ -727,7 +861,63 @@ function useQuestState() {
 
 **Recommendation**: Compute locally for better UX, but validate against contract data.
 
-### 3.6 Share on X Feature
+### 3.6 Mock Contract System
+
+To enable frontend development and testing without deployed smart contracts, a comprehensive mock system has been implemented.
+
+**Location**: `src/lib/mockContracts.ts`
+
+**Features**:
+- Drop-in replacement for real contract interactions
+- Simulates network delays (400-1500ms) for realistic testing
+- In-memory state management for trial completion
+- Console logging with `[MOCK]` prefix for visibility
+- Controlled via `VITE_USE_MOCK_CONTRACTS` environment variable
+
+**Mock Functions**:
+- `mockGetTrialProgress(address)` - Returns trial completion state
+- `mockCompleteWaza(address, collectionAddress)` - Simulates ownership verification (50% success rate, "pistols" always succeeds)
+- `mockCheckERC721Ownership(collectionAddress, ownerAddress)` - Simulates balance checks
+- `mockCompleteChi(answers)` - Always accepts quiz answers
+- `mockCompleteShin(signerGuid)` - Simulates signer verification
+- `mockGetSigners(address)` - Returns mock signers (webauthn, discord, google)
+- `mockMintNFT(address)` - Simulates NFT minting
+- `mockWaitForTransaction(txHash)` - Simulates transaction confirmation
+
+**Utility Functions**:
+- `isMockEnabled()` - Checks if mock mode is active
+- `resetMockState()` - Clears all progress (useful for testing)
+- `getMockState()` - Returns current state for debugging
+
+**Hook Integration Pattern**:
+```typescript
+export function useHook() {
+  const useMock = isMockEnabled();
+
+  // Contract setup disabled when mocking
+  const { contract } = useContract({
+    enabled: !useMock && !!address
+  });
+
+  // Branch on mock mode
+  if (useMock) {
+    return await mockFunction();
+  }
+  return await contract.call();
+}
+```
+
+**Benefits**:
+- Develop UI before contracts are deployed
+- Test error states and edge cases easily
+- No gas costs during development
+- Faster iteration cycles
+- Consistent testing environment
+
+**Transition to Production**:
+Simply set `VITE_USE_MOCK_CONTRACTS=false` and provide real contract addresses. No code changes needed.
+
+### 3.7 Share on X Feature
 
 **Component**: `ShareButton.tsx`
 

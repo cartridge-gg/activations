@@ -89,6 +89,7 @@ curl -fsSL https://get.pnpm.io/install.sh | sh -
    Edit `.env` to set:
    - `VITE_RONIN_PACT_ADDRESS`: Contract address after deployment
    - `VITE_RPC_URL`: Starknet RPC endpoint (default: Cartridge Sepolia)
+   - `VITE_USE_MOCK_CONTRACTS`: Set to `true` for mock mode, `false` for production
 
 3. **Run development server:**
    ```bash
@@ -155,16 +156,28 @@ Outputs to `dist/` directory, ready for static hosting (Vercel, Netlify, GitHub 
 
 ## Custom Hooks
 
+All hooks support both mock mode (for testing) and production mode (for real contract interactions). Mock mode is controlled via the `VITE_USE_MOCK_CONTRACTS` environment variable.
+
 ### useTrialProgress
-Fetches and tracks trial completion status from the RoninPact contract.
+Fetches and tracks trial completion status from the RoninPact contract. Automatically watches for real-time updates when connected to a live contract.
+
+**Location:** `src/hooks/useTrialProgress.ts`
 
 ```typescript
 const { progress, isLoading, error, refetch } = useTrialProgress();
 // progress: { waza_complete: bool, chi_complete: bool, shin_complete: bool }
 ```
 
+**Implementation:**
+- Uses `useReadContract` from `@starknet-react/core` to call `get_progress(address)` on the RoninPact contract
+- In mock mode: Returns in-memory state from `mockContracts.ts`
+- In production: Parses contract response as a tuple of `(bool, bool, bool)`
+- Watch mode enabled for real-time progress updates
+
 ### useWazaClaim
-Handles Waza trial (game ownership verification).
+Handles Waza trial (game ownership verification). Checks ERC721 ownership and submits proof to complete the trial.
+
+**Location:** `src/hooks/useWazaClaim.ts`
 
 ```typescript
 const { tryCollection, tryAll, isLoading, error, success } = useWazaClaim();
@@ -172,21 +185,75 @@ await tryCollection('0x123...'); // Try specific collection
 await tryAll(); // Try all allowlisted collections
 ```
 
+**Implementation:**
+- `tryCollection(collectionAddress)`:
+  1. Checks ERC721 ownership by calling `balance_of(address)` on the collection contract
+  2. If balance > 0, calls `complete_waza(collection_address)` on RoninPact contract
+  3. Waits for transaction confirmation
+- `tryAll()`: Iterates through `ALLOWLISTED_COLLECTIONS`, stopping at first successful match
+- In mock mode: Simulates ownership checks with 50% success rate (always succeeds for "pistols")
+- Error handling includes specific messages for "no ownership" and "already completed" states
+
 ### useChiQuiz
-Handles Chi trial (quiz submission).
+Handles Chi trial (quiz submission and validation).
+
+**Location:** `src/hooks/useChiQuiz.ts`
 
 ```typescript
 const { submitQuiz, isLoading, error, success } = useChiQuiz();
 await submitQuiz(['answer1', 'answer2', 'answer3']);
 ```
 
+**Implementation:**
+- `submitQuiz(answers)`: Sends array of answer strings to `complete_chi(answers)` entrypoint
+- Answers are passed as felt252-compatible string array in calldata
+- Contract validates answers onchain and completes trial if correct
+- In mock mode: Always accepts answers as correct
+- Error parsing detects "incorrect answers" and "already completed" states
+- Allows unlimited retakes (contract handles retry logic)
+
 ### useShinTrial
-Handles Shin trial (signer verification).
+Handles Shin trial (signer verification via Cartridge Controller). Fetches user's registered signers and submits selected signer GUID for verification.
+
+**Location:** `src/hooks/useShinTrial.ts`
 
 ```typescript
-const { getSigners, completeTrial, signers, isLoading, error, success } = useShinTrial();
-await getSigners(); // Fetch available signers
-await completeTrial(signers[0].guid); // Complete with selected signer
+const {
+  availableSigners,     // Array of SignerInfo objects
+  selectedSigner,       // Currently selected signer
+  vowText,              // Optional vow text (UI-only)
+  setVowText,           // Update vow text
+  selectSigner,         // Select a signer
+  completeVow,          // Submit trial completion
+  isLoading,
+  error,
+  success
+} = useShinTrial();
+
+// Auto-fetches signers on mount when address is available
+await completeVow(); // Complete with selected signer
+```
+
+**Implementation:**
+- Auto-fetches signers via Cartridge GraphQL API (`https://api.cartridge.gg/query`)
+- GraphQL query: `controller(address).signers` returns signer metadata including:
+  - `guid`: Signer identifier (felt252)
+  - `metadata.__typename`: Credential type (`WebauthnCredentials` or `Eip191Credentials`)
+  - Provider info for Eip191 (Discord, Google, etc.)
+  - `isRevoked`: Whether signer is active
+- Filters out revoked signers
+- `completeVow()`: Calls `complete_shin(signer_guid)` on contract
+- **No signatures required**: Contract verifies GUID is registered on caller's account
+- In mock mode: Returns mock signers (webauthn, discord, google)
+
+### useTrialCompletion
+Utility hook to trigger callbacks when trials complete successfully.
+
+**Location:** `src/hooks/useTrialCompletion.ts`
+
+```typescript
+useTrialCompletion(success, onComplete);
+// Calls onComplete() when success changes to true
 ```
 
 ## Configuration
@@ -261,12 +328,25 @@ The frontend is designed to work with:
 3. **Mainnet**: Production deployment
 
 ### Testing Checklist
+
+**Mock Mode Testing:**
+- [ ] Enable mock mode: `VITE_USE_MOCK_CONTRACTS=true`
 - [ ] Wallet connection/disconnection
 - [ ] Each trial completion flow
 - [ ] NFT preview updates correctly
 - [ ] Error handling (no ownership, wrong answers, etc.)
 - [ ] Responsive design on mobile/tablet/desktop
 - [ ] Share button opens Twitter with correct message
+- [ ] Mock console logs appear with `[MOCK]` prefix
+
+**Production Mode Testing:**
+- [ ] Deploy contracts to testnet
+- [ ] Disable mock mode: `VITE_USE_MOCK_CONTRACTS=false`
+- [ ] Update contract addresses in `.env`
+- [ ] Test all trial flows with real transactions
+- [ ] Verify gas estimation and transaction fees
+- [ ] Check contract event emission and indexing
+- [ ] Test error cases (insufficient gas, incorrect answers, etc.)
 
 ## Deployment
 
@@ -331,6 +411,210 @@ The frontend is designed to work with:
 - Lower operational costs
 - Better decentralization
 - Simpler deployment
+
+## Mock Contract Implementation
+
+The client includes a comprehensive mock system for testing and development without requiring deployed smart contracts. This allows full-stack frontend development before contracts are deployed.
+
+### Overview
+
+Mock contracts are implemented in `src/lib/mockContracts.ts` and provide simulated versions of all contract interactions. The system is designed to be a drop-in replacement for real contract calls, maintaining identical interfaces and return types.
+
+**Location:** `src/lib/mockContracts.ts`
+
+### Enabling Mock Mode
+
+Set the environment variable in your `.env` file:
+
+```env
+VITE_USE_MOCK_CONTRACTS=true
+```
+
+All hooks automatically detect mock mode via `isMockEnabled()` and switch between real and mock implementations.
+
+### Mock Architecture
+
+**In-Memory State:**
+```typescript
+// Global mock state persists across function calls
+let mockState = {
+  wazaComplete: false,
+  chiComplete: false,
+  shinComplete: false,
+  mintedNFT: false,
+};
+```
+
+**Network Simulation:**
+- All mock functions include artificial delays (400-1500ms) to simulate network latency
+- Delays help test loading states and race conditions
+- Transaction hashes are generated as `0xmock_{trial}_tx_{timestamp}`
+
+### Mock Functions
+
+#### mockGetTrialProgress(address)
+Returns current trial completion state for a user.
+
+```typescript
+// Returns TrialProgress matching contract's (bool, bool, bool) tuple
+await mockGetTrialProgress('0x123...');
+// → { waza_complete: false, chi_complete: false, shin_complete: false }
+```
+
+#### mockCompleteWaza(address, collectionAddress)
+Simulates Waza trial completion with conditional success logic.
+
+```typescript
+await mockCompleteWaza('0x123...', '0xpistols...');
+// → { transaction_hash: '0xmock_waza_tx_...', success: true }
+```
+
+**Behavior:**
+- Collections containing "pistols" in address: Always succeed
+- Other collections: 50% random success rate
+- Updates `mockState.wazaComplete` on success
+
+#### mockCheckERC721Ownership(collectionAddress, ownerAddress)
+Simulates ERC721 balance check.
+
+```typescript
+await mockCheckERC721Ownership('0xpistols...', '0x123...');
+// → true (if collection contains "pistols") or 70% random chance
+```
+
+**Behavior:**
+- Pistols collection: Always returns `true`
+- Other collections: 30% chance of ownership
+
+#### mockCompleteChi(answers)
+Simulates quiz submission and always accepts answers.
+
+```typescript
+await mockCompleteChi(['answer1', 'answer2', 'answer3']);
+// → { transaction_hash: '0xmock_chi_tx_...', success: true }
+```
+
+**Behavior:**
+- Accepts any answers as correct (no validation)
+- Updates `mockState.chiComplete` to `true`
+- Allows testing quiz UI without answer constraints
+
+#### mockCompleteShin(signerGuid)
+Simulates signer verification and trial completion.
+
+```typescript
+await mockCompleteShin('0xmock_signer_webauthn_...');
+// → { transaction_hash: '0xmock_shin_tx_...' }
+```
+
+**Behavior:**
+- Accepts any signer GUID
+- Updates `mockState.shinComplete` to `true`
+
+#### mockGetSigners(address)
+Returns mock signer credentials for testing multi-auth flows.
+
+```typescript
+await mockGetSigners('0x123...');
+// → [
+//   { guid: '0xmock_signer_webauthn_...', type: 'webauthn', isRevoked: false },
+//   { guid: '0xmock_signer_discord_...', type: 'discord', isRevoked: false },
+//   { guid: '0xmock_signer_google_...', type: 'google', isRevoked: false }
+// ]
+```
+
+**Behavior:**
+- Returns 3 mock signers: WebAuthn, Discord, Google
+- GUIDs include timestamp for uniqueness
+- All signers are active (not revoked)
+
+#### mockMintNFT(address)
+Simulates NFT minting transaction.
+
+```typescript
+await mockMintNFT('0x123...');
+// → { transaction_hash: '0xmock_mint_tx_...' }
+```
+
+#### mockWaitForTransaction(txHash)
+Simulates waiting for transaction confirmation (1.5s delay).
+
+```typescript
+await mockWaitForTransaction('0xmock_waza_tx_...');
+// → void (after 1500ms)
+```
+
+### Utility Functions
+
+#### resetMockState()
+Resets all trial completion state to initial values.
+
+```typescript
+resetMockState();
+// Clears all progress, useful for testing fresh user flows
+```
+
+#### getMockState()
+Returns current mock state for debugging.
+
+```typescript
+const state = getMockState();
+console.log(state);
+// → { wazaComplete: true, chiComplete: false, ... }
+```
+
+### Integration with Hooks
+
+Each hook checks `isMockEnabled()` and branches accordingly:
+
+```typescript
+const useMock = isMockEnabled();
+
+if (useMock) {
+  // Use mock functions from mockContracts.ts
+  await mockCompleteWaza(address, collectionAddress);
+} else {
+  // Use real contract via starknet-react
+  await account.execute({
+    contractAddress: RONIN_PACT_ADDRESS,
+    entrypoint: 'complete_waza',
+    calldata: [collectionAddress],
+  });
+}
+```
+
+### Migration to Production
+
+When transitioning from mocks to real contracts:
+
+1. **Deploy contracts** to Sepolia/Mainnet
+2. **Update `.env`**:
+   ```env
+   VITE_RONIN_PACT_ADDRESS=0x... # Deployed contract address
+   VITE_USE_MOCK_CONTRACTS=false # Disable mocks
+   ```
+3. **No code changes required** - hooks automatically switch to production mode
+4. **Test thoroughly** - Real contract calls may have different error cases and gas requirements
+
+### Mock Console Logging
+
+All mock functions log to console with `[MOCK]` prefix for visibility:
+
+```
+[MOCK] Fetching trial progress for: 0x123...
+[MOCK] ✅ Waza trial completed!
+[MOCK] ❌ No ownership found for this collection
+```
+
+This helps differentiate mock vs. production behavior during development.
+
+### Limitations
+
+- **No gas estimation**: Mocks don't account for transaction costs
+- **Simplified validation**: Real contracts may have stricter requirements
+- **No reverts**: Mocks generally succeed; real contracts may revert with specific error messages
+- **No events**: Mock calls don't emit blockchain events
+- **State isolation**: Mock state is browser-session only (not persisted)
 
 ## Troubleshooting
 
