@@ -1,103 +1,89 @@
-import { TrialProgress, VisualState } from '@/types';
+import { TrialProgress } from '@/types';
 import { ShareButton } from './ShareButton';
+import { useMemo } from 'react';
 
 interface NFTPreviewProps {
   progress: TrialProgress;
 }
 
-export function NFTPreview({ progress }: NFTPreviewProps) {
-  // Calculate visual state (number of slashes lit)
-  const visualState: VisualState = [
-    progress.waza_complete,
-    progress.chi_complete,
-    progress.shin_complete,
-  ].filter(Boolean).length as VisualState;
+const TRIALS = [
+  { name: 'Waza', key: 'waza_complete' as const },
+  { name: 'Chi', key: 'chi_complete' as const },
+  { name: 'Shin', key: 'shin_complete' as const },
+];
 
-  const slashStates = [
-    { name: 'Waza', complete: progress.waza_complete },
-    { name: 'Chi', complete: progress.chi_complete },
-    { name: 'Shin', complete: progress.shin_complete },
-  ];
+function getBackground(): string {
+  return "<rect width='400' height='400' fill='#1a1a2e'/><defs><radialGradient id='bg-gradient'><stop offset='0%' style='stop-color:#2a2a4e;stop-opacity:1'/><stop offset='100%' style='stop-color:#1a1a2e;stop-opacity:1'/></radialGradient></defs><rect width='400' height='400' fill='url(#bg-gradient)'/>";
+}
+
+function getBasePact(): string {
+  return "<circle cx='200' cy='200' r='80' fill='none' stroke='#4a5568' stroke-width='3' opacity='0.6'/><circle cx='200' cy='200' r='90' fill='none' stroke='#4a5568' stroke-width='2' opacity='0.4'/><circle cx='200' cy='200' r='100' fill='none' stroke='#4a5568' stroke-width='1' opacity='0.2'/><text x='200' y='340' text-anchor='middle' font-family='monospace' font-size='16' fill='#718096'>The Ronins Pact</text>";
+}
+
+function getWazaSlash(): string {
+  return "<defs><linearGradient id='waza-gradient' x1='140' y1='140' x2='260' y2='260' gradientUnits='userSpaceOnUse'><stop offset='0%' style='stop-color:#ef4444;stop-opacity:1'/><stop offset='100%' style='stop-color:#dc2626;stop-opacity:1'/></linearGradient><filter id='waza-glow'><feGaussianBlur stdDeviation='3' result='coloredBlur'/><feMerge><feMergeNode in='coloredBlur'/><feMergeNode in='SourceGraphic'/></feMerge></filter></defs><line x1='140' y1='140' x2='260' y2='260' stroke='url(#waza-gradient)' stroke-width='8' stroke-linecap='round' filter='url(#waza-glow)'/><text x='120' y='130' font-family='monospace' font-size='14' fill='#ef4444' opacity='0.9'>WAZA</text>";
+}
+
+function getChiSlash(): string {
+  return "<defs><linearGradient id='chi-gradient' x1='260' y1='140' x2='140' y2='260' gradientUnits='userSpaceOnUse'><stop offset='0%' style='stop-color:#3b82f6;stop-opacity:1'/><stop offset='100%' style='stop-color:#2563eb;stop-opacity:1'/></linearGradient><filter id='chi-glow'><feGaussianBlur stdDeviation='3' result='coloredBlur'/><feMerge><feMergeNode in='coloredBlur'/><feMergeNode in='SourceGraphic'/></feMerge></filter></defs><line x1='260' y1='140' x2='140' y2='260' stroke='url(#chi-gradient)' stroke-width='8' stroke-linecap='round' filter='url(#chi-glow)'/><text x='268' y='130' font-family='monospace' font-size='14' fill='#3b82f6' opacity='0.9'>CHI</text>";
+}
+
+function getShinSlash(): string {
+  return "<defs><linearGradient id='shin-gradient' x1='200' y1='120' x2='200' y2='280' gradientUnits='userSpaceOnUse'><stop offset='0%' style='stop-color:#a855f7;stop-opacity:1'/><stop offset='100%' style='stop-color:#9333ea;stop-opacity:1'/></linearGradient></defs><line x1='200' y1='120' x2='200' y2='280' stroke='url(#shin-gradient)' stroke-width='8' stroke-linecap='round'/><text x='200' y='110' text-anchor='middle' font-family='monospace' font-size='14' fill='#a855f7' opacity='0.9'>SHIN</text>";
+}
+
+function getCompletionGlow(): string {
+  return "<defs><radialGradient id='complete-gradient'><stop offset='0%' style='stop-color:#fbbf24;stop-opacity:0.4'/><stop offset='50%' style='stop-color:#f59e0b;stop-opacity:0.2'/><stop offset='100%' style='stop-color:#d97706;stop-opacity:0'/></radialGradient><filter id='complete-glow'><feGaussianBlur stdDeviation='8' result='coloredBlur'/><feMerge><feMergeNode in='coloredBlur'/><feMergeNode in='SourceGraphic'/></feMerge></filter></defs><circle cx='200' cy='200' r='120' fill='url(#complete-gradient)' filter='url(#complete-glow)'/><text x='200' y='360' text-anchor='middle' font-family='monospace' font-size='12' fill='#fbbf24' font-weight='bold'>FORGED</text>";
+}
+
+function generateSvg(progress: TrialProgress): string {
+  let svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'>";
+
+  svg += getBackground();
+  svg += getBasePact();
+
+  if (progress.waza_complete) svg += getWazaSlash();
+  if (progress.chi_complete) svg += getChiSlash();
+  if (progress.shin_complete) svg += getShinSlash();
+
+  if (progress.waza_complete && progress.chi_complete && progress.shin_complete) {
+    svg += getCompletionGlow();
+  }
+
+  return svg + "</svg>";
+}
+
+export function NFTPreview({ progress }: NFTPreviewProps) {
+  const svgContent = useMemo(() => generateSvg(progress), [progress]);
+  const allComplete = progress.waza_complete && progress.chi_complete && progress.shin_complete;
 
   return (
     <div className="bg-gradient-to-br from-ronin-dark to-ronin-light rounded-lg p-8 shadow-xl">
       <div className="flex flex-col items-center space-y-6">
-        {/* NFT Visual Representation */}
-        <div className="relative w-64 h-64 bg-ronin-secondary/10 rounded-lg border-4 border-ronin-secondary/30 flex items-center justify-center overflow-hidden">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <svg
-              className="w-full h-full"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-            >
-              <pattern
-                id="grid"
-                width="10"
-                height="10"
-                patternUnits="userSpaceOnUse"
-              >
-                <path
-                  d="M 10 0 L 0 0 0 10"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="0.5"
-                />
-              </pattern>
-              <rect width="100" height="100" fill="url(#grid)" />
-            </svg>
-          </div>
-
-          {/* Three Slashes */}
-          <div className="relative z-10 flex items-center justify-center space-x-8">
-            {slashStates.map((slash) => (
-              <div
-                key={slash.name}
-                className={`w-2 h-32 rounded-full transition-all duration-700 transform rotate-12 ${
-                  slash.complete
-                    ? 'bg-ronin-primary shadow-lg shadow-ronin-primary/50 scale-110'
-                    : 'bg-ronin-secondary/20'
-                }`}
-                style={{
-                  transformOrigin: 'center',
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Center Glow Effect */}
-          {visualState === 3 && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-48 h-48 bg-ronin-primary/20 rounded-full blur-3xl animate-pulse" />
-            </div>
-          )}
+        <div className="relative w-96 h-96 rounded-lg overflow-hidden">
+          <div dangerouslySetInnerHTML={{ __html: svgContent }} />
         </div>
 
-        {/* Trial Status Indicators */}
         <div className="flex items-center space-x-4">
-          {slashStates.map((slash) => (
-            <div
-              key={slash.name}
-              className="flex flex-col items-center space-y-1"
-            >
+          {TRIALS.map(({ name, key }) => (
+            <div key={name} className="flex flex-col items-center space-y-1">
               <div
                 className={`w-3 h-3 rounded-full transition-colors duration-300 ${
-                  slash.complete ? 'bg-ronin-primary' : 'bg-ronin-secondary/30'
+                  progress[key] ? 'bg-ronin-primary' : 'bg-ronin-secondary/30'
                 }`}
               />
               <span
                 className={`text-xs font-medium ${
-                  slash.complete ? 'text-ronin-secondary' : 'text-ronin-secondary/50'
+                  progress[key] ? 'text-ronin-secondary' : 'text-ronin-secondary/50'
                 }`}
               >
-                {slash.name}
+                {name}
               </span>
             </div>
           ))}
         </div>
 
-        {/* Congratulations Message (shown when all trials complete) */}
-        {visualState === 3 && (
+        {allComplete && (
           <div className="w-full space-y-4 pt-4 border-t border-ronin-primary/30">
             <div className="text-center space-y-2">
               <h3 className="text-xl font-bold text-ronin-secondary">
