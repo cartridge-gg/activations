@@ -41,7 +41,7 @@ pub mod actions {
     use starknet::{ContractAddress, get_caller_address};
     use dojo::world::WorldStorage;
     use dojo::model::ModelStorage;
-    use ronin_pact::models::{RoninOwner, RoninPact, RoninGames, RoninAnswers};
+    use ronin_quest::models::{RoninOwner, RoninPact, RoninGames, RoninAnswers};
 
     #[abi(embed_v0)]
     impl ActionsImpl of IActions<ContractState> {
@@ -151,7 +151,7 @@ pub mod actions {
     #[generate_trait]
     impl InternalImpl of InternalTrait {
         fn world_default(self: @ContractState) -> WorldStorage {
-            self.world(@"pact")
+            self.world(@"ronin_quest")
         }
 
         fn assert_only_owner(self: @ContractState, world: @WorldStorage) {

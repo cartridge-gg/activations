@@ -1,6 +1,6 @@
 [package]
 cairo-version = "2.12.2"
-name = "ronin_pact"
+name = "ronin_quest"
 version = "0.1.0"
 edition = "2024_07"
 
@@ -9,7 +9,7 @@ sierra-replace-ids = true
 
 [scripts]
 migrate = "sozo build && sozo migrate"
-mint = "sozo execute ronin_pact-ronin_pact_nft mint --wait"
+mint = "sozo execute ronin_quest-ronin_pact mint --wait"
 
 [dependencies]
 dojo = "1.7.1"

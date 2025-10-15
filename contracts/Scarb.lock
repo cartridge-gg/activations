@@ -132,7 +132,7 @@ version = "0.20.0"
 source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v0.20.0#7756fd1de2b4ebd239fa6e372d75535cea02e5e5"
 
 [[package]]
-name = "ronin_pact"
+name = "ronin_quest"
 version = "0.1.0"
 dependencies = [
  "dojo",
