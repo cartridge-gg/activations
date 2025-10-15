@@ -1,0 +1,27 @@
+[package]
+cairo-version = "2.12.2"
+name = "ronin_pact"
+version = "0.1.0"
+edition = "2024_07"
+
+[cairo]
+sierra-replace-ids = true
+
+[scripts]
+migrate = "sozo build && sozo migrate"
+mint = "sozo execute ronin_pact-ronin_pact_nft mint --wait"
+
+[dependencies]
+dojo = "1.7.1"
+starknet = "2.12.2"
+openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.20.0" }
+
+[[target.starknet-contract]]
+build-external-contracts = ["dojo::world::world_contract::world"]
+
+[tool.scarb]
+allow-prebuilt-plugins = ["dojo_cairo_macros"]
+
+[dev-dependencies]
+cairo_test = "2.12.2"
+dojo_cairo_test = "1.7.1"
