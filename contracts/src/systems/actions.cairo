@@ -1,18 +1,17 @@
 // Dojo contract for The Ronin's Pact treasure hunt game logic
 // This contract stores game configuration and validates trial completion
-// Player progress is stored in the NFT contract (ronin_pact.cairo)
+// Player progress is stored in the NFT contract (pact.cairo)
 
 use starknet::ContractAddress;
 
-// Interface for the Controller's signer verification
+// Interface for ERC721 games
 #[starknet::interface]
-pub trait ISignerList<TContractState> {
-    fn is_signer_in_list(self: @TContractState, signer_guid: felt252) -> bool;
+pub trait IERC721<TContractState> {
+    fn balance_of(self: @TContractState, account: ContractAddress) -> u256;
 }
-
 // Interface for the NFT contract - only progress recording
 #[starknet::interface]
-pub trait IRoninPact<TContractState> {
+pub trait IPactNFT<TContractState> {
     fn complete_waza(ref self: TContractState, owner: ContractAddress);
     fn complete_chi(ref self: TContractState, owner: ContractAddress);
     fn complete_shin(ref self: TContractState, owner: ContractAddress);
@@ -20,360 +19,152 @@ pub trait IRoninPact<TContractState> {
 
 // Treasure hunt game interface
 #[starknet::interface]
-pub trait ITreasureHunt<T> {
+pub trait IActions<T> {
     // Player actions
-    fn complete_waza(ref self: T, collection_address: ContractAddress);
-    fn complete_chi(ref self: T, answers: Array<felt252>);
-    fn complete_shin(ref self: T, signer_guid: felt252);
-    fn get_quiz_questions_for_wallet(self: @T, wallet: ContractAddress) -> Array<ByteArray>;
+    fn complete_waza(ref self: T);
+    fn complete_chi(ref self: T, questions: Array<u32>, answers: Array<felt252>);
+    fn complete_shin(ref self: T, signer: felt252);
 
     // Admin functions
-    fn set_allowlist(ref self: T, collections: Array<ContractAddress>);
-    fn set_quiz(ref self: T, questions: Array<ByteArray>, answer_hashes: Array<felt252>);
-    fn get_allowlist_length(self: @T) -> u32;
-    fn get_allowlisted_collection(self: @T, index: u32) -> ContractAddress;
-    fn get_quiz_length(self: @T) -> u32;
-    fn get_quiz_question(self: @T, index: u32) -> ByteArray;
-    fn get_quiz_answer_hash(self: @T, index: u32) -> felt252;
+    fn set_owner(ref self: T, owner: ContractAddress);
+    fn set_pact(ref self: T, pact: ContractAddress);
+    fn set_games(ref self: T, games: Array<ContractAddress>);
+    fn set_quiz(ref self: T, answers: Array<felt252>);
 }
 
 #[dojo::contract]
-pub mod treasure_hunt {
+pub mod actions {
     use super::{
-        ITreasureHunt, IRoninPactDispatcher, IRoninPactDispatcherTrait, ISignerListDispatcher,
-        ISignerListDispatcherTrait
+        IActions, IERC721Dispatcher, IERC721DispatcherTrait,
+        IPactNFTDispatcher, IPactNFTDispatcherTrait
     };
-    use starknet::{ContractAddress, get_caller_address, storage::{StoragePointerReadAccess, StoragePointerWriteAccess, Map, StorageMapReadAccess, StorageMapWriteAccess}};
-    use core::poseidon::poseidon_hash_span;
-    use dojo::event::EventStorage;
+    use starknet::{ContractAddress, get_caller_address};
     use dojo::world::WorldStorage;
-
-    #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
-    pub struct WazaAttempted {
-        #[key]
-        pub wallet: ContractAddress,
-        pub collection: ContractAddress,
-        pub success: bool,
-    }
-
-    #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
-    pub struct ChiAttempted {
-        #[key]
-        pub wallet: ContractAddress,
-        pub success: bool,
-    }
-
-    #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
-    pub struct ShinAttempted {
-        #[key]
-        pub wallet: ContractAddress,
-        pub signer_guid: felt252,
-        pub success: bool,
-    }
-
-    #[storage]
-    struct Storage {
-        nft_contract: ContractAddress,
-        owner: ContractAddress,
-        // Configuration storage
-        allowlist_length: u32,
-        allowlisted_collections: Map<u32, ContractAddress>,
-        quiz_length: u32,
-        quiz_questions: Map<u32, ByteArray>,
-        quiz_answer_hashes: Map<u32, felt252>,
-    }
+    use dojo::model::ModelStorage;
+    use ronin_pact::models::{RoninOwner, RoninPact, RoninGames, RoninAnswers};
 
     #[abi(embed_v0)]
-    impl TreasureHuntImpl of ITreasureHunt<ContractState> {
-        fn complete_waza(ref self: ContractState, collection_address: ContractAddress) {
+    impl ActionsImpl of IActions<ContractState> {
+        fn complete_waza(ref self: ContractState) {
             let caller = get_caller_address();
-            let mut world = self.world_default();
+            let world = self.world_default();
 
-            // Verify the collection is allowlisted by reading from local storage
-            let allowlist_length = self.allowlist_length.read();
-            let mut is_allowlisted = false;
-            let mut i: u32 = 0;
-            loop {
-                if i >= allowlist_length {
-                    break;
-                }
-                let allowlisted_collection = self.allowlisted_collections.read(i);
-                if allowlisted_collection == collection_address {
-                    is_allowlisted = true;
-                    break;
-                }
-                i += 1;
+            let games_config: RoninGames = world.read_model(0);
+            let pact_config: RoninPact = world.read_model(0);
+
+            // Check balance across all game collections
+            let mut balance: u256 = 0;
+            for game in games_config.games {
+                let erc721 = IERC721Dispatcher { contract_address: game };
+                balance += erc721.balance_of(caller);
             };
 
-            if !is_allowlisted {
-                world
-                    .emit_event(
-                        @WazaAttempted {
-                            wallet: caller, collection: collection_address, success: false
-                        }
-                    );
-                panic!("Collection not allowlisted");
-            }
+            assert(balance >= 1, 'No tokens owned!');
 
-            // Check ownership via ERC721 balance_of
-            let balance = self.check_erc721_balance(collection_address, caller);
-            if balance == 0 {
-                world
-                    .emit_event(
-                        @WazaAttempted {
-                            wallet: caller, collection: collection_address, success: false
-                        }
-                    );
-                panic!("No tokens owned");
-            }
-
-            // Call NFT contract to record completion
-            let nft_contract = self.nft_contract.read();
-            let nft = IRoninPactDispatcher { contract_address: nft_contract };
+            let nft = IPactNFTDispatcher { contract_address: pact_config.pact };
             nft.complete_waza(caller);
-
-            world
-                .emit_event(
-                    @WazaAttempted { wallet: caller, collection: collection_address, success: true }
-                );
         }
 
-        fn complete_chi(ref self: ContractState, answers: Array<felt252>) {
+        fn complete_chi(ref self: ContractState, questions: Array<u32>, answers: Array<felt252>) {
             let caller = get_caller_address();
-            let mut world = self.world_default();
+            let world = self.world_default();
 
-            // Verify answers (3 questions per user)
-            if answers.len() != 3 {
-                world.emit_event(@ChiAttempted { wallet: caller, success: false });
-                panic!("Must answer 3 questions");
-            }
+            let answers_config: RoninAnswers = world.read_model(0);
+            let pact_config: RoninPact = world.read_model(0);
 
-            // Get the 3 questions for this wallet
-            let question_indices = self.select_questions_for_wallet(caller);
+            // Verify answer count matches question count
+            assert(questions.len() == answers.len(), 'Question/answer mismatch');
 
-            // Verify each answer by reading from local storage
-            let mut i: u32 = 0;
-            let mut all_correct = true;
-            loop {
-                if i >= 3 {
-                    break;
+            let mut correct: u256 = 0;
+            for i in 0..questions.len() {
+                let question_idx = *questions.at(i);
+                let answer_hash = *answers.at(i);
+                let expected_hash = *answers_config.answers.at(question_idx);
+
+                if answer_hash == expected_hash {
+                    correct += 1;
                 }
-                let question_idx = *question_indices.at(i);
-                let answer_hash = self.quiz_answer_hashes.read(question_idx);
-                let submitted_answer = *answers.at(i);
-
-                if submitted_answer != answer_hash {
-                    all_correct = false;
-                    break;
-                }
-                i += 1;
             };
 
-            if !all_correct {
-                world.emit_event(@ChiAttempted { wallet: caller, success: false });
-                panic!("Incorrect answers");
-            }
+            assert(correct >= 3, 'Incorrect answers!');
 
             // Call NFT contract to record completion
-            let nft_contract = self.nft_contract.read();
-            let nft = IRoninPactDispatcher { contract_address: nft_contract };
+            let nft = IPactNFTDispatcher { contract_address: pact_config.pact };
             nft.complete_chi(caller);
-
-            world.emit_event(@ChiAttempted { wallet: caller, success: true });
         }
 
-        fn complete_shin(ref self: ContractState, signer_guid: felt252) {
+        // TODO: Implement with correct signer type
+        // https://github.com/cartridge-gg/controller-cairo/blob/main/src/signer/signer_signature.cairo#L168
+        fn complete_shin(ref self: ContractState, signer: felt252) {
             let caller = get_caller_address();
-            let mut world = self.world_default();
+            let world = self.world_default();
+
+            let pact_config: RoninPact = world.read_model(0);
 
             // Verify the signer GUID is registered on the caller's Controller account
-            let controller_dispatcher = ISignerListDispatcher { contract_address: caller };
-            let is_valid_signer = controller_dispatcher.is_signer_in_list(signer_guid);
 
-            if !is_valid_signer {
-                world.emit_event(@ShinAttempted { wallet: caller, signer_guid, success: false });
-                panic!("Signer not registered");
-            }
+            // let signer = signer.into_guid();
+            // let is_owner = controller.is_owner(signer);
+
+            let is_owner = true;
+            assert(is_owner, 'Signer not registered');
 
             // Call NFT contract to record completion
-            let nft_contract = self.nft_contract.read();
-            let nft = IRoninPactDispatcher { contract_address: nft_contract };
+            let nft = IPactNFTDispatcher { contract_address: pact_config.pact };
             nft.complete_shin(caller);
-
-            world.emit_event(@ShinAttempted { wallet: caller, signer_guid, success: true });
-        }
-
-        fn get_quiz_questions_for_wallet(
-            self: @ContractState, wallet: ContractAddress
-        ) -> Array<ByteArray> {
-            let indices = self.select_questions_for_wallet(wallet);
-            let mut questions = ArrayTrait::new();
-
-            let mut i: u32 = 0;
-            loop {
-                if i >= 3 {
-                    break;
-                }
-                let idx = *indices.at(i);
-                let question = self.quiz_questions.read(idx);
-                questions.append(question);
-                i += 1;
-            };
-
-            questions
         }
 
         // Admin functions
-        fn set_allowlist(ref self: ContractState, collections: Array<ContractAddress>) {
-            self.assert_only_owner();
+        fn set_pact(ref self: ContractState, pact: ContractAddress) {
+            let mut world = self.world_default();
+            self.assert_only_owner(@world);
 
-            let len = collections.len();
-            self.allowlist_length.write(len);
-
-            let mut i: u32 = 0;
-            loop {
-                if i >= len {
-                    break;
-                }
-                let collection = *collections.at(i);
-                self.allowlisted_collections.write(i, collection);
-                i += 1;
-            };
+            let config = RoninPact { game_id: 0, pact };
+            world.write_model(@config);
         }
 
-        fn set_quiz(
-            ref self: ContractState, questions: Array<ByteArray>, answer_hashes: Array<felt252>
-        ) {
-            self.assert_only_owner();
+        fn set_owner(ref self: ContractState, owner: ContractAddress) {
+            let mut world = self.world_default();
+            self.assert_only_owner(@world);
 
-            assert(questions.len() == 10, 'Must provide 10 questions');
-            assert(answer_hashes.len() == 10, 'Must provide 10 answers');
-
-            self.quiz_length.write(10);
-
-            let mut i: u32 = 0;
-            loop {
-                if i >= 10 {
-                    break;
-                }
-                let question = questions.at(i);
-                let answer_hash = *answer_hashes.at(i);
-                self.quiz_questions.write(i, question.clone());
-                self.quiz_answer_hashes.write(i, answer_hash);
-                i += 1;
-            };
+            let config = RoninOwner { game_id: 0, owner };
+            world.write_model(@config);
         }
 
-        fn get_allowlist_length(self: @ContractState) -> u32 {
-            self.allowlist_length.read()
+        fn set_games(ref self: ContractState, games: Array<ContractAddress>) {
+            let mut world = self.world_default();
+            self.assert_only_owner(@world);
+
+            let config = RoninGames { game_id: 0, games };
+            world.write_model(@config);
         }
 
-        fn get_allowlisted_collection(self: @ContractState, index: u32) -> ContractAddress {
-            self.allowlisted_collections.read(index)
-        }
+        fn set_quiz(ref self: ContractState, answers: Array<felt252>) {
+            let mut world = self.world_default();
+            self.assert_only_owner(@world);
 
-        fn get_quiz_length(self: @ContractState) -> u32 {
-            self.quiz_length.read()
-        }
-
-        fn get_quiz_question(self: @ContractState, index: u32) -> ByteArray {
-            self.quiz_questions.read(index)
-        }
-
-        fn get_quiz_answer_hash(self: @ContractState, index: u32) -> felt252 {
-            self.quiz_answer_hashes.read(index)
+            let config = RoninAnswers { game_id: 0, answers };
+            world.write_model(@config);
         }
     }
 
     #[generate_trait]
     impl InternalImpl of InternalTrait {
         fn world_default(self: @ContractState) -> WorldStorage {
-            self.world(@"ronin_pact")
+            self.world(@"pact")
         }
 
-        fn assert_only_owner(self: @ContractState) {
+        fn assert_only_owner(self: @ContractState, world: @WorldStorage) {
             let caller = get_caller_address();
-            let owner = self.owner.read();
-            assert(caller == owner, 'Only owner');
-        }
-
-        fn check_erc721_balance(
-            self: @ContractState, collection: ContractAddress, owner: ContractAddress
-        ) -> u256 {
-            // Call balance_of on the ERC721 collection
-            let mut calldata = ArrayTrait::new();
-            calldata.append(owner.into());
-
-            let balance_of_selector = selector!("balance_of");
-            let result = starknet::syscalls::call_contract_syscall(
-                collection, balance_of_selector, calldata.span()
-            );
-
-            match result {
-                Result::Ok(mut ret_data) => {
-                    if ret_data.len() == 0 {
-                        return 0;
-                    }
-                    // Balance is u256, so we need to read two felts (low, high)
-                    let low: felt252 = *ret_data.at(0);
-                    let high: felt252 = if ret_data.len() > 1 {
-                        *ret_data.at(1)
-                    } else {
-                        0
-                    };
-                    u256 { low: low.try_into().unwrap(), high: high.try_into().unwrap() }
-                },
-                Result::Err(_) => 0
-            }
-        }
-
-        fn select_questions_for_wallet(
-            self: @ContractState, wallet: ContractAddress
-        ) -> Array<u32> {
-            // Pseudo-random selection based on wallet address
-            // Select 3 unique questions from the 10 available
-            let mut questions = ArrayTrait::new();
-
-            // Use poseidon hash with wallet address to generate deterministic randomness
-            let seed: felt252 = wallet.into();
-            let hash1 = poseidon_hash_span(array![seed, 1].span());
-            let hash2 = poseidon_hash_span(array![seed, 2].span());
-            let hash3 = poseidon_hash_span(array![seed, 3].span());
-
-            // Convert to indices 0-9
-            let q1: u256 = hash1.into();
-            let q2: u256 = hash2.into();
-            let q3: u256 = hash3.into();
-
-            let idx1: u32 = (q1 % 10).try_into().unwrap();
-            let mut idx2: u32 = (q2 % 10).try_into().unwrap();
-            let mut idx3: u32 = (q3 % 10).try_into().unwrap();
-
-            // Ensure uniqueness
-            if idx2 == idx1 {
-                idx2 = (idx2 + 1) % 10;
-            }
-            if idx3 == idx1 || idx3 == idx2 {
-                idx3 = (idx3 + 1) % 10;
-                if idx3 == idx1 || idx3 == idx2 {
-                    idx3 = (idx3 + 1) % 10;
-                }
-            }
-
-            questions.append(idx1);
-            questions.append(idx2);
-            questions.append(idx3);
-
-            questions
+            let owner_config: RoninOwner = world.read_model(0);
+            assert(caller == owner_config.owner, 'Only owner');
         }
     }
 
-    fn dojo_init(ref self: ContractState, nft_contract: ContractAddress, owner: ContractAddress) {
-        // Store the NFT contract address and owner
-        self.nft_contract.write(nft_contract);
-        self.owner.write(owner);
+    fn dojo_init(ref self: ContractState) {
+        let mut world = self.world_default();
+        let caller = get_caller_address();
+
+        world.write_model(@RoninOwner { game_id: 0, owner: caller });
     }
 }

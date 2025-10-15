@@ -1,10 +1,10 @@
 [world]
 name = "Ronin Pact"
 description = "A serverless quest system with dynamic NFT for the Cartridge Game Jam. Complete three trials and forge your pact."
-seed = "ronin_pact"
+seed = "pact"
 
 [namespace]
-default = "ronin_pact"
+default = "pact"
 
 [env]
 rpc_url = "http://localhost:5050/"
@@ -14,4 +14,4 @@ private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 # world_address = "0x06171ed98331e849d6084bf2b3e3186a7ddf35574dd68cab4691053ee8ab69d7"
 
 [writers]
-"ronin_pact" = ["ronin_pact-treasure_hunt"]
+"pact" = ["pact-actions", "pact-nft"]
