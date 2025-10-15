@@ -1,523 +1,443 @@
-# Ronin's Pact - Smart Contracts
+# The Ronin's Pact - Smart Contracts
 
-A serverless quest system with a dynamic ERC721 NFT on Starknet, built using Dojo tooling.
+A Dojo-based quest system on Starknet featuring a dynamic NFT that evolves as players complete three trials.
 
 ## Overview
 
-The Ronin's Pact is a participation NFT that evolves as users complete three thematic trials:
-- **Waza (Technique)**: Prove ownership of NFT in allowlisted Dojo games
-- **Chi (Wisdom)**: Answer 3 quiz questions about Dojo 1.7 (pseudo-randomly selected from 10)
-- **Shin (Spirit)**: Verify a Cartridge Controller signer GUID
+The Ronin's Pact is a gamified quest where players forge their commitment to the Ronin by completing three trials:
+- **Waza** (Technique) - Prove mastery by owning NFTs from approved game collections
+- **Chi** (Wisdom) - Demonstrate knowledge by passing a quiz (3+ correct answers required)
+- **Shin** (Spirit) - Show dedication through Controller integration (TODO)
 
-The NFT artwork evolves dynamically based on progress, with visual markers appearing as each trial is completed (0/3, 1/3, 2/3, 3/3 states).
+Each completed trial adds a colored slash to the NFT's visual representation. When all three trials are complete, the NFT displays a golden glow effect with "FORGED" text.
 
-## Architecture Overview
+## Architecture
 
 This project uses a **separation of concerns** architecture:
 
-### Why This Design?
+### RoninPact NFT (`src/tokens/pact.cairo`)
+**Type**: Standard ERC721 contract
 
-**Configuration vs Progress Separation**: The Dojo contract (`treasure_hunt.cairo`) stores game configuration and validation logic, while the NFT contract (`ronin_pact.cairo`) stores only player progress. This design provides:
-
-- **Clear Separation**: Game rules and configuration in treasure_hunt, player state in NFT
-- **Standard ERC721**: NFT remains a standard ERC721 contract, compatible with wallets and marketplaces
-- **Flexible Configuration**: Game config can be updated without affecting player progress
-- **Efficient Queries**: Torii indexes both Dojo World state (config) and ERC721 events (player progress)
-- **Single Authority**: treasure_hunt is the only contract that can update player progress
-
-### Data Flow
-
-1. User calls `treasure_hunt.complete_waza/chi/shin()`
-2. `treasure_hunt` validates the trial using its own configuration (allowlist, quiz questions/hashes, signer verification)
-3. If valid, `treasure_hunt` calls `nft.complete_waza/chi/shin()` to record completion
-4. NFT updates trial progress in storage and emits events
-5. Torii indexes both treasure_hunt state (config) and NFT events (player progress) for UI queries
-
-## Contract Details
-
-### ronin_pact.cairo - NFT Contract (Player Progress Storage)
-
-**Type**: Standard Starknet contract (not a Dojo contract)
-
-**Purpose**: Store player progress and generate dynamic NFTs
+**Purpose**: Store player progress and generate dynamic SVG artwork
 
 **Key Responsibilities**:
 - ERC721 token management (mint, transfer, metadata)
-- Store player trial progress per wallet
-- Enforce one NFT per wallet rule
-- Generate dynamic SVG artwork based on progress
-- Emit completion events for indexing
-- Accept trial completions ONLY from authorized game contract
+- Store trial progress using bit flags (3 bits for 3 trials)
+- Generate dynamic on-chain SVG artwork based on progress
+- Emit events for each trial completion
+- Enforce minter authorization (only actions contract can update progress)
 
-**Storage Structure**:
+**Progress Storage**:
 ```cairo
-struct Storage {
-    // ERC721 standard storage (OpenZeppelin component)
-    erc721: ERC721Component::Storage,
-
-    // Contract owner and authorized game contract
-    owner: ContractAddress,
-    game_contract: ContractAddress,
-
-    // Token tracking (one per wallet)
-    next_token_id: u256,
-    owner_to_token_id: Map<ContractAddress, u256>,
-
-    // Player progress (ONLY state stored here)
-    trial_progress: Map<ContractAddress, TrialProgress>,
-}
+// Efficient bit-flag storage
+const WAZA_BIT: u8 = 0x04; // 0b100
+const CHI_BIT: u8 = 0x02;  // 0b010
+const SHIN_BIT: u8 = 0x01; // 0b001
 ```
 
 **Key Functions**:
-- `mint()` - Mint NFT (one per wallet enforcement)
-- `get_trial_progress(owner)` - Query player progress
-- `complete_waza/chi/shin(owner)` - Record trial completion (only callable by game contract)
-- `set_game_contract(address)` - Admin: authorize game contract
-- `get_game_contract()` - Query authorized game contract
-- `token_uri(token_id)` - Returns dynamic metadata with progress state
+- `mint()` - Public minting (anyone can mint)
+- `get_progress(token_id)` - Query trial progress
+- `complete_waza/chi/shin(token_id)` - Record completion (minter only)
+- `set_minter(address)` - Set authorized minter contract (owner only)
+- `token_uri(token_id)` - Returns dynamic SVG data URI
 
-**Important Notes**:
-- Uses OpenZeppelin ERC721 components for standard compliance
-- SVG artwork is generated on-chain with 4 visual states
-- Does NOT store game configuration (allowlist, quiz) - that lives in treasure_hunt
-- Only the authorized game contract can update trial progress
+### Actions Contract (`src/systems/actions.cairo`)
+**Type**: Dojo contract
 
-### treasure_hunt.cairo - Dojo Contract (Game Configuration & Validation)
-
-**Type**: Dojo contract (deployed via sozo)
-
-**Purpose**: Store game configuration and validate trials
+**Purpose**: Validate trial completion and manage game configuration
 
 **Key Responsibilities**:
-- Store game configuration (allowlist, quiz questions/hashes)
-- Validate Waza trial (check NFT ownership in allowlisted games)
+- Validate Waza trial (check NFT ownership in approved collections)
 - Validate Chi trial (verify quiz answers)
-- Validate Shin trial (verify Controller signer)
-- Emit Dojo events for indexing trial attempts
+- Validate Shin trial (TODO: Controller signer verification)
+- Store game configuration using Dojo models
 - Coordinate with NFT contract to record completions
 
-**Storage Structure**:
+**Trial Validation**:
+
+**Waza (Technique)**:
+1. Reads allowlisted game collections from Dojo models
+2. Iterates through collections checking ERC721 balance
+3. Requires balance ≥ 1 across all collections
+4. Calls `nft.complete_waza(token_id)` to record
+
+**Chi (Wisdom)**:
+1. Verifies question and answer arrays match in length
+2. Reads answer hashes from Dojo models
+3. Validates submitted answers against stored hashes
+4. Requires 3+ correct answers
+5. Calls `nft.complete_chi(token_id)` to record
+
+**Shin (Spirit)**:
+1. TODO: Integrate with Controller to verify signer GUID
+2. Currently placeholder (always validates)
+3. Calls `nft.complete_shin(token_id)` to record
+
+**Admin Functions**:
+- `set_owner(owner)` - Update contract owner
+- `set_pact(pact)` - Set NFT contract address
+- `set_games(games)` - Set allowlisted game collections
+- `set_quiz(answers)` - Set quiz answer hashes
+
+### Dojo Models (`src/models.cairo`)
+
+Configuration stored using Dojo's ECS pattern (all use singleton `game_id: 0`):
+
 ```cairo
-struct Storage {
-    // NFT contract reference
-    nft_contract: ContractAddress,
-
-    // Contract owner for admin operations
+// Contract owner
+struct RoninOwner {
+    game_id: u32,        // Always 0
     owner: ContractAddress,
+}
 
-    // Waza trial configuration (allowlist)
-    allowlist_length: u32,
-    allowlisted_collections: Map<u32, ContractAddress>,
+// NFT contract address
+struct RoninPact {
+    game_id: u32,        // Always 0
+    pact: ContractAddress,
+}
 
-    // Chi trial configuration (quiz)
-    quiz_length: u32,
-    quiz_questions: Map<u32, ByteArray>,
-    quiz_answer_hashes: Map<u32, felt252>,
+// Allowlisted game collections for Waza
+struct RoninGames {
+    game_id: u32,        // Always 0
+    games: Array<ContractAddress>,
+}
+
+// Quiz answer hashes for Chi
+struct RoninAnswers {
+    game_id: u32,        // Always 0
+    answers: Array<felt252>,
 }
 ```
 
-**Key Functions**:
-- `complete_waza(collection_address)` - Validate and record Waza completion
-- `complete_chi(answers)` - Validate and record Chi completion
-- `complete_shin(signer_guid)` - Validate and record Shin completion
-- `get_quiz_questions_for_wallet(wallet)` - Get the 3 questions for a specific wallet
-- `set_allowlist(collections)` - Admin: set allowlisted game collections
-- `set_quiz(questions, hashes)` - Admin: set quiz questions and answer hashes
-- `get_allowlist_length()` - Query allowlist size
-- `get_allowlisted_collection(index)` - Query specific allowlisted collection
-- `get_quiz_length()` - Query quiz size (should be 10)
-- `get_quiz_question(index)` - Query specific quiz question
-- `get_quiz_answer_hash(index)` - Query specific quiz answer hash
+## Data Flow
 
-**Trial Validation Details**:
-
-**Waza (Technique)**:
-1. Check if collection is in allowlist (reads from own storage)
-2. Check if user owns tokens in that collection (ERC721 balance_of)
-3. If valid, call NFT contract to record completion
-
-**Chi (Wisdom)**:
-1. Verify user submitted exactly 3 answers
-2. Select 3 pseudo-random questions based on wallet address hash
-3. Read answer hashes from own storage
-4. Verify all answers match
-5. If correct, call NFT contract to record completion
-
-**Shin (Spirit)**:
-1. Call user's Controller account to verify signer GUID
-2. If valid, call NFT contract to record completion
-
-**Important Notes**:
-- Stores ALL game configuration (allowlist, quiz)
-- Pseudo-random quiz selection is deterministic per wallet (using Poseidon hash)
-- Emits attempt events to Dojo World for analytics
-- Initialized with NFT contract address AND owner via `dojo_init(nft_contract, owner)`
-- Only owner can call admin functions (set_allowlist, set_quiz)
+1. User calls `actions.complete_waza/chi/shin(token_id, ...)`
+2. Actions contract validates trial using configuration from Dojo models
+3. If valid, actions calls `pact.complete_waza/chi/shin(token_id)`
+4. NFT updates progress in storage and emits events
+5. Torii indexes both actions state (config) and NFT events (player progress)
 
 ## The Three Trials
 
 ### 1. Waza (Technique) - Game Ownership
 
-**Goal**: Prove you own an NFT in an allowlisted Dojo game
+**Goal**: Prove you own an NFT in an allowlisted game collection
 
 **How It Works**:
-- Admin configures allowlist of game NFT contracts
-- Player calls `complete_waza(collection_address)`
-- Contract verifies collection is allowlisted
-- Contract checks player owns at least 1 NFT in that collection
-- Completion recorded, red diagonal slash appears in artwork
+- Admin configures array of allowlisted ERC721 collections
+- Player calls `complete_waza(token_id)`
+- Contract sums balance across all allowlisted collections
+- Requires balance ≥ 1
+- On success: Red diagonal slash appears (top-left to bottom-right)
 
 ### 2. Chi (Wisdom) - Quiz Challenge
 
-**Goal**: Answer 3 questions about Dojo 1.7 correctly
+**Goal**: Answer quiz questions correctly (3+ required)
 
 **How It Works**:
-- Admin sets 10 quiz questions with answer hashes
-- Each player gets 3 pseudo-randomly selected questions (based on wallet address)
-- Questions are deterministic per wallet (same 3 questions always)
-- Player submits 3 answer hashes
-- All 3 must be correct to complete
-- Completion recorded, blue diagonal slash appears in artwork
+- Admin sets quiz with array of answer hashes
+- Player submits question indices and answer hashes
+- Contract validates arrays match in length
+- Contract compares answers against stored hashes
+- Requires 3+ correct to complete
+- On success: Blue diagonal slash appears (top-right to bottom-left)
 
-**Quiz Configuration**:
-- Requires exactly 10 questions
-- Answer hashes stored (not plaintext answers)
-- Use Poseidon hash for answer hashing
-- Questions selected deterministically using: `poseidon_hash_span([wallet_address, 1/2/3])`
+**Answer Hashing**:
+Use Poseidon hash for answer hashing:
+```python
+from starknet_py.hash.poseidon import poseidon_hash_many
+answer_hash = poseidon_hash_many([int.from_bytes(answer.encode(), 'big')])
+```
 
 ### 3. Shin (Spirit) - Controller Verification
 
-**Goal**: Prove you have a Cartridge Controller signer
+**Goal**: Prove you have a Cartridge Controller signer (TODO)
 
-**How It Works**:
-- Player provides their Controller signer GUID
-- Contract calls the player's wallet (Controller account) to verify signer
-- Uses `ISignerList.is_signer_in_list()` interface
-- Completion recorded, purple vertical slash appears in artwork
+**Current State**: Placeholder implementation (always validates)
+
+**Planned Implementation**:
+- Player provides Controller signer GUID
+- Contract calls player's wallet to verify signer
+- Uses Controller's `ISignerList.is_signer_in_list()` interface
+- On success: Purple vertical slash appears (top to bottom)
+
+**Reference**: https://github.com/cartridge-gg/controller-cairo
+
+## Dynamic NFT Artwork
+
+The NFT generates SVG artwork on-chain with 4 visual states:
+
+1. **Base State**:
+   - Dark gradient background
+   - Gray concentric circles
+   - "The Ronins Pact" text
+
+2. **Waza Complete (+1)**:
+   - Red gradient diagonal slash (top-left to bottom-right)
+   - "WAZA" label with glow effect
+
+3. **Chi Complete (+2)**:
+   - Blue gradient diagonal slash (top-right to bottom-left)
+   - "CHI" label with glow effect
+
+4. **Shin Complete (+3)**:
+   - Purple gradient vertical slash (top to bottom)
+   - "SHIN" label
+
+5. **All Complete (Final State)**:
+   - All three slashes present
+   - Golden radial glow effect
+   - "FORGED" text at bottom
+
+The artwork is generated in `token_uri()` as a data URI - no IPFS required.
 
 ## Building
 
-Build both contracts using Dojo's build system:
+```bash
+# Build all contracts
+sozo build
+
+# This compiles:
+# - RoninPact (ERC721 contract)
+# - actions (Dojo contract)
+# - Dojo models
+```
+
+## Testing
+
+The project includes comprehensive integration tests (20 tests):
+
+```bash
+# Run all tests
+snforge test
+
+# Run with verbose output
+snforge test -v
+
+# Run specific test
+snforge test test_complete_waza
+```
+
+**Test Coverage**:
+- ✓ Admin function access control (4 tests)
+- ✓ NFT minting (1 test)
+- ✓ Waza trial (success + 2 failure cases)
+- ✓ Chi trial (success + 3 failure cases)
+- ✓ Shin trial (success + 1 failure case)
+- ✓ Full lifecycle (all trials)
+
+Tests use:
+- Actual contract deployments
+- Mock ERC721 for game collections
+- Dojo test utilities for world setup
+
+## Deployment
+
+### Step 1: Build Contracts
 
 ```bash
 sozo build
 ```
 
-This compiles both the standard Starknet contract (`ronin_pact`) and the Dojo contract (`treasure_hunt`).
-
-## Deployment Instructions
-
-Deployment requires two steps since we have both a standard Starknet contract and a Dojo contract:
-
-### Step 1: Deploy NFT Contract
-
-The `ronin_pact` contract is a standard Starknet contract (not deployed via sozo). Deploy it using Starkli or your preferred deployment tool:
-
-```bash
-# Using Starkli (example)
-starkli declare target/dev/ronin_pact_RoninPact.contract_class.json --account <account> --keystore <keystore>
-
-starkli deploy <class_hash> <owner_address> --account <account> --keystore <keystore>
-```
-
-Note the deployed NFT contract address - you'll need it for the next step.
-
-### Step 2: Deploy Treasure Hunt via Dojo
-
-Deploy the Dojo contract using sozo migrate, which will call `dojo_init()`:
+### Step 2: Deploy World & Contracts
 
 ```bash
 sozo migrate --name ronin_pact
-
-# During migration, the dojo_init function will be called with TWO parameters:
-# 1. nft_contract: The NFT contract address from Step 1
-# 2. owner: The owner address who can call admin functions
 ```
 
-### Step 3: Configure Contracts
+This deploys:
+- Dojo World contract
+- Actions contract
+- All Dojo models
+- Initializes owner via `dojo_init()`
 
-After both contracts are deployed, configure them:
+### Step 3: Deploy NFT Contract
 
-#### 3a. Authorize treasure_hunt in NFT contract
+The RoninPact NFT is a standard contract (not deployed via Sozo):
 
 ```bash
-# Authorize the treasure_hunt contract to update trial progress
-sozo execute <nft_contract_address> set_game_contract --calldata <treasure_hunt_address>
-```
-
-#### 3b. Configure game rules in treasure_hunt contract
-
-```bash
-# Set the allowlist of game collections for Waza trial
-sozo execute <treasure_hunt_address> set_allowlist --calldata <num_collections> <collection1> <collection2> ...
-
-# Set the quiz questions and answer hashes (requires exactly 10)
-sozo execute <treasure_hunt_address> set_quiz --calldata \
-  <num_questions> <question1> <question2> ... <question10> \
-  <num_hashes> <hash1> <hash2> ... <hash10>
-```
-
-### Step 4: Verify Deployment
-
-Check that everything is configured correctly:
-
-```bash
-# Verify game contract is set in NFT
-sozo call <nft_contract_address> get_game_contract
-
-# Verify allowlist in treasure_hunt
-sozo call <treasure_hunt_address> get_allowlist_length
-sozo call <treasure_hunt_address> get_allowlisted_collection --calldata 0
-
-# Verify quiz in treasure_hunt
-sozo call <treasure_hunt_address> get_quiz_length
-sozo call <treasure_hunt_address> get_quiz_question --calldata 0
-```
-
-## Torii Configuration
-
-To enable frontend queries, configure Torii to index both the NFT contract and Dojo World:
-
-### Configuration File
-
-Create a `torii_config.toml` file:
-
-```toml
-[indexing]
-# Index the NFT contract as an ERC721
-contracts = [
-    "ERC721:0x<nft_contract_address>"
-]
-
-[erc]
-# Configure ERC token indexing
-max_metadata_tasks = 100
-```
-
-### Launch Torii
-
-```bash
-torii --config torii_config.toml --world <world_address>
-```
-
-### What Gets Indexed
-
-Torii will index:
-- **From NFT contract**: ERC721 Transfer events, custom completion events (WazaCompleted, ChiCompleted, ShinCompleted), player trial progress storage
-- **From Dojo World (treasure_hunt)**: Game configuration storage (allowlist, quiz), trial attempt events (WazaAttempted, ChiAttempted, ShinAttempted)
-- **NFT metadata**: Dynamic SVG artwork based on player progress
-
-## Frontend Integration
-
-### Querying Data with Dojo SDK
-
-The frontend should use Torii's GraphQL API to query data:
-
-```typescript
-// Query user's NFT and progress
-const { tokens } = useTokens({
-  contractAddress: nftContractAddress,
-  ownerAddress: userAddress,
-});
-
-// Query trial progress via GraphQL
-const { data } = useQuery(`
-  query GetProgress($wallet: String!) {
-    roninPactModels(where: { owner: $wallet }) {
-      owner
-      waza_complete
-      chi_complete
-      shin_complete
-    }
-  }
-`, { wallet: userAddress });
-
-// Query quiz questions for wallet
-const questions = await treasureHuntContract.get_quiz_questions_for_wallet(userAddress);
-```
-
-### Key Integration Points
-
-1. **Minting**: Call `nft.mint()` to create NFT (one per wallet)
-2. **Check Progress**: Query `nft.get_trial_progress(wallet)` or use Torii
-3. **Complete Trials**: Call `treasure_hunt.complete_waza/chi/shin()` with required params
-4. **Display NFT**: Use `token_uri()` to get dynamic metadata and SVG artwork
-5. **Show Questions**: Call `get_quiz_questions_for_wallet()` to get user's 3 questions
-
-### Torii Benefits
-
-- Real-time updates via GraphQL subscriptions
-- Indexed ERC721 data (standard token queries)
-- Historical event data for analytics
-- Efficient queries without direct RPC calls
-
-## Admin Operations
-
-### Set Game Contract (NFT Contract)
-
-Authorize the treasure_hunt contract to update trial progress:
-
-```bash
-sozo execute <nft_contract_address> set_game_contract --calldata <treasure_hunt_address>
-```
-
-**Security**: Only the NFT contract owner can call this. Only the authorized game contract can call `complete_waza/chi/shin()` on the NFT.
-
-### Set Allowlist (treasure_hunt Contract)
-
-Configure which game collections are valid for the Waza trial:
-
-```bash
-sozo execute <treasure_hunt_address> set_allowlist --calldata <num_collections> <collection1> <collection2> ...
-```
-
-**Example**:
-```bash
-# Allow 3 game collections
-sozo execute <treasure_hunt_address> set_allowlist --calldata 3 0x123... 0x456... 0x789...
-```
-
-**Security**: Only the treasure_hunt contract owner can call this.
-
-### Set Quiz (treasure_hunt Contract)
-
-Configure the 10 quiz questions and answer hashes:
-
-```bash
-sozo execute <treasure_hunt_address> set_quiz --calldata \
-  <num_questions> <question1> <question2> ... <question10> \
-  <num_hashes> <hash1> <hash2> ... <hash10>
-```
-
-**Requirements**:
-- Must provide exactly 10 questions
-- Must provide exactly 10 answer hashes
-- Questions are ByteArray (text strings)
-- Answer hashes are felt252 (use Poseidon hash)
-
-**Security**: Only the treasure_hunt contract owner can call this.
-
-**Generating Answer Hashes**:
-```python
-# Python example using starknet-py
-from starknet_py.hash.poseidon import poseidon_hash_many
-
-answer = "dojo"  # Example answer
-answer_felt = int.from_bytes(answer.encode(), 'big')
-answer_hash = poseidon_hash_many([answer_felt])
-```
-
-## Development
-
-### Local Development with Katana
-
-1. Start Katana (local Starknet devnet):
-```bash
-katana --disable-fee
-```
-
-2. Build contracts:
-```bash
+# Get the contract class hash
 sozo build
+
+# Deploy using starkli or your preferred tool
+starkli declare target/dev/ronin_quest_RoninPact.contract_class.json
+starkli deploy <class_hash> <owner_address>
 ```
 
-3. Deploy to local network:
-```bash
-sozo migrate --name ronin_pact
-```
+Save the NFT contract address for configuration.
 
-4. Run Torii for indexing:
-```bash
-torii --world <world_address>
-```
-
-### Testing
+### Step 4: Configure System
 
 ```bash
-# Run tests (if implemented)
-sozo test
+# Set NFT contract address in actions
+sozo execute ronin_quest-actions set_pact --calldata <nft_address>
+
+# Set allowlisted game collections
+sozo execute ronin_quest-actions set_games --calldata <game1>,<game2>,...
+
+# Set quiz answer hashes
+sozo execute ronin_quest-actions set_quiz --calldata <hash1>,<hash2>,...
 ```
 
-### Project Structure
+### Step 5: Configure NFT Contract
+
+```bash
+# Authorize actions contract as minter
+# (Call directly on NFT contract, not via sozo)
+<call_nft_contract> set_minter --calldata <actions_address>
+```
+
+### Step 6: Verify Deployment
+
+```bash
+# Check NFT minter is set
+<call_nft_contract> get_minter
+
+# Check actions configuration
+sozo call ronin_quest-actions --help
+```
+
+## Scripts
+
+Scarb.toml defines helpful scripts:
+
+```bash
+# Build and migrate
+scarb run migrate
+
+# Mint an NFT (for testing)
+scarb run mint
+```
+
+## Project Structure
 
 ```
 contracts/
+├── Scarb.toml              # Package configuration
+├── README.md               # This file
 ├── src/
-│   ├── ronin_pact.cairo      # NFT contract (player progress storage)
-│   ├── treasure_hunt.cairo   # Dojo contract (game config & validation)
-│   └── lib.cairo             # Module exports
-├── Scarb.toml                # Dojo project configuration
-└── README.md                 # This file
+│   ├── lib.cairo           # Module declarations
+│   ├── models.cairo        # Dojo models (4 singletons)
+│   ├── systems/
+│   │   └── actions.cairo   # Trial validation logic
+│   ├── tokens/
+│   │   └── pact.cairo      # Dynamic ERC721 NFT
+│   └── tests/
+│       ├── actions.cairo   # Integration tests (20)
+│       └── mocks.cairo     # Mock ERC721 for testing
 ```
 
-## Technical Notes
+## Dependencies
 
-### One NFT Per Wallet
+- **Dojo** 1.7.1 - ECS framework and world management
+- **Starknet** 2.12.2 - Cairo standard library
+- **OpenZeppelin** v0.20.0 - ERC721 components
+- **Starknet Foundry** 0.48.1 - Testing framework
 
-The NFT contract enforces one token per wallet:
-- `mint()` checks balance and reverts if user already has a token
-- Transfer updates the `owner_to_token_id` mapping
-- `token_id_of_owner()` allows querying wallet's token ID
+## Development Guide
 
-### Pseudo-Random Quiz Selection
+### Local Development with Katana
 
-Quiz questions are deterministically selected per wallet:
+```bash
+# Start local devnet
+katana --disable-fee
+
+# In another terminal: Build and deploy
+sozo build
+sozo migrate --name ronin_pact_dev
+
+# Configure system
+sozo execute ronin_quest-actions set_pact --calldata <nft_addr>
+# ... other configuration
+```
+
+### Adding New Trials
+
+To add a new trial (e.g., "Gi" - Honor):
+
+1. Add bit flag to `pact.cairo`:
 ```cairo
-// Uses Poseidon hash with wallet address as seed
-let hash1 = poseidon_hash_span(array![wallet.into(), 1].span());
-let idx1 = (hash1 % 10).try_into().unwrap();
+const GI_BIT: u8 = 0x08; // 0b1000
 ```
 
-This ensures:
-- Same wallet always gets same 3 questions
-- Questions are distributed uniformly
-- No randomness oracle needed
-- Cannot be gamed (questions revealed after wallet address)
+2. Add field to `TrialProgress`:
+```cairo
+pub struct TrialProgress {
+    pub waza_complete: bool,
+    pub chi_complete: bool,
+    pub shin_complete: bool,
+    pub gi_complete: bool, // New
+}
+```
 
-### Quiz Requirements
+3. Add `complete_gi()` to NFT interface and implementation
 
-- Exactly 10 questions must be configured
-- Users answer 3 pseudo-randomly selected questions
-- All 3 answers must be correct to complete
-- Answer hashes stored (privacy - answers not on-chain)
+4. Add validation logic to `actions.cairo`
 
-### Dynamic SVG Artwork
+5. Add artwork generation in `get_gi_slash()`
 
-The NFT artwork evolves with progress (4 states):
+6. Update tests in `tests/actions.cairo`
 
-1. **0/3 Complete**: Base circle with "Unforged" state
-2. **1/3 Complete**: Red diagonal slash (Waza)
-3. **2/3 Complete**: Red + Blue diagonal slashes (Waza + Chi)
-4. **3/3 Complete**: All 3 slashes + golden glow effect ("FORGED")
+### Updating Quiz
 
-Artwork is generated on-chain in `token_uri()` - no IPFS needed.
+```bash
+# Hash new answers (Python)
+from starknet_py.hash.poseidon import poseidon_hash_many
 
-### Event Emission Strategy
+answers = ["dojo", "starknet", "cairo"]
+hashes = [poseidon_hash_many([int.from_bytes(a.encode(), 'big')]) for a in answers]
 
-**NFT Contract Events** (for state changes):
-- `WazaCompleted(owner, timestamp)`
-- `ChiCompleted(owner, timestamp)`
-- `ShinCompleted(owner, timestamp)`
+# Update on-chain
+sozo execute ronin_quest-actions set_quiz --calldata <hash1>,<hash2>,<hash3>
+```
 
-**Dojo World Events** (for analytics):
-- `WazaAttempted(wallet, collection, success)`
-- `ChiAttempted(wallet, success)`
-- `ShinAttempted(wallet, signer_guid, success)`
+### Updating Allowlist
 
-This dual-event approach provides:
-- Reliable state tracking (NFT events)
-- Analytics for success/failure rates (Dojo events)
-- Torii indexing of both event types
+```bash
+# Add new game collection
+sozo execute ronin_quest-actions set_games --calldata <game1>,<game2>,<new_game>
+```
 
-### Security Considerations
+## Security Considerations
 
-1. **Access Control**: Only authorized game contract can update trial progress
-2. **One Token Per Wallet**: Prevents gaming the system with multiple NFTs
-3. **Answer Privacy**: Quiz answer hashes stored, not plaintext
-4. **Deterministic Randomness**: Cannot game question selection
-5. **Allowlist Validation**: Only approved games count for Waza
-6. **Signer Verification**: Controller integration prevents spoofing
+1. **Access Control**:
+   - Actions contract: Only owner can modify configuration
+   - NFT contract: Only minter (actions) can update progress
+   - NFT contract: Only owner can set minter
+
+2. **Progress Integrity**:
+   - Bit flags prevent tampering
+   - Double-completion prevented (bit already set check)
+   - Only authorized minter can update
+
+3. **Validation**:
+   - Waza: Real-time balance checks via ERC721
+   - Chi: Answer hashes stored (not plaintext)
+   - Shin: TODO - Controller integration required
+
+4. **Quiz Privacy**:
+   - Answer hashes stored on-chain
+   - Actual answers never revealed
+   - Use Poseidon hash (collision-resistant)
+
+## TODOs
+
+- [ ] Implement Controller integration for Shin trial
+- [ ] Add base64 encoding for SVG data URIs (currently UTF-8)
+- [ ] Consider adding rate limiting between trials
+- [ ] Add events to actions contract for analytics
+- [ ] Add metadata JSON generation alongside SVG
+- [ ] Consider adding trial completion timestamps
+- [ ] Add admin function to pause/unpause system
+
+## Known Issues
+
+- Shin trial is currently a placeholder (always validates)
+- SVG data URIs use UTF-8 encoding (should use base64)
+- No rate limiting between trials
+- No events emitted from actions contract
 
 ## License
 
-See repository root for license information.
+See parent repository for license information.
