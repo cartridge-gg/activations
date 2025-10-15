@@ -28,7 +28,7 @@ pub mod actions {
 
     use super::IActions;
     use ronin_quest::models::{RoninOwner, RoninPact, RoninGames, RoninAnswers};
-    use ronin_quest::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
+    use ronin_quest::tokens::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 
     #[abi(embed_v0)]
     impl ActionsImpl of IActions<ContractState> {

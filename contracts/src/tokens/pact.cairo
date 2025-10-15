@@ -51,7 +51,7 @@ pub trait IRoninPact<TContractState> {
 }
 
 #[starknet::contract]
-mod RoninPact {
+pub mod RoninPact {
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
     use starknet::{ContractAddress, get_caller_address};

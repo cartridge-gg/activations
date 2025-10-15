@@ -3,4 +3,13 @@ pub mod systems {
 }
 
 pub mod models;
-pub mod pact;
+
+pub mod tokens {
+    pub mod pact;
+}
+
+#[cfg(test)]
+mod tests {
+    mod actions;
+    mod mocks;
+}
