@@ -1,29 +1,16 @@
-// Dojo contract for The Ronin's Pact treasure hunt game logic
+// Dojo contract for The Ronin's Pact quest game logic
 // This contract stores game configuration and validates trial completion
 // Player progress is stored in the NFT contract (pact.cairo)
 
 use starknet::ContractAddress;
 
-// Interface for ERC721 games
-#[starknet::interface]
-pub trait IERC721<TContractState> {
-    fn balance_of(self: @TContractState, account: ContractAddress) -> u256;
-}
-// Interface for the NFT contract - only progress recording
-#[starknet::interface]
-pub trait IPactNFT<TContractState> {
-    fn complete_waza(ref self: TContractState, owner: ContractAddress);
-    fn complete_chi(ref self: TContractState, owner: ContractAddress);
-    fn complete_shin(ref self: TContractState, owner: ContractAddress);
-}
-
-// Treasure hunt game interface
+// Quest actions interface
 #[starknet::interface]
 pub trait IActions<T> {
     // Player actions
-    fn complete_waza(ref self: T);
-    fn complete_chi(ref self: T, questions: Array<u32>, answers: Array<felt252>);
-    fn complete_shin(ref self: T, signer: felt252);
+    fn complete_waza(ref self: T, token_id: u256);
+    fn complete_chi(ref self: T, token_id: u256, questions: Array<u32>, answers: Array<felt252>);
+    fn complete_shin(ref self: T, token_id: u256, signer: felt252);
 
     // Admin functions
     fn set_owner(ref self: T, owner: ContractAddress);
@@ -34,18 +21,18 @@ pub trait IActions<T> {
 
 #[dojo::contract]
 pub mod actions {
-    use super::{
-        IActions, IERC721Dispatcher, IERC721DispatcherTrait,
-        IPactNFTDispatcher, IPactNFTDispatcherTrait
-    };
     use starknet::{ContractAddress, get_caller_address};
+    use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
     use dojo::world::WorldStorage;
     use dojo::model::ModelStorage;
+
+    use super::IActions;
     use ronin_quest::models::{RoninOwner, RoninPact, RoninGames, RoninAnswers};
+    use ronin_quest::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 
     #[abi(embed_v0)]
     impl ActionsImpl of IActions<ContractState> {
-        fn complete_waza(ref self: ContractState) {
+        fn complete_waza(ref self: ContractState, token_id: u256) {
             let caller = get_caller_address();
             let world = self.world_default();
 
@@ -61,12 +48,11 @@ pub mod actions {
 
             assert(balance >= 1, 'No tokens owned!');
 
-            let nft = IPactNFTDispatcher { contract_address: pact_config.pact };
-            nft.complete_waza(caller);
+            let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
+            nft.complete_waza(token_id);
         }
 
-        fn complete_chi(ref self: ContractState, questions: Array<u32>, answers: Array<felt252>) {
-            let caller = get_caller_address();
+        fn complete_chi(ref self: ContractState, token_id: u256, questions: Array<u32>, answers: Array<felt252>) {
             let world = self.world_default();
 
             let answers_config: RoninAnswers = world.read_model(0);
@@ -89,14 +75,13 @@ pub mod actions {
             assert(correct >= 3, 'Incorrect answers!');
 
             // Call NFT contract to record completion
-            let nft = IPactNFTDispatcher { contract_address: pact_config.pact };
-            nft.complete_chi(caller);
+            let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
+            nft.complete_chi(token_id);
         }
 
         // TODO: Implement with correct signer type
         // https://github.com/cartridge-gg/controller-cairo/blob/main/src/signer/signer_signature.cairo#L168
-        fn complete_shin(ref self: ContractState, signer: felt252) {
-            let caller = get_caller_address();
+        fn complete_shin(ref self: ContractState, token_id: u256, signer: felt252) {
             let world = self.world_default();
 
             let pact_config: RoninPact = world.read_model(0);
@@ -110,8 +95,8 @@ pub mod actions {
             assert(is_owner, 'Signer not registered');
 
             // Call NFT contract to record completion
-            let nft = IPactNFTDispatcher { contract_address: pact_config.pact };
-            nft.complete_shin(caller);
+            let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
+            nft.complete_shin(token_id);
         }
 
         // Admin functions
