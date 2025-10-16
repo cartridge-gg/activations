@@ -7,10 +7,11 @@ seed = "ronin_quest"
 default = "ronin_quest"
 
 [env]
-rpc_url = "http://localhost:5050/"
-# Default Katana account (katana --accounts 1 --seed 0)
-account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
-private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
+rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
+# Credentials loaded from .env file
+# Set DOJO_ACCOUNT_ADDRESS and DOJO_PRIVATE_KEY in .env
+account_address = "$DOJO_ACCOUNT_ADDRESS"
+private_key = "$DOJO_PRIVATE_KEY"
 # world_address = "0x..."  # Uncomment after first deployment
 
 [writers]

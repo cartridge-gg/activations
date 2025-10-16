@@ -1,3 +1,9 @@
 target
 dojo_mainnet.toml
 .snfoundry_cache
+
+# Environment variables
+.env
+
+# Deployment artifacts
+deployments/
