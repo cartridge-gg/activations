@@ -338,45 +338,6 @@ fn test_waza_no_nft_fails() {
     actions.complete_waza(0);
 }
 
-#[test]
-#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-#[should_panic(expected: ('Challenge already complete',))]
-fn test_complete_waza_twice_fails() {
-    let (_world, actions, actions_address) = setup_world();
-
-    // Setup: Deploy pact and mock game
-    let pact_address = deploy_pact(owner());
-    let pact = IRoninPactDispatcher { contract_address: pact_address };
-    let game_address = deploy_test_game(owner());
-    let game = IMockERC721Dispatcher { contract_address: game_address };
-
-    // Configure actions contract
-    start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
-    actions.set_games(array![game_address]);
-    stop_cheat_caller_address(actions_address);
-
-    start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
-    stop_cheat_caller_address(pact_address);
-
-    // Player mints NFT and game NFT
-    start_cheat_caller_address(pact_address, player());
-    pact.mint();
-    stop_cheat_caller_address(pact_address);
-
-    start_cheat_caller_address(game_address, player());
-    game.mint(player());
-    stop_cheat_caller_address(game_address);
-
-    // Complete waza trial once
-    start_cheat_caller_address(actions_address, player());
-    actions.complete_waza(0);
-
-    // Try to complete waza again - should fail
-    actions.complete_waza(0);
-}
-
 // ============================================================================
 // Trial Completion Tests - Chi (Wisdom)
 // ============================================================================
@@ -501,43 +462,6 @@ fn test_chi_mismatched_length_fails() {
     actions.complete_chi(0, questions, player_answers);
 }
 
-#[test]
-#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-#[should_panic(expected: ('Challenge already complete',))]
-fn test_complete_chi_twice_fails() {
-    let (_world, actions, actions_address) = setup_world();
-
-    // Setup: Deploy pact
-    let pact_address = deploy_pact(owner());
-    let pact = IRoninPactDispatcher { contract_address: pact_address };
-
-    // Configure actions contract
-    let answers = array![0x12345678, 0x23456789, 0x34567890];
-
-    start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
-    actions.set_quiz(answers.clone());
-    stop_cheat_caller_address(actions_address);
-
-    start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
-    stop_cheat_caller_address(pact_address);
-
-    // Player mints NFT
-    start_cheat_caller_address(pact_address, player());
-    pact.mint();
-    stop_cheat_caller_address(pact_address);
-
-    // Complete chi trial once
-    let questions = array![0, 1, 2];
-    let player_answers = array![0x12345678, 0x23456789, 0x34567890];
-    start_cheat_caller_address(actions_address, player());
-    actions.complete_chi(0, questions.clone(), player_answers.clone());
-
-    // Try to complete chi again - should fail
-    actions.complete_chi(0, questions, player_answers);
-}
-
 // ============================================================================
 // Trial Completion Tests - Shin (Spirit)
 // ============================================================================
@@ -575,38 +499,6 @@ fn test_complete_shin() {
     assert(progress.waza_complete == false, 'Waza should not be complete');
     assert(progress.chi_complete == false, 'Chi should not be complete');
     assert(progress.shin_complete == true, 'Shin not complete');
-}
-
-#[test]
-#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-#[should_panic(expected: ('Challenge already complete',))]
-fn test_complete_shin_twice_fails() {
-    let (_world, actions, actions_address) = setup_world();
-
-    // Setup: Deploy pact
-    let pact_address = deploy_pact(owner());
-    let pact = IRoninPactDispatcher { contract_address: pact_address };
-
-    // Configure actions contract
-    start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
-    stop_cheat_caller_address(actions_address);
-
-    start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
-    stop_cheat_caller_address(pact_address);
-
-    // Player mints NFT
-    start_cheat_caller_address(pact_address, player());
-    pact.mint();
-    stop_cheat_caller_address(pact_address);
-
-    // Complete shin trial once
-    start_cheat_caller_address(actions_address, player());
-    actions.complete_shin(0, 'test_signer');
-
-    // Try to complete shin again - should fail
-    actions.complete_shin(0, 'test_signer');
 }
 
 // ============================================================================

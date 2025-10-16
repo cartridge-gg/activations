@@ -246,8 +246,6 @@ pub mod RoninPact {
             self.assert_minter();
 
             let progress = self.token_progress.read(token_id);
-            assert((progress & challenge_bit) == 0, 'Challenge already complete');
-
             self.token_progress.write(token_id, progress | challenge_bit);
         }
 
