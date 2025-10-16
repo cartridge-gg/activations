@@ -1,9 +1,13 @@
 // Mock contracts for testing
 
+use starknet::ContractAddress;
+
+// ============================================================================
+// Mock ERC721 - for testing game NFT ownership
+// ============================================================================
+
 // Minimal ERC721 contract for testing game NFT ownership validation
 // Implements the minimal IERC721 interface needed for actions.cairo
-
-use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IMockERC721<TContractState> {
@@ -59,6 +63,31 @@ pub mod MockERC721 {
             let token_id = self.next_token_id.read();
             self.erc721.mint(to, token_id);
             self.next_token_id.write(token_id + 1);
+        }
+    }
+}
+
+// ============================================================================
+// Mock Controller - for testing Controller account ownership
+// ============================================================================
+
+use ronin_quest::controller::interface::IMultipleOwners;
+
+/// Mock Controller contract for testing
+/// Always returns true for is_owner to allow testing without deploying real Controller
+#[starknet::contract]
+pub mod MockController {
+    use super::IMultipleOwners;
+
+    #[storage]
+    struct Storage {}
+
+    #[abi(embed_v0)]
+    impl MockControllerImpl of IMultipleOwners<ContractState> {
+        /// Mock implementation that always returns true
+        /// In production, this would verify the GUID against registered signers
+        fn is_owner(self: @ContractState, guid: felt252) -> bool {
+            true
         }
     }
 }

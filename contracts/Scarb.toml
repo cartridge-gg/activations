@@ -14,7 +14,7 @@ mint = "sozo execute ronin_quest-ronin_pact mint --wait"
 [dependencies]
 dojo = "1.7.1"
 starknet = "2.12.2"
-openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.20.0" }
+openzeppelin = "1.0.0"
 
 [[target.starknet-contract]]
 build-external-contracts = ["dojo::world::world_contract::world"]

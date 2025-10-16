@@ -15,8 +15,9 @@ use snforge_std::{
 use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
 
 use ronin_quest::systems::actions::{IActionsDispatcher, IActionsDispatcherTrait};
-use ronin_quest::models::{RoninOwner, RoninPact, RoninGames, RoninAnswers};
+use ronin_quest::models::{RoninOwner, RoninPact, RoninController, RoninGames, RoninAnswers};
 use ronin_quest::tokens::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
+use ronin_quest::controller::eip191::{Signer, Eip191Signer};
 use super::mocks::{IMockERC721Dispatcher, IMockERC721DispatcherTrait};
 
 // ============================================================================
@@ -47,6 +48,7 @@ fn namespace_def() -> NamespaceDef {
         resources: [
             TestResource::Model("RoninOwner"),
             TestResource::Model("RoninPact"),
+            TestResource::Model("RoninController"),
             TestResource::Model("RoninGames"),
             TestResource::Model("RoninAnswers"),
             TestResource::Contract("actions"),
@@ -72,6 +74,12 @@ fn deploy_test_game(owner: ContractAddress) -> ContractAddress {
     let contract = declare("MockERC721").unwrap().contract_class();
     let (game_address, _) = contract.deploy(@array![owner.into()]).unwrap();
     game_address
+}
+
+fn deploy_mock_controller() -> ContractAddress {
+    let contract = declare("MockController").unwrap().contract_class();
+    let (controller_address, _) = contract.deploy(@array![]).unwrap();
+    controller_address
 }
 
 // World setup with initialized contracts
@@ -135,6 +143,37 @@ fn test_set_pact_only_owner() {
     // Try to set pact as non-owner
     start_cheat_caller_address(actions_address, player());
     actions.set_pact(pact_address);
+}
+
+#[test]
+#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
+fn test_set_controller() {
+    let (world, actions, actions_address) = setup_world();
+
+    // Deploy mock controller
+    let controller_address = deploy_mock_controller();
+
+    // Set controller address
+    start_cheat_caller_address(actions_address, owner());
+    actions.set_controller(controller_address);
+    stop_cheat_caller_address(actions_address);
+
+    // Verify controller was set
+    let controller_config: RoninController = world.read_model(0);
+    assert(controller_config.controller == controller_address, 'Controller not set');
+}
+
+#[test]
+#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
+#[should_panic(expected: ('Only owner',))]
+fn test_set_controller_only_owner() {
+    let (_world, actions, actions_address) = setup_world();
+
+    let controller_address = deploy_mock_controller();
+
+    // Try to set controller as non-owner
+    start_cheat_caller_address(actions_address, player());
+    actions.set_controller(controller_address);
 }
 
 #[test]
@@ -475,9 +514,13 @@ fn test_complete_shin() {
     let pact_address = deploy_pact(owner());
     let pact = IRoninPactDispatcher { contract_address: pact_address };
 
-    // Configure actions contract
+    // Deploy MockController - this is the global Controller contract
+    let mock_controller = deploy_mock_controller();
+
+    // Configure actions contract with controller address
     start_cheat_caller_address(actions_address, owner());
     actions.set_pact(pact_address);
+    actions.set_controller(mock_controller);
     stop_cheat_caller_address(actions_address);
 
     start_cheat_caller_address(pact_address, owner());
@@ -489,9 +532,14 @@ fn test_complete_shin() {
     pact.mint();
     stop_cheat_caller_address(pact_address);
 
-    // Complete shin trial (currently always passes)
+    // Create a test signer (Discord/EIP-191 signer)
+    let eth_address: starknet::EthAddress = 0x1234567890abcdef_felt252.try_into().unwrap();
+    let test_signer = Signer::Eip191(Eip191Signer { eth_address });
+
+    // Complete shin trial - player calls with their signer
+    // MockController always returns true for is_owner
     start_cheat_caller_address(actions_address, player());
-    actions.complete_shin(0, 'test_signer');
+    actions.complete_shin(0, test_signer);
     stop_cheat_caller_address(actions_address);
 
     // Verify shin trial is complete
@@ -516,6 +564,9 @@ fn test_full_lifecycle() {
     let game_address = deploy_test_game(owner());
     let game = IMockERC721Dispatcher { contract_address: game_address };
 
+    // Deploy MockController - this is the global Controller contract
+    let mock_controller = deploy_mock_controller();
+
     // Configure actions contract
     let answers = array![
         0x12345678,
@@ -527,6 +578,7 @@ fn test_full_lifecycle() {
 
     start_cheat_caller_address(actions_address, owner());
     actions.set_pact(pact_address);
+    actions.set_controller(mock_controller);
     actions.set_games(array![game_address]);
     actions.set_quiz(answers.clone());
     stop_cheat_caller_address(actions_address);
@@ -550,7 +602,7 @@ fn test_full_lifecycle() {
     assert(progress.chi_complete == false, 'Chi should start incomplete');
     assert(progress.shin_complete == false, 'Shin should start incomplete');
 
-    // Complete all three trials
+    // Complete all three trials as the player
     // 1. Complete Waza (technique)
     start_cheat_caller_address(actions_address, player());
     actions.complete_waza(0);
@@ -568,11 +620,17 @@ fn test_full_lifecycle() {
     assert(progress.chi_complete == true, 'Chi not complete');
 
     // 3. Complete Shin (spirit)
+    // Create a test signer (Discord/EIP-191 signer)
+    let eth_address: starknet::EthAddress = 0x1234567890abcdef_felt252.try_into().unwrap();
+    let test_signer = Signer::Eip191(Eip191Signer { eth_address });
+
+    // Player calls complete_shin with their signer
+    // MockController (configured via set_controller) always returns true for is_owner
     start_cheat_caller_address(actions_address, player());
-    actions.complete_shin(0, 'test_signer');
+    actions.complete_shin(0, test_signer);
     stop_cheat_caller_address(actions_address);
 
-    // Verify final state - all trials complete
+    // Verify final state - all three trials complete
     let progress = pact.get_progress(0);
     assert(progress.waza_complete == true, 'Final: Waza not complete');
     assert(progress.chi_complete == true, 'Final: Chi not complete');

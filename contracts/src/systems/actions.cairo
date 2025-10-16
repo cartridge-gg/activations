@@ -3,6 +3,7 @@
 // Player progress is stored in the NFT contract (pact.cairo)
 
 use starknet::ContractAddress;
+use ronin_quest::controller::eip191::Signer;
 
 // Quest actions interface
 #[starknet::interface]
@@ -10,11 +11,12 @@ pub trait IActions<T> {
     // Player actions
     fn complete_waza(ref self: T, token_id: u256);
     fn complete_chi(ref self: T, token_id: u256, questions: Array<u32>, answers: Array<felt252>);
-    fn complete_shin(ref self: T, token_id: u256, signer: felt252);
+    fn complete_shin(ref self: T, token_id: u256, signer: Signer);
 
     // Admin functions
     fn set_owner(ref self: T, owner: ContractAddress);
     fn set_pact(ref self: T, pact: ContractAddress);
+    fn set_controller(ref self: T, controller: ContractAddress);
     fn set_games(ref self: T, games: Array<ContractAddress>);
     fn set_quiz(ref self: T, answers: Array<felt252>);
 }
@@ -27,7 +29,9 @@ pub mod actions {
     use dojo::model::ModelStorage;
 
     use super::IActions;
-    use ronin_quest::models::{RoninOwner, RoninPact, RoninGames, RoninAnswers};
+    use ronin_quest::controller::eip191::{Signer, SignerTrait};
+    use ronin_quest::controller::interface::{IMultipleOwnersDispatcher, IMultipleOwnersDispatcherTrait};
+    use ronin_quest::models::{RoninOwner, RoninPact, RoninController, RoninGames, RoninAnswers};
     use ronin_quest::tokens::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 
     #[abi(embed_v0)]
@@ -79,19 +83,19 @@ pub mod actions {
             nft.complete_chi(token_id);
         }
 
-        // TODO: Implement with correct signer type
-        // https://github.com/cartridge-gg/controller-cairo/blob/main/src/signer/signer_signature.cairo#L168
-        fn complete_shin(ref self: ContractState, token_id: u256, signer: felt252) {
+        fn complete_shin(ref self: ContractState, token_id: u256, signer: Signer) {
             let world = self.world_default();
-
             let pact_config: RoninPact = world.read_model(0);
+            let controller_config: RoninController = world.read_model(0);
 
-            // Verify the signer GUID is registered on the caller's Controller account
+            // Convert signer to its GUID (globally unique identifier)
+            let signer_guid = signer.into_guid();
 
-            // let signer = signer.into_guid();
-            // let is_owner = controller.is_owner(signer);
+            // Create dispatcher to the Controller contract
+            let controller = IMultipleOwnersDispatcher { contract_address: controller_config.controller };
 
-            let is_owner = true;
+            // Verify the signer GUID is registered in the Controller
+            let is_owner = controller.is_owner(signer_guid);
             assert(is_owner, 'Signer not registered');
 
             // Call NFT contract to record completion
@@ -105,6 +109,14 @@ pub mod actions {
             self.assert_only_owner(@world);
 
             let config = RoninPact { game_id: 0, pact };
+            world.write_model(@config);
+        }
+
+        fn set_controller(ref self: ContractState, controller: ContractAddress) {
+            let mut world = self.world_default();
+            self.assert_only_owner(@world);
+
+            let config = RoninController { game_id: 0, controller };
             world.write_model(@config);
         }
 
