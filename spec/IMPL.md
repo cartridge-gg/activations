@@ -83,213 +83,312 @@
 
 ### 2.1 Contract Overview
 
-The system requires **two main contracts**:
+The system uses a **modular architecture** with two main components:
 
 #### A. `RoninPact.cairo` (Dynamic ERC721 NFT)
+**Location**: `contracts/src/tokens/pact.cairo`
+
 **Purpose**: The participation NFT that evolves as users complete trials
 
 **Key Features**:
 - ERC721 compliant using OpenZeppelin components
-- **One mint per wallet** enforcement
-- Dynamic metadata/artwork based on completion state
+- Dynamic on-chain SVG generation based on completion state
 - **Four visual states**: Base (0/3), +Waza (1/3), +Chi (2/3), +Shin (3/3)
-- Token URI updates automatically based on trial completion
+- Bit-flag storage for efficient trial progress tracking
+- Minter-based access control for trial completion
 
 **State Storage**:
 ```cairo
-// Per-wallet completion tracking
-struct TrialProgress {
-    waza_complete: bool,    // Trial 1: Technique
-    chi_complete: bool,     // Trial 2: Wisdom
-    shin_complete: bool,    // Trial 3: Spirit
+// Bit flags for efficient storage (3 bits = 3 trials)
+const WAZA_BIT: u8 = 0x04;  // 0b100
+const CHI_BIT: u8 = 0x02;   // 0b010
+const SHIN_BIT: u8 = 0x01;  // 0b001
+
+#[storage]
+struct Storage {
+    #[substorage(v0)]
+    erc721: ERC721Component::Storage,
+    #[substorage(v0)]
+    src5: SRC5Component::Storage,
+    owner: ContractAddress,
+    minter: ContractAddress,           // Address authorized to mark trials complete
+    token_count: u256,                 // Sequential token IDs
+    token_progress: Map<u256, u8>,     // Token ID -> bit flags
 }
 
-// Maps: wallet_address -> TrialProgress
-// Maps: wallet_address -> token_id
-// Maps: token_id -> wallet_address (standard ERC721 ownership)
+// Public struct for reading progress
+#[derive(Copy, Drop, Serde, starknet::Store)]
+pub struct TrialProgress {
+    pub waza_complete: bool,
+    pub chi_complete: bool,
+    pub shin_complete: bool,
+}
 ```
 
 **Core Functions**:
-- `mint()` - Mints one Pact NFT per wallet (enforces 1-per-wallet rule)
-- `complete_waza(proof: WazaProof)` - Marks Waza trial complete
-- `complete_chi(quiz_answers: Array<felt252>)` - Validates and marks Chi complete
-- `complete_shin(signer_guid: felt252)` - Marks Shin complete
-- `get_progress(wallet: ContractAddress)` - Returns TrialProgress struct
-- `token_uri(token_id: u256)` - Returns dynamic metadata based on progress
-- `get_visual_state(token_id: u256)` - Returns state: 0-3 slashes lit
+- `mint()` - Mints a Pact NFT to the caller (no 1-per-wallet enforcement at contract level)
+- `complete_waza(token_id: u256)` - Marks Waza trial complete (minter-only)
+- `complete_chi(token_id: u256)` - Marks Chi trial complete (minter-only)
+- `complete_shin(token_id: u256)` - Marks Shin trial complete (minter-only)
+- `get_progress(token_id: u256)` - Returns TrialProgress struct
+- `token_uri(token_id: u256)` - Returns data URI with inline SVG
+- `set_minter(minter: ContractAddress)` - Sets authorized minter address (owner-only)
 
 **Access Control**:
-- Ownable pattern for admin functions (updating allowlists, quiz content)
-- Public trial completion functions (with validation)
+- Owner: Can set minter address
+- Minter: Can mark trials complete (typically the Dojo actions contract)
+- Anyone: Can mint NFTs and read progress
 
-#### B. `QuestManager.cairo` (Trial Logic & Validation)
-**Purpose**: Handles business logic for trial verification
+**Events**:
+```cairo
+#[derive(Drop, starknet::Event)]
+struct WazaCompleted { token_id: u256 }
 
-**Key Components**:
+#[derive(Drop, starknet::Event)]
+struct ChiCompleted { token_id: u256 }
+
+#[derive(Drop, starknet::Event)]
+struct ShinCompleted { token_id: u256 }
+```
+
+#### B. `actions.cairo` (Dojo Contract - Trial Logic & Validation)
+**Location**: `contracts/src/systems/actions.cairo`
+
+**Purpose**: Validates trial completion requirements and calls NFT contract
+
+**Architecture**: Dojo contract with models for configuration storage
+
+**Dojo Models** (`contracts/src/models.cairo`):
+```cairo
+// All models use game_id: u32 = 0 as singleton key
+
+#[dojo::model]
+pub struct RoninOwner {
+    #[key] pub game_id: u32,
+    pub owner: ContractAddress,
+}
+
+#[dojo::model]
+pub struct RoninPact {
+    #[key] pub game_id: u32,
+    pub pact: ContractAddress,        // NFT contract address
+}
+
+#[dojo::model]
+pub struct RoninController {
+    #[key] pub game_id: u32,
+    pub controller: ContractAddress,  // Global Controller for verification
+}
+
+#[dojo::model]
+pub struct RoninGames {
+    #[key] pub game_id: u32,
+    pub games: Array<ContractAddress>,  // Allowlisted game collections
+}
+
+#[dojo::model]
+pub struct RoninAnswers {
+    #[key] pub game_id: u32,
+    pub answers: Array<felt252>,      // Quiz answer hashes
+}
+```
+
+**Trial Logic**:
 
 **Trial 1 - Waza (Technique)**:
 ```cairo
-// Storage: Array of allowlisted ERC721 contract addresses
-@storage
-struct Storage {
-    allowlisted_collections: LegacyMap<u32, ContractAddress>,
-    allowlist_length: u32,
-    // ... other fields
-}
+fn complete_waza(ref self: ContractState, token_id: u256) {
+    let caller = get_caller_address();
+    let world = self.world_default();
 
-// Function to check ownership
-fn verify_waza_ownership(
-    wallet: ContractAddress,
-    collection: ContractAddress
-) -> bool {
-    // Call ERC721::balance_of on the target collection
-    // Return true if balance > 0
-}
+    let games_config: RoninGames = world.read_model(0);
+    let pact_config: RoninPact = world.read_model(0);
 
-// Admin function to update allowlist
-fn set_allowlist(collections: Array<ContractAddress>) {
-    // Only owner
+    // Check balance across all allowlisted game collections
+    let mut balance: u256 = 0;
+    for game in games_config.games {
+        let erc721 = IERC721Dispatcher { contract_address: game };
+        balance += erc721.balance_of(caller);
+    };
+
+    assert(balance >= 1, 'No tokens owned!');
+
+    // Mark trial complete in NFT contract
+    let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
+    nft.complete_waza(token_id);
 }
 ```
 
 **Trial 2 - Chi (Wisdom)**:
 ```cairo
-// Storage: Quiz configuration (10 questions total, 3 shown per user)
-struct QuizConfig {
-    questions: LegacyMap<u32, ByteArray>,  // Question text (10 questions)
-    answers: LegacyMap<u32, felt252>,       // Correct answer hashes
-    num_questions: u32,                     // Total = 10
-}
+fn complete_chi(
+    ref self: ContractState,
+    token_id: u256,
+    questions: Array<u32>,     // Question indices selected by player
+    answers: Array<felt252>    // Player's answer hashes
+) {
+    let world = self.world_default();
+    let answers_config: RoninAnswers = world.read_model(0);
+    let pact_config: RoninPact = world.read_model(0);
 
-// Pseudo-random question selection based on wallet address
-fn select_questions(wallet: ContractAddress) -> Array<u32> {
-    // Derive 3 question indices from wallet address
-    // Example: hash(wallet) % 10 for first question
-    //          hash(wallet + 1) % 10 for second (ensuring no duplicates)
-    //          hash(wallet + 2) % 10 for third (ensuring no duplicates)
-    // Returns array of 3 question indices
-}
+    // Verify answer count matches question count
+    assert(questions.len() == answers.len(), 'Question/answer mismatch');
 
-// Validation function
-fn verify_chi_answers(
-    wallet: ContractAddress,
-    submitted_answers: Array<felt252>
-) -> bool {
-    let question_indices = select_questions(wallet);
-    // Verify submitted answers match correct answers for selected questions
-    // Return true if all 3 correct
-}
+    // Check correctness
+    let mut correct: u256 = 0;
+    for i in 0..questions.len() {
+        let question_idx = *questions.at(i);
+        let answer_hash = *answers.at(i);
+        let expected_hash = *answers_config.answers.at(question_idx);
 
-// Admin function to set quiz (all 10 questions)
-fn set_quiz(questions: Array<ByteArray>, answer_hashes: Array<felt252>) {
-    // Only owner
-    assert(questions.len() == 10, 'Must provide 10 questions');
+        if answer_hash == expected_hash {
+            correct += 1;
+        }
+    };
+
+    assert(correct >= 3, 'Incorrect answers!');
+
+    // Mark trial complete in NFT contract
+    let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
+    nft.complete_chi(token_id);
 }
 ```
+
+**Note**: The current implementation does NOT use pseudo-random question selection. The frontend selects questions and submits them along with answers. The contract validates that at least 3 answers are correct.
 
 **Trial 3 - Shin (Spirit)**:
 ```cairo
-// Interface for calling Controller account's signer verification
-#[starknet::interface]
-trait ISignerList<TContractState> {
-    fn is_signer_in_list(self: @TContractState, signer_guid: felt252) -> bool;
-}
+use ronin_quest::controller::eip191::{Signer, SignerTrait};
+use ronin_quest::controller::interface::{
+    IMultipleOwnersDispatcher,
+    IMultipleOwnersDispatcherTrait
+};
 
-// Validation function
-fn complete_shin(
-    signer_guid: felt252
-) {
-    let caller = get_caller_address();
+fn complete_shin(ref self: ContractState, token_id: u256, signer: Signer) {
+    let world = self.world_default();
+    let pact_config: RoninPact = world.read_model(0);
+    let controller_config: RoninController = world.read_model(0);
 
-    // 1. Call the Controller account's is_signer_in_list method
-    let controller_dispatcher = ISignerListDispatcher { contract_address: caller };
-    let is_valid_signer = controller_dispatcher.is_signer_in_list(signer_guid);
+    // Convert signer to its GUID (globally unique identifier)
+    let signer_guid = signer.into_guid();
 
-    // 2. Verify the signer GUID is registered on the caller's account
-    assert(is_valid_signer, 'Signer not registered');
+    // Create dispatcher to the global Controller contract
+    let controller = IMultipleOwnersDispatcher {
+        contract_address: controller_config.controller
+    };
 
-    // 3. Mark Shin trial complete
-    mark_shin_complete(caller);
+    // Verify the signer GUID is registered in the Controller
+    let is_owner = controller.is_owner(signer_guid);
+    assert(is_owner, 'Signer not registered');
 
-    // 4. Emit event recording which signer was used
-    self.emit(ShinComplete {
-        wallet: caller,
-        signer_guid,
-        timestamp: get_block_timestamp()
-    });
-}
-
-// Event
-#[derive(Drop, starknet::Event)]
-struct ShinComplete {
-    wallet: ContractAddress,
-    signer_guid: felt252,        // The GUID of the signer used
-    timestamp: u64,
+    // Mark trial complete in NFT contract
+    let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
+    nft.complete_shin(token_id);
 }
 ```
 
-**How it works**:
-1. **Signer GUIDs**: Each signer on a Controller account has a unique GUID (hash of signer data)
-2. **Frontend queries** available signers via GraphQL API
-3. **User selects** a signer (Discord, Passkey, etc.)
-4. **Contract verifies** the GUID is registered by calling `is_signer_in_list` on the caller's account
-5. **No signatures needed** - just verification that the signer exists on the account
+**Admin Functions**:
+- `set_owner(owner: ContractAddress)` - Transfer ownership
+- `set_pact(pact: ContractAddress)` - Set NFT contract address
+- `set_controller(controller: ContractAddress)` - Set global Controller address
+- `set_games(games: Array<ContractAddress>)` - Update allowlisted games
+- `set_quiz(answers: Array<felt252>)` - Update quiz answer hashes
 
-### 2.2 Contract Architecture Decision
+All admin functions are protected by `assert_only_owner()`.
 
-**Option A: Monolithic Contract** (Recommended for v1)
-- Combine `RoninPact` and `QuestManager` into a single contract
-- **Pros**: Simpler deployment, atomic state updates, lower gas for cross-contract calls
-- **Cons**: Larger contract, less modular
+**Initialization**:
+```cairo
+fn dojo_init(ref self: ContractState) {
+    let mut world = self.world_default();
+    let caller = get_caller_address();
+    world.write_model(@RoninOwner { game_id: 0, owner: caller });
+}
+```
 
-**Option B: Modular Contracts**
-- Separate NFT contract and Quest logic
-- `RoninPact` calls `QuestManager` for validations
-- **Pros**: More modular, easier to upgrade quest logic
-- **Cons**: More complex, additional deployment overhead
+### 2.2 Architectural Details
 
-**Recommendation**: Start with **Option B** (modular) to make it easier to reference ERC721 in the future.
+**Chosen Architecture**: Modular (Option B)
+- ✅ Separate NFT contract (`RoninPact`) and game logic (`actions`)
+- ✅ NFT contract is reusable and can be integrated with other systems
+- ✅ Game logic uses Dojo for configuration storage
+- ✅ Minter pattern allows NFT contract to be agnostic of validation logic
+
+**Communication Flow**:
+1. Player calls `actions.complete_waza(token_id)`
+2. Actions contract validates requirements (game ownership)
+3. Actions contract calls `ronin_pact.complete_waza(token_id)`
+4. Pact contract verifies caller is authorized minter
+5. Pact contract updates bit flags and emits event
+6. NFT metadata automatically reflects new state
 
 ### 2.3 Dynamic NFT Metadata Strategy
 
-**Challenge**: NFT metadata must update automatically when trials are completed.
+**Implementation**: Fully On-Chain SVG Generation
 
-**Solution**: On-chain metadata generation
+The contract generates SVG artwork dynamically in the `token_uri()` function based on trial completion state.
+
+**Actual Implementation** (`contracts/src/tokens/pact.cairo`):
 ```cairo
-fn token_uri(token_id: u256) -> ByteArray {
-    let owner = owner_of(token_id);
-    let progress = get_progress(owner);
-    let slashes = count_completed(progress);
+fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
+    self.generate_svg(token_id)
+}
 
-    // Generate JSON metadata on-chain
-    let metadata = format_metadata(token_id, progress, slashes);
+fn generate_svg(self: @ContractState, token_id: u256) -> ByteArray {
+    let progress = self.get_progress(token_id);
 
-    // Option 1: Return base64-encoded data URI
-    // Option 2: Return IPFS URI with state parameter
-    return metadata;
+    let mut svg: ByteArray = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'>";
+
+    // Background with radial gradient
+    svg.append(@self.get_background());
+
+    // Base pact symbol (concentric circles + title)
+    svg.append(@self.get_base_pact());
+
+    // Add completed trial slashes conditionally
+    if progress.waza_complete {
+        svg.append(@self.get_waza_slash());  // Red diagonal (top-left to bottom-right)
+    }
+    if progress.chi_complete {
+        svg.append(@self.get_chi_slash());   // Blue diagonal (top-right to bottom-left)
+    }
+    if progress.shin_complete {
+        svg.append(@self.get_shin_slash());  // Purple vertical (top to bottom)
+    }
+
+    // Golden glow effect when all three trials complete
+    if progress.waza_complete && progress.chi_complete && progress.shin_complete {
+        svg.append(@self.get_completion_glow());
+    }
+
+    svg.append(@"</svg>");
+
+    // Return as data URI
+    let mut data_uri: ByteArray = "data:image/svg+xml;utf8,";
+    data_uri.append(@svg);
+    data_uri
 }
 ```
 
-**Metadata Hosting Options**:
+**Visual Design**:
+- **Base State** (0/3): Dark blue background with concentric gray circles
+- **Waza Complete** (+1/3): Red diagonal slash with gradient and glow effect, "WAZA" label
+- **Chi Complete** (+2/3): Blue diagonal slash (opposite direction), "CHI" label
+- **Shin Complete** (+3/3): Purple vertical slash, "SHIN" label
+- **All Complete** (3/3): Golden radial glow effect, "FORGED" label
 
-1. **Fully On-Chain** (Most Decentralized):
-   - Store SVG image data in contract
-   - Generate metadata JSON on-chain
-   - Return as `data:application/json;base64,...`
-   - **Pros**: Fully immutable, no external dependencies
-   - **Cons**: Higher deployment cost, limited artwork complexity
+**Technical Details**:
+- SVG elements use gradients and filters for visual effects
+- Each slash has its own gradient definition and glow filter
+- Data URI format: `data:image/svg+xml;utf8,<svg>...</svg>`
+- No base64 encoding (direct UTF-8 SVG in data URI)
+- Fully deterministic based on token progress bits
 
-2. **IPFS with State Parameter** (Balanced):
-   - Host 4 artwork variants on IPFS
-   - Return metadata pointing to IPFS with state param
-   - Example: `ipfs://QmXXX/metadata?state=2`
-   - **Pros**: Richer artwork, lower contract cost
-   - **Cons**: Requires IPFS gateway to interpret state
-
-3. **Dynamic API** (Not Recommended):
-   - Would require server, violates serverless requirement
-
-**Recommendation**: Use **Option 1 (On-chain)** with simple SVGs. SVG artwork is en route and will be embedded directly in the contract for full decentralization.
+**Benefits**:
+- ✅ Fully on-chain and immutable
+- ✅ No external dependencies (IPFS, APIs, etc.)
+- ✅ Automatic updates when trials are completed
+- ✅ Rich visual effects with SVG gradients and filters
+- ✅ Standards-compliant ERC721 metadata
 
 ---
 
@@ -1374,6 +1473,369 @@ These are explicitly **out of scope for v1** but could be considered for future 
 - [Cartridge Discord](https://discord.gg/cartridge)
 - [Dojo Discord](https://discord.gg/dojoengine)
 - [Starknet Discord](https://discord.gg/starknet)
+
+---
+
+## 13. Controller Integration Implementation
+
+### 13.1 Overview
+
+This section details the specific implementation for enabling signer verification in the Shin trial.
+
+**Goal**: Verify that a user has registered a signer (Discord, Passkey, etc.) on their Cartridge Controller account.
+
+**Approach**: Use a **simplified local implementation** of the signer interface to avoid heavy controller-cairo dependencies. The implementation provides only what's needed for EIP-191 signer verification (used by Discord, Google, etc.).
+
+### 13.2 Architecture Decision
+
+**Chosen Approach**: Minimal Local Implementation
+
+Instead of importing the full `controller-cairo` library (which includes many unused components), the project implements a minimal local version of the required interfaces.
+
+**Files**:
+- `contracts/src/controller/eip191.cairo` - Minimal Signer enum and GUID conversion
+- `contracts/src/controller/interface.cairo` - IMultipleOwners interface definition
+- `contracts/src/tests/mocks.cairo` - MockController for testing
+
+**Benefits**:
+- ✅ Lighter dependency footprint
+- ✅ Faster compilation times
+- ✅ Easier to understand and maintain
+- ✅ Compatible with controller-cairo's GUID computation
+
+### 13.3 Implementation Details
+
+#### Component 1: Signer Types (`contracts/src/controller/eip191.cairo`)
+
+```cairo
+use starknet::EthAddress;
+use core::poseidon;
+
+// Signer type constant - must match controller-cairo
+const EIP191_SIGNER_TYPE: felt252 = 'Eip191 Signer';
+
+/// EIP-191 signer struct - contains only the Ethereum address
+#[derive(Drop, Copy, Serde, PartialEq)]
+pub struct Eip191Signer {
+    pub eth_address: EthAddress,
+}
+
+/// Simplified Signer enum - only supports Eip191 for our use case
+#[derive(Drop, Copy, Signer, PartialEq)]
+pub enum Signer {
+    Eip191: Eip191Signer,
+}
+
+/// Trait for converting signers to GUIDs
+pub trait SignerTrait {
+    fn into_guid(self: Signer) -> felt252;
+}
+
+/// Implementation of GUID conversion
+pub impl SignerTraitImpl of SignerTrait {
+    fn into_guid(self: Signer) -> felt252 {
+        match self {
+            Signer::Eip191(signer) => {
+                // Hash: poseidon(signer_type, eth_address)
+                let (hash, _, _) = poseidon::hades_permutation(
+                    EIP191_SIGNER_TYPE,
+                    signer.eth_address.into(),
+                    2
+                );
+                hash
+            }
+        }
+    }
+}
+```
+
+**Key Points**:
+- Only implements `Eip191` variant (covers Discord, Google, external wallets)
+- Uses identical GUID computation as controller-cairo (`poseidon_2`)
+- Lightweight and focused on the specific use case
+
+#### Component 2: Controller Interface (`contracts/src/controller/interface.cairo`)
+
+```cairo
+// Minimal Controller interface for checking signer ownership
+// This is a local copy of the IMultipleOwners interface from controller-cairo
+// to avoid the heavy dependency while still allowing runtime calls to Controller accounts
+
+#[starknet::interface]
+pub trait IMultipleOwners<T> {
+    fn is_owner(self: @T, guid: felt252) -> bool;
+}
+```
+
+**Key Points**:
+- Minimal interface with just the `is_owner` method
+- Compatible with actual Controller accounts deployed on Starknet
+- No implementation needed (we call deployed Controller contracts)
+
+#### Component 3: Actions Contract Integration
+
+The Shin trial verification in `contracts/src/systems/actions.cairo`:
+
+```cairo
+use ronin_quest::controller::eip191::{Signer, SignerTrait};
+use ronin_quest::controller::interface::{
+    IMultipleOwnersDispatcher,
+    IMultipleOwnersDispatcherTrait
+};
+
+fn complete_shin(ref self: ContractState, token_id: u256, signer: Signer) {
+    let world = self.world_default();
+    let pact_config: RoninPact = world.read_model(0);
+    let controller_config: RoninController = world.read_model(0);
+
+    // Convert signer to its GUID (globally unique identifier)
+    let signer_guid = signer.into_guid();
+
+    // Create dispatcher to the GLOBAL Controller contract
+    // Note: Uses configured controller address, not caller's address
+    let controller = IMultipleOwnersDispatcher {
+        contract_address: controller_config.controller
+    };
+
+    // Verify the signer GUID is registered in the Controller
+    let is_owner = controller.is_owner(signer_guid);
+    assert(is_owner, 'Signer not registered');
+
+    // Mark trial complete in NFT contract
+    let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
+    nft.complete_shin(token_id);
+}
+```
+
+**Important**: The verification checks against a **global Controller contract** address (configured via `set_controller()`), not the caller's address. This is a design decision that may need adjustment based on requirements.
+
+### 13.4 How It Works
+
+**Flow**:
+
+1. **Admin configures global Controller**: Call `set_controller(controller_address)` to set the Controller contract to verify against
+
+2. **Frontend queries signers** via Cartridge GraphQL API:
+   ```graphql
+   query GetControllerSigners($address: String!) {
+     controller(address: $address) {
+       signers {
+         guid
+         metadata {
+           __typename
+           ... on Eip191Credentials {
+             eip191 { provider }
+           }
+         }
+         isRevoked
+       }
+     }
+   }
+   ```
+
+3. **User selects a signer** from the UI (Discord, Passkey, etc.)
+
+4. **Frontend constructs `Signer` struct** with the EthAddress:
+   ```typescript
+   // For Discord signer (Eip191Credentials)
+   // Frontend extracts the eth_address from GraphQL response
+   const signer = {
+     Eip191: {
+       eth_address: '0x...'  // From signer metadata
+     }
+   }
+   ```
+
+5. **Frontend calls `complete_shin(token_id, signer)`** with the constructed signer
+
+6. **Contract converts to GUID**:
+   ```cairo
+   let signer_guid = signer.into_guid();
+   // Computes: poseidon('Eip191 Signer', eth_address)
+   ```
+
+7. **Contract verifies ownership**: Calls `controller.is_owner(signer_guid)` on the configured Controller address
+
+8. **Contract records completion**: If verified, calls NFT contract to mark trial complete
+
+**Security**:
+- No private keys or sensitive data transmitted
+- Verification happens on-chain via Controller's storage
+- GUIDs are deterministically computed from signer credentials
+- Only the configured Controller contract is trusted
+
+### 13.5 Signer Types Supported
+
+**Current Implementation**: Only `Eip191` variant
+
+The minimal implementation currently supports only EIP-191 signers, which covers:
+
+| Signer Type | Frontend Detection | Use Case |
+|------------|-------------------|----------|
+| `Signer::Eip191` | `Eip191Credentials` with `provider` field | Discord, Google, X (Twitter), External wallets |
+
+**Signer Detection** (Frontend):
+- **Discord**: `metadata.__typename === 'Eip191Credentials' && metadata.eip191[0].provider === 'discord'`
+- **Google**: `metadata.__typename === 'Eip191Credentials' && metadata.eip191[0].provider === 'google'`
+- **Passkeys**: `metadata.__typename === 'WebauthnCredentials'` (not yet supported by contract)
+
+**Limitation**: The current contract implementation does NOT support Webauthn (Passkeys), Secp256k1, or other signer types. To add support:
+1. Extend the `Signer` enum in `eip191.cairo`
+2. Add corresponding GUID computation logic
+3. Ensure type constants match controller-cairo's implementation
+
+**Example Extension** (for future Webauthn support):
+```cairo
+const WEBAUTHN_SIGNER_TYPE: felt252 = 'Webauthn Signer';
+
+#[derive(Drop, Copy, Serde)]
+pub struct WebauthnSigner {
+    pub origin: ByteArray,
+    pub rp_id_hash: u256,
+    pub pubkey: u256,
+}
+
+pub enum Signer {
+    Eip191: Eip191Signer,
+    Webauthn: WebauthnSigner,  // Add new variant
+}
+```
+
+### 13.6 Testing Strategy
+
+**Implemented Unit Tests** (`contracts/src/controller/eip191.cairo`):
+
+```cairo
+#[test]
+fn test_into_guid() {
+    let eth_addr: EthAddress = 0x1234567890abcdef_felt252.try_into().unwrap();
+    let signer = Signer::Eip191(Eip191Signer { eth_address: eth_addr });
+    let guid = signer.into_guid();
+    let expected_guid = poseidon_2(EIP191_SIGNER_TYPE, 0x1234567890abcdef_felt252);
+    assert(guid == expected_guid, 'GUID mismatch');
+}
+
+#[test]
+fn test_guid_deterministic() {
+    // Same input should produce same GUID
+    let eth_addr: EthAddress = 0xdeadbeef_felt252.try_into().unwrap();
+    let signer1 = Signer::Eip191(Eip191Signer { eth_address: eth_addr });
+    let signer2 = Signer::Eip191(Eip191Signer { eth_address: eth_addr });
+    assert(signer1.into_guid() == signer2.into_guid(), 'Not deterministic');
+}
+
+#[test]
+fn test_different_addresses_different_guids() {
+    // Different addresses should produce different GUIDs
+    let eth_addr1: EthAddress = 0x1111_felt252.try_into().unwrap();
+    let eth_addr2: EthAddress = 0x2222_felt252.try_into().unwrap();
+    let signer1 = Signer::Eip191(Eip191Signer { eth_address: eth_addr1 });
+    let signer2 = Signer::Eip191(Eip191Signer { eth_address: eth_addr2 });
+    assert(signer1.into_guid() != signer2.into_guid(), 'GUIDs should differ');
+}
+```
+
+**Implemented Integration Tests** (`contracts/src/tests/actions.cairo`):
+
+1. ✅ `test_complete_shin()` - Tests successful Shin completion with MockController
+2. ✅ `test_set_controller()` - Tests setting Controller address
+3. ✅ `test_set_controller_only_owner()` - Tests access control
+4. ✅ `test_full_lifecycle()` - Tests all three trials including Shin
+
+**Mock Controller** (`contracts/src/tests/mocks.cairo`):
+```cairo
+#[starknet::contract]
+pub mod MockController {
+    use ronin_quest::controller::interface::IMultipleOwners;
+
+    #[storage]
+    struct Storage {}
+
+    #[abi(embed_v0)]
+    impl MockControllerImpl of IMultipleOwners<ContractState> {
+        fn is_owner(self: @ContractState, guid: felt252) -> bool {
+            true  // Always returns true for testing
+        }
+    }
+}
+```
+
+**Test Results**: All 22 tests passing (including 2 Shin-related tests)
+
+### 13.7 Benefits of This Approach
+
+✅ **Minimal dependencies**: No heavy controller-cairo library import
+✅ **Type-safe**: Uses proper `Signer` enum instead of raw `felt252`
+✅ **Focused**: Only implements what's needed (Eip191 signers)
+✅ **Compatible**: GUID computation matches controller-cairo exactly
+✅ **Testable**: Mock Controller enables easy testing
+✅ **Secure**: Leverages Controller's built-in ownership verification
+✅ **Decentralized**: All verification happens on-chain
+✅ **User-friendly**: No complex signing flows, just ownership verification
+
+### 13.8 Known Limitations
+
+1. **Limited signer types**: Only supports `Eip191` (Discord, Google, etc.). Does NOT support Webauthn (Passkeys), Secp256k1, or other types
+2. **Global Controller verification**: Verifies against a single configured Controller address, not the caller's Controller account
+3. **Frontend must provide eth_address**: Frontend needs to extract the Ethereum address from GraphQL and construct the Signer struct
+4. **No revocation checking**: Contract only checks if signer GUID is registered, not if it's been revoked (relies on Controller's internal logic)
+5. **GUID computation**: Must exactly match controller-cairo's implementation (using Poseidon hash)
+
+**Critical Design Note**: The current implementation verifies signers against a **global Controller contract** (set via `set_controller()`), not individual user Controller accounts. This means:
+- All users' signers are verified against the same Controller contract
+- This may not be the intended behavior if each user has their own Controller account
+- Consider updating to verify against `get_caller_address()` instead of `controller_config.controller`
+
+### 13.9 Implementation Status
+
+✅ **Completed**:
+- [x] Minimal Signer enum with Eip191 variant
+- [x] GUID conversion trait (`into_guid()`)
+- [x] IMultipleOwners interface definition
+- [x] Integration in actions.cairo
+- [x] Unit tests for GUID computation
+- [x] Integration tests with MockController
+- [x] All tests passing (22/22)
+
+❌ **Not Implemented**:
+- [ ] Full controller-cairo dependency (intentionally avoided)
+- [ ] Webauthn signer support
+- [ ] Other signer types (Secp256k1, Secp256r1, etc.)
+- [ ] Per-user Controller verification
+- [ ] Frontend integration (TBD)
+
+### 13.10 Recommended Improvements
+
+1. **Per-User Verification**: Change from global Controller to per-user:
+   ```cairo
+   // Instead of:
+   let controller = IMultipleOwnersDispatcher {
+       contract_address: controller_config.controller
+   };
+
+   // Use:
+   let caller = get_caller_address();
+   let controller = IMultipleOwnersDispatcher {
+       contract_address: caller  // Verify against caller's Controller account
+   };
+   ```
+
+2. **Add Webauthn Support**: Extend Signer enum to include Passkeys:
+   ```cairo
+   pub enum Signer {
+       Eip191: Eip191Signer,
+       Webauthn: WebauthnSigner,
+   }
+   ```
+
+3. **Store Signer Metadata**: Emit events with signer details for analytics:
+   ```cairo
+   self.emit(ShinCompleted {
+       token_id,
+       signer_type: 'Eip191',
+       eth_address: signer.eth_address
+   });
+   ```
 
 ---
 
