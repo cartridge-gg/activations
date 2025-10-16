@@ -134,9 +134,20 @@ const SWORD_SVG = `<defs>
     <path class="cls-1" d="M279,62.01c.14.14.17,3.53-.17,3.88-.31.32-2.12-.21-2.65.29-.21.2-.54,5.38-3.17,2.83-2.4-2.33,3.37-9.64,5.99-6.99Z"/>
   </g>`;
 
-// Helper to position sword at specific y-offset
+const OCCLUSION = `<g id="_2JLexQ.tif" data-name="2JLexQ.tif">
+  <g>
+    <path fill="#030001" d="M12.83,23.81c-.34-5.54-.75-11.13-1.17-16.91l32.48-.12c.94,5.63,1.52,11.32,1.82,17.03h5.98C51.24,12.3,49.91,1.66,47.38,0L3.57.49,0,5.18c.55,7.14.91,13.3,1.15,18.63h11.68Z"/>
+    <path fill="#e9283a" d="M45.96,23.81c-.29-5.71-.87-11.39-1.82-17.03-10.82-.1-23.59,0-32.48.12.42,5.78.82,11.37,1.17,16.91h33.13Z"/>
+  </g>
+</g>`
+
+// Helper to position sword at specific y-offset with occlusions
 function getSwordAt(yOffset: number): string {
-  return `<g transform="translate(170, ${yOffset})">${SWORD_SVG}</g>`;
+  return `<g transform="translate(135, ${yOffset})">
+    ${SWORD_SVG}
+    <g transform="translate(175, 100)">${OCCLUSION}</g>
+    <g transform="translate(520, 100)">${OCCLUSION}</g>
+  </g>`;
 }
 
 function generateSvg(progress: TrialProgress): string {
