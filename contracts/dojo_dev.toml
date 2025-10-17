@@ -15,3 +15,11 @@ private_key = "0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b
 
 [writers]
 "ronin_quest" = ["ronin_quest-actions"]
+
+[[external_contracts]]
+contract_name = "RoninPact"
+instance_name = "ronin_pact_nft"
+salt = "1"
+constructor_data = [
+    "0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7"
+]

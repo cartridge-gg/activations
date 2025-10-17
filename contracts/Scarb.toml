@@ -17,7 +17,10 @@ starknet = "2.12.2"
 openzeppelin = "1.0.0"
 
 [[target.starknet-contract]]
-build-external-contracts = ["dojo::world::world_contract::world"]
+build-external-contracts = [
+    "dojo::world::world_contract::world",
+    "ronin_quest::token::pact::RoninPact"
+]
 
 [tool.scarb]
 allow-prebuilt-plugins = ["dojo_cairo_macros"]

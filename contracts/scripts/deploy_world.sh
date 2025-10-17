@@ -92,12 +92,21 @@ sozo migrate --profile dev
 WORLD_ADDRESS=$(grep -o '"address": "0x[^"]*"' "$CONTRACTS_DIR/manifest_dev.json" | head -1 | cut -d'"' -f4)
 echo -e "${GREEN}World deployed at: $WORLD_ADDRESS${NC}"
 
+# Get the RoninPact token contract address from the manifest (external_contracts section)
+TOKEN_ADDRESS=$(jq -r '.external_contracts[] | select(.tag == "ronin_quest-ronin_pact_nft") | .address' "$CONTRACTS_DIR/manifest_dev.json")
+if [ -z "$TOKEN_ADDRESS" ] || [ "$TOKEN_ADDRESS" == "null" ]; then
+    echo -e "${RED}Error: RoninPact NFT not found in manifest${NC}"
+    exit 1
+fi
+echo -e "${GREEN}RoninPact NFT deployed at: $TOKEN_ADDRESS${NC}"
+
 # Step 3: Start Torii
 echo -e "\n${YELLOW}Step 4: Starting Torii indexer...${NC}"
 torii \
     --world "$WORLD_ADDRESS" \
     --rpc http://localhost:5050 \
     --db-dir /tmp/torii-db \
+    --indexing.contracts "ERC721:$TOKEN_ADDRESS" \
     > /tmp/torii.log 2>&1 &
 TORII_PID=$!
 echo -e "${GREEN}Torii started (PID: $TORII_PID)${NC}"
@@ -121,7 +130,9 @@ echo -e "${BLUE}Services running:${NC}"
 echo -e "  Katana RPC:     http://localhost:5050"
 echo -e "  Torii GraphQL:  http://localhost:8080/graphql"
 echo -e "  Torii gRPC:     http://localhost:8080"
+echo -e "\n${BLUE}Deployed Contracts:${NC}"
 echo -e "  World Address:  $WORLD_ADDRESS"
+echo -e "  RoninPact NFT:  $TOKEN_ADDRESS"
 echo -e "\n${BLUE}Logs:${NC}"
 echo -e "  Katana: /tmp/katana.log"
 echo -e "  Torii:  /tmp/torii.log"
