@@ -16,7 +16,7 @@ use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721Dispatche
 
 use ronin_quest::systems::actions::{IActionsDispatcher, IActionsDispatcherTrait};
 use ronin_quest::models::{RoninOwner, RoninPact, RoninController, RoninGames, RoninAnswers};
-use ronin_quest::tokens::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
+use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 use ronin_quest::controller::eip191::{Signer, Eip191Signer};
 use super::mocks::{IMockERC721Dispatcher, IMockERC721DispatcherTrait};
 

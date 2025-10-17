@@ -32,7 +32,7 @@ pub mod actions {
     use ronin_quest::controller::eip191::{Signer, SignerTrait};
     use ronin_quest::controller::interface::{IMultipleOwnersDispatcher, IMultipleOwnersDispatcherTrait};
     use ronin_quest::models::{RoninOwner, RoninPact, RoninController, RoninGames, RoninAnswers};
-    use ronin_quest::tokens::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
+    use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 
     #[abi(embed_v0)]
     impl ActionsImpl of IActions<ContractState> {

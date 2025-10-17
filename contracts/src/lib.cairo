@@ -9,12 +9,14 @@ pub mod controller {
     pub mod interface;
 }
 
-pub mod tokens {
+pub mod token {
     pub mod pact;
+    pub mod svg;
 }
 
 #[cfg(test)]
 mod tests {
     mod actions;
     mod mocks;
+    mod svg;
 }
