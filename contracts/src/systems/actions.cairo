@@ -15,7 +15,6 @@ pub trait IActions<T> {
 
     // Admin functions
     fn set_pact(ref self: T, pact: ContractAddress);
-    fn set_controller(ref self: T, controller: ContractAddress);
     fn set_games(ref self: T, games: Array<ContractAddress>);
     fn set_quiz(ref self: T, answers: Array<felt252>);
 }
@@ -30,7 +29,7 @@ pub mod actions {
     use super::IActions;
     use ronin_quest::controller::eip191::{Signer, SignerTrait};
     use ronin_quest::controller::interface::{IMultipleOwnersDispatcher, IMultipleOwnersDispatcherTrait};
-    use ronin_quest::models::{RoninPact, RoninController, RoninGames, RoninAnswers};
+    use ronin_quest::models::{RoninPact, RoninGames, RoninAnswers};
     use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 
     #[abi(embed_v0)]
@@ -39,8 +38,12 @@ pub mod actions {
             let caller = get_caller_address();
             let world = self.world_default();
 
-            let games_config: RoninGames = world.read_model(0);
             let pact_config: RoninPact = world.read_model(0);
+            let games_config: RoninGames = world.read_model(0);
+
+            let pact_erc721 = IERC721Dispatcher { contract_address: pact_config.pact };
+            let owner = pact_erc721.owner_of(token_id);
+            assert(owner == caller, 'Not token owner');
 
             // Check balance across all game collections
             let mut balance: u256 = 0;
@@ -56,10 +59,15 @@ pub mod actions {
         }
 
         fn complete_chi(ref self: ContractState, token_id: u256, questions: Array<u32>, answers: Array<felt252>) {
+            let caller = get_caller_address();
             let world = self.world_default();
 
-            let answers_config: RoninAnswers = world.read_model(0);
             let pact_config: RoninPact = world.read_model(0);
+            let answers_config: RoninAnswers = world.read_model(0);
+
+            let pact_erc721 = IERC721Dispatcher { contract_address: pact_config.pact };
+            let owner = pact_erc721.owner_of(token_id);
+            assert(owner == caller, 'Not token owner');
 
             // Verify answer count matches question count
             assert(questions.len() == answers.len(), 'Question/answer mismatch');
@@ -77,43 +85,37 @@ pub mod actions {
 
             assert(correct >= 3, 'Incorrect answers!');
 
-            // Call NFT contract to record completion
             let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
             nft.complete_chi(token_id);
         }
 
         fn complete_shin(ref self: ContractState, token_id: u256, signer: Signer) {
+            let caller = get_caller_address();
             let world = self.world_default();
+
             let pact_config: RoninPact = world.read_model(0);
-            let controller_config: RoninController = world.read_model(0);
 
-            // Convert signer to its GUID (globally unique identifier)
+            let pact_erc721 = IERC721Dispatcher { contract_address: pact_config.pact };
+            let owner = pact_erc721.owner_of(token_id);
+            assert(owner == caller, 'Not token owner');
+
+            // Caller is a Controller instance
+            let controller = IMultipleOwnersDispatcher { contract_address: caller };
+
+            // Verify the signer GUID is registered in this Controller instance
             let signer_guid = signer.into_guid();
-
-            // Create dispatcher to the Controller contract
-            let controller = IMultipleOwnersDispatcher { contract_address: controller_config.controller };
-
-            // Verify the signer GUID is registered in the Controller
             let is_owner = controller.is_owner(signer_guid);
             assert(is_owner, 'Signer not registered');
 
-            // Call NFT contract to record completion
             let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
             nft.complete_shin(token_id);
         }
 
         // Admin functions
         // Note: Authorization is handled by Dojo's permission system (owners in dojo_<profile>.toml)
-        // Only accounts with owner permissions on the ronin_quest namespace can call these functions
         fn set_pact(ref self: ContractState, pact: ContractAddress) {
             let mut world = self.world_default();
             let config = RoninPact { game_id: 0, pact };
-            world.write_model(@config);
-        }
-
-        fn set_controller(ref self: ContractState, controller: ContractAddress) {
-            let mut world = self.world_default();
-            let config = RoninController { game_id: 0, controller };
             world.write_model(@config);
         }
 

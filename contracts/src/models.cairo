@@ -9,15 +9,6 @@ pub struct RoninPact {
     pub pact: ContractAddress,
 }
 
-// Controller contract address
-#[derive(Drop, Serde)]
-#[dojo::model]
-pub struct RoninController {
-    #[key]
-    pub game_id: u32, // Always 0 for singleton
-    pub controller: ContractAddress,
-}
-
 // Allowlisted game collections
 #[derive(Drop, Serde)]
 #[dojo::model]

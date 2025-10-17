@@ -69,6 +69,7 @@ katana \
     --dev.no-fee \
     --http.cors_origins "*" \
     --cartridge.controllers \
+    --cartridge.paymaster \
     > /tmp/katana.log 2>&1 &
 KATANA_PID=$!
 echo -e "${GREEN}Katana started (PID: $KATANA_PID)${NC}"

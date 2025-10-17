@@ -1479,8 +1479,8 @@
   },
   "contracts": [
     {
-      "address": "0x1db60f99459486f07ddabadad8a41f26513ca2042b8f9e420d8fa1d0d962618",
-      "class_hash": "0x3cd25f99f1bb44372b0f64c51517c677e2db63f73826ddd0eefd8d6cf2de585",
+      "address": "0x772a8796fd7830ddcc7d25cc43f1d9d1a5e588356c0fff6b89c05f2ef8f1cef",
+      "class_hash": "0x1d3a1da102be5fbb0ab327fdba96af0f35f93165374f317322e2a8ef5c3f31c",
       "abi": [
         {
           "type": "impl",
@@ -1647,18 +1647,6 @@
             },
             {
               "type": "function",
-              "name": "set_controller",
-              "inputs": [
-                {
-                  "name": "controller",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
               "name": "set_games",
               "inputs": [
                 {
@@ -1806,7 +1794,6 @@
         "complete_chi",
         "complete_shin",
         "set_pact",
-        "set_controller",
         "set_games",
         "set_quiz",
         "dojo_init",
@@ -1821,12 +1808,6 @@
       "class_hash": "0x6713cce3e7f20919e9b6004cc3dc5d01e52cd55f8bf21b6c997d80ed1b3d861",
       "tag": "ronin_quest-RoninAnswers",
       "selector": "0x4f1050c925e0f748456032f9f3e998e80f61d80e5c49869f343a42373bf7773"
-    },
-    {
-      "members": [],
-      "class_hash": "0x31ecbfb4dfd349b82f2c3f1be626e5ec7f7e423b59884c906e84644e953ffd2",
-      "tag": "ronin_quest-RoninController",
-      "selector": "0x15b283e464c5e770ad8af1fcbd00cd0b605b03747a07984485934282620a6c0"
     },
     {
       "members": [],
