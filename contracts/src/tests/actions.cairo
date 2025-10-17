@@ -15,7 +15,7 @@ use snforge_std::{
 use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
 
 use ronin_quest::systems::actions::{IActionsDispatcher, IActionsDispatcherTrait};
-use ronin_quest::models::{RoninOwner, RoninPact, RoninController, RoninGames, RoninAnswers};
+use ronin_quest::models::{RoninPact, RoninController, RoninGames, RoninAnswers};
 use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 use ronin_quest::controller::eip191::{Signer, Eip191Signer};
 use super::mocks::{IMockERC721Dispatcher, IMockERC721DispatcherTrait};
@@ -46,7 +46,6 @@ fn namespace_def() -> NamespaceDef {
     NamespaceDef {
         namespace: "ronin_quest",
         resources: [
-            TestResource::Model("RoninOwner"),
             TestResource::Model("RoninPact"),
             TestResource::Model("RoninController"),
             TestResource::Model("RoninGames"),
@@ -94,25 +93,12 @@ fn setup_world() -> (WorldStorage, IActionsDispatcher, ContractAddress) {
     let (actions_address, _) = world.dns(@"actions").unwrap();
     let actions = IActionsDispatcher { contract_address: actions_address };
 
-    // Set owner for tests (dojo_init sets it to world's address during sync)
-    world.write_model(@RoninOwner { game_id: 0, owner: owner() });
-
     (world, actions, actions_address)
 }
 
 // ============================================================================
 // Admin Function Tests
 // ============================================================================
-
-#[test]
-#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-fn test_initialization() {
-    let (world, _actions, _) = setup_world();
-
-    // Verify owner was set in dojo_init
-    let owner_config: RoninOwner = world.read_model(0);
-    assert(owner_config.owner == owner(), 'Owner not initialized');
-}
 
 #[test]
 #[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
@@ -134,19 +120,6 @@ fn test_set_pact() {
 
 #[test]
 #[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-#[should_panic(expected: ('Only owner',))]
-fn test_set_pact_only_owner() {
-    let (_world, actions, actions_address) = setup_world();
-
-    let pact_address = deploy_pact(owner());
-
-    // Try to set pact as non-owner
-    start_cheat_caller_address(actions_address, player());
-    actions.set_pact(pact_address);
-}
-
-#[test]
-#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
 fn test_set_controller() {
     let (world, actions, actions_address) = setup_world();
 
@@ -161,19 +134,6 @@ fn test_set_controller() {
     // Verify controller was set
     let controller_config: RoninController = world.read_model(0);
     assert(controller_config.controller == controller_address, 'Controller not set');
-}
-
-#[test]
-#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-#[should_panic(expected: ('Only owner',))]
-fn test_set_controller_only_owner() {
-    let (_world, actions, actions_address) = setup_world();
-
-    let controller_address = deploy_mock_controller();
-
-    // Try to set controller as non-owner
-    start_cheat_caller_address(actions_address, player());
-    actions.set_controller(controller_address);
 }
 
 #[test]
@@ -197,19 +157,6 @@ fn test_set_games() {
 
 #[test]
 #[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-#[should_panic(expected: ('Only owner',))]
-fn test_set_games_only_owner() {
-    let (_world, actions, actions_address) = setup_world();
-
-    let game1 = deploy_test_game(owner());
-
-    // Try to set games as non-owner
-    start_cheat_caller_address(actions_address, player());
-    actions.set_games(array![game1]);
-}
-
-#[test]
-#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
 fn test_set_quiz() {
     let (world, actions, actions_address) = setup_world();
 
@@ -229,47 +176,6 @@ fn test_set_quiz() {
     // Verify answers were set
     let answers_config: RoninAnswers = world.read_model(0);
     assert(answers_config.answers.len() == 5, 'Answers not set');
-}
-
-#[test]
-#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-#[should_panic(expected: ('Only owner',))]
-fn test_set_quiz_only_owner() {
-    let (_world, actions, actions_address) = setup_world();
-
-    let answers = array![0x12345678];
-
-    // Try to set quiz as non-owner
-    start_cheat_caller_address(actions_address, player());
-    actions.set_quiz(answers);
-}
-
-#[test]
-#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-fn test_set_owner() {
-    let (world, actions, actions_address) = setup_world();
-
-    let new_owner = other();
-
-    // Set new owner
-    start_cheat_caller_address(actions_address, owner());
-    actions.set_owner(new_owner);
-    stop_cheat_caller_address(actions_address);
-
-    // Verify owner was changed
-    let owner_config: RoninOwner = world.read_model(0);
-    assert(owner_config.owner == new_owner, 'Owner not changed');
-}
-
-#[test]
-#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-#[should_panic(expected: ('Only owner',))]
-fn test_set_owner_only_owner() {
-    let (_world, actions, actions_address) = setup_world();
-
-    // Try to set owner as non-owner
-    start_cheat_caller_address(actions_address, player());
-    actions.set_owner(other());
 }
 
 // ============================================================================

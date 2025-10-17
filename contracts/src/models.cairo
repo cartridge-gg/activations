@@ -1,14 +1,5 @@
 use starknet::ContractAddress;
 
-// Owner configuration
-#[derive(Drop, Serde)]
-#[dojo::model]
-pub struct RoninOwner {
-    #[key]
-    pub game_id: u32, // Always 0 for singleton
-    pub owner: ContractAddress,
-}
-
 // Pact NFT contract address
 #[derive(Drop, Serde)]
 #[dojo::model]

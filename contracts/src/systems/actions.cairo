@@ -14,7 +14,6 @@ pub trait IActions<T> {
     fn complete_shin(ref self: T, token_id: u256, signer: Signer);
 
     // Admin functions
-    fn set_owner(ref self: T, owner: ContractAddress);
     fn set_pact(ref self: T, pact: ContractAddress);
     fn set_controller(ref self: T, controller: ContractAddress);
     fn set_games(ref self: T, games: Array<ContractAddress>);
@@ -31,7 +30,7 @@ pub mod actions {
     use super::IActions;
     use ronin_quest::controller::eip191::{Signer, SignerTrait};
     use ronin_quest::controller::interface::{IMultipleOwnersDispatcher, IMultipleOwnersDispatcherTrait};
-    use ronin_quest::models::{RoninOwner, RoninPact, RoninController, RoninGames, RoninAnswers};
+    use ronin_quest::models::{RoninPact, RoninController, RoninGames, RoninAnswers};
     use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 
     #[abi(embed_v0)]
@@ -104,42 +103,28 @@ pub mod actions {
         }
 
         // Admin functions
+        // Note: Authorization is handled by Dojo's permission system (owners in dojo_<profile>.toml)
+        // Only accounts with owner permissions on the ronin_quest namespace can call these functions
         fn set_pact(ref self: ContractState, pact: ContractAddress) {
             let mut world = self.world_default();
-            self.assert_only_owner(@world);
-
             let config = RoninPact { game_id: 0, pact };
             world.write_model(@config);
         }
 
         fn set_controller(ref self: ContractState, controller: ContractAddress) {
             let mut world = self.world_default();
-            self.assert_only_owner(@world);
-
             let config = RoninController { game_id: 0, controller };
-            world.write_model(@config);
-        }
-
-        fn set_owner(ref self: ContractState, owner: ContractAddress) {
-            let mut world = self.world_default();
-            self.assert_only_owner(@world);
-
-            let config = RoninOwner { game_id: 0, owner };
             world.write_model(@config);
         }
 
         fn set_games(ref self: ContractState, games: Array<ContractAddress>) {
             let mut world = self.world_default();
-            self.assert_only_owner(@world);
-
             let config = RoninGames { game_id: 0, games };
             world.write_model(@config);
         }
 
         fn set_quiz(ref self: ContractState, answers: Array<felt252>) {
             let mut world = self.world_default();
-            self.assert_only_owner(@world);
-
             let config = RoninAnswers { game_id: 0, answers };
             world.write_model(@config);
         }
@@ -150,18 +135,12 @@ pub mod actions {
         fn world_default(self: @ContractState) -> WorldStorage {
             self.world(@"ronin_quest")
         }
-
-        fn assert_only_owner(self: @ContractState, world: @WorldStorage) {
-            let caller = get_caller_address();
-            let owner_config: RoninOwner = world.read_model(0);
-            assert(caller == owner_config.owner, 'Only owner');
-        }
     }
 
+    // Empty initialization function - required by Dojo framework
+    // Authorization is handled by Dojo's permission system, not custom ownership
     fn dojo_init(ref self: ContractState) {
-        let mut world = self.world_default();
-        let caller = get_caller_address();
-
-        world.write_model(@RoninOwner { game_id: 0, owner: caller });
+        // No initialization needed - configuration is done via admin functions
+        // with permissions managed by Dojo's auth system
     }
 }
