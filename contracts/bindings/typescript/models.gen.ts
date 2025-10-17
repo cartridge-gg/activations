@@ -2,6 +2,11 @@ import type { SchemaType as ISchemaType } from "@dojoengine/sdk";
 
 import { CairoCustomEnum, BigNumberish } from 'starknet';
 
+// Type definition for EthAddress (since it's not exported from starknet)
+export interface EthAddress {
+	address: BigNumberish;
+}
+
 // Type definition for `ronin_quest::models::RoninAnswers` struct
 export interface RoninAnswers {
 	game_id: BigNumberish;
@@ -79,7 +84,7 @@ export const schema: SchemaType = {
 			pact: "",
 		},
 		Eip191Signer: {
-		eth_address: EthAddress,
+			eth_address: { address: 0 },
 		},
 	},
 };

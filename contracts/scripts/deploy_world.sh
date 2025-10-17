@@ -60,9 +60,16 @@ done
 # Navigate to contracts directory
 cd "$CONTRACTS_DIR"
 
-# Step 1: Start Katana
+# Step 1: Start Katana with Cartridge controller support
 echo -e "\n${YELLOW}Step 1: Starting Katana...${NC}"
-katana --dev --dev.accounts 3 --dev.seed 0 --dev.no-fee > /tmp/katana.log 2>&1 &
+katana \
+    --dev \
+    --dev.accounts 3 \
+    --dev.seed 0 \
+    --dev.no-fee \
+    --http.cors_origins "*" \
+    --cartridge.controllers \
+    > /tmp/katana.log 2>&1 &
 KATANA_PID=$!
 echo -e "${GREEN}Katana started (PID: $KATANA_PID)${NC}"
 
@@ -100,8 +107,52 @@ if [ -z "$TOKEN_ADDRESS" ] || [ "$TOKEN_ADDRESS" == "null" ]; then
 fi
 echo -e "${GREEN}RoninPact NFT deployed at: $TOKEN_ADDRESS${NC}"
 
-# Step 3: Start Torii
-echo -e "\n${YELLOW}Step 4: Starting Torii indexer...${NC}"
+# Get the actions contract address from the manifest
+ACTIONS_ADDRESS=$(jq -r '.contracts[] | select(.tag == "ronin_quest-actions") | .address' "$CONTRACTS_DIR/manifest_dev.json")
+if [ -z "$ACTIONS_ADDRESS" ] || [ "$ACTIONS_ADDRESS" == "null" ]; then
+    echo -e "${RED}Error: Actions contract not found in manifest${NC}"
+    exit 1
+fi
+echo -e "${GREEN}Actions contract deployed at: $ACTIONS_ADDRESS${NC}"
+
+# Step 4: Configure contracts
+echo -e "\n${YELLOW}Step 4: Configuring contracts...${NC}"
+
+# Get deployer account from config
+DEPLOYER_ACCOUNT=$(grep "account_address" "$CONTRACTS_DIR/dojo_dev.toml" | cut -d'"' -f2)
+
+# Grant owner permissions to the deployer account on the ronin_quest namespace
+# This allows the deployer account to write to models for configuration
+echo -e "${BLUE}Granting owner permissions to deployer account...${NC}"
+sozo auth grant --profile dev owner ronin_quest,"$DEPLOYER_ACCOUNT" --wait
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Owner permissions granted to deployer account${NC}"
+else
+    echo -e "${YELLOW}Could not grant owner permissions (may already exist)${NC}"
+fi
+
+# Set the minter on the NFT contract to be the actions contract
+echo -e "${BLUE}Setting minter on NFT contract...${NC}"
+sozo execute --profile dev --wait "$TOKEN_ADDRESS" set_minter "$ACTIONS_ADDRESS"
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Minter configured on NFT contract${NC}"
+else
+    echo -e "${RED}✗ Failed to set minter on NFT contract${NC}"
+fi
+
+# Configure the actions contract with the NFT address
+echo -e "${BLUE}Setting Pact NFT address in actions contract...${NC}"
+sozo execute --profile dev --wait ronin_quest-actions set_pact "$TOKEN_ADDRESS"
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Pact NFT address configured in actions contract${NC}"
+else
+    echo -e "${RED}✗ Failed to set Pact address${NC}"
+fi
+
+echo -e "${GREEN}Contract configuration complete!${NC}"
+
+# Step 5: Start Torii
+echo -e "\n${YELLOW}Step 5: Starting Torii indexer...${NC}"
 torii \
     --world "$WORLD_ADDRESS" \
     --rpc http://localhost:5050 \
@@ -131,8 +182,13 @@ echo -e "  Katana RPC:     http://localhost:5050"
 echo -e "  Torii GraphQL:  http://localhost:8080/graphql"
 echo -e "  Torii gRPC:     http://localhost:8080"
 echo -e "\n${BLUE}Deployed Contracts:${NC}"
-echo -e "  World Address:  $WORLD_ADDRESS"
-echo -e "  RoninPact NFT:  $TOKEN_ADDRESS"
+echo -e "  World Address:    $WORLD_ADDRESS"
+echo -e "  RoninPact NFT:    $TOKEN_ADDRESS"
+echo -e "  Actions Contract: $ACTIONS_ADDRESS"
+echo -e "\n${BLUE}Configuration:${NC}"
+echo -e "  ✓ Owner permissions granted to deployer"
+echo -e "  ✓ NFT minter set to Actions contract"
+echo -e "  ✓ Actions contract configured with NFT address"
 echo -e "\n${BLUE}Logs:${NC}"
 echo -e "  Katana: /tmp/katana.log"
 echo -e "  Torii:  /tmp/torii.log"

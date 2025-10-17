@@ -1479,8 +1479,8 @@
   },
   "contracts": [
     {
-      "address": "0xa9f225f17991597548e80bd58dd37e39aeba6d14693369673d1526f474c35c",
-      "class_hash": "0xa04080b1d38824178a15d3a589eb2a3205610b9a8f622b1482890ff6e7591f",
+      "address": "0x1db60f99459486f07ddabadad8a41f26513ca2042b8f9e420d8fa1d0d962618",
+      "class_hash": "0x3cd25f99f1bb44372b0f64c51517c677e2db63f73826ddd0eefd8d6cf2de585",
       "abi": [
         {
           "type": "impl",
@@ -1628,18 +1628,6 @@
                 {
                   "name": "signer",
                   "type": "ronin_quest::controller::eip191::Signer"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "set_owner",
-              "inputs": [
-                {
-                  "name": "owner",
-                  "type": "core::starknet::contract_address::ContractAddress"
                 }
               ],
               "outputs": [],
@@ -1817,7 +1805,6 @@
         "complete_waza",
         "complete_chi",
         "complete_shin",
-        "set_owner",
         "set_pact",
         "set_controller",
         "set_games",
@@ -1846,12 +1833,6 @@
       "class_hash": "0x6f5ed3dcd8afb0c74446b6acd13568416943c1de9f1650577b89ca5faeb2f1",
       "tag": "ronin_quest-RoninGames",
       "selector": "0x1e3ad28d63a3fd825c2e9f1cc847e239a3e7d9f3c408aecd42864dccb6caa35"
-    },
-    {
-      "members": [],
-      "class_hash": "0x734c8e9996d5d244805984a34c99b579421d8c127eeb7db689afc4f2c13ac26",
-      "tag": "ronin_quest-RoninOwner",
-      "selector": "0x3f25e06bf4a8652c23c87753841b3578d184f36c02d2d0ce74ed9aa59703674"
     },
     {
       "members": [],
