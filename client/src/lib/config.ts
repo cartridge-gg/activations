@@ -92,20 +92,15 @@ console.log('  Quest Manager:', QUEST_MANAGER_ADDRESS);
 // Allowlisted game collections for Waza trial
 export const ALLOWLISTED_COLLECTIONS: AllowlistedCollection[] = [
   {
-    address: '0x0', // TODO: Replace with actual Pistols contract address
-    name: 'pistols',
-    displayName: 'Pistols at 10 Blocks',
-  },
-  {
-    address: '0x0', // TODO: Replace with actual Loot Survivor contract address
+    address: '0x036017e69d21d6d8c13e266eabb73ef1f1d02722d86bdcabe5f168f8e549d3cd',
     name: 'loot-survivor',
     displayName: 'Loot Survivor',
   },
-  {
-    address: '0x0', // TODO: Replace with actual Blob Arena contract address
-    name: 'blob-arena',
-    displayName: 'Blob Arena',
-  },
+  // {
+  //   address: '0x0', // TODO: Replace with actual Pistols contract address
+  //   name: 'pistols',
+  //   displayName: 'Pistols at Dawn',
+  // },
 ];
 
 // Social sharing

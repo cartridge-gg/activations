@@ -17,7 +17,7 @@ interface UseTrialProgressReturn {
 export function useTrialProgress(): UseTrialProgressReturn {
   const { address } = useAccount();
 
-  // Get user's NFT from Torii
+  // Get user's NFTs from Torii (using ERC721 indexer)
   const { tokens } = useTokens({
     accountAddresses: address ? [address] : [],
   });

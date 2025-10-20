@@ -1,70 +1,91 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { hash } from 'starknet';
 
 import { useChiQuiz } from '@/hooks/useChiQuiz';
 import { useTrialCompletion } from '@/hooks/useTrialCompletion';
-import { TrialStatus, QuizQuestion } from '@/types';
+import { TrialStatus } from '@/types';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
+import chiData from '../../../spec/chi.json';
 
 interface ChiTrialProps {
   status: TrialStatus;
   onComplete: () => void;
 }
 
-// Quiz questions about Dojo 1.7
-// In production, these could be fetched from the contract or a config
-const QUIZ_QUESTIONS: QuizQuestion[] = [
-  {
-    id: 1,
-    text: 'What is the primary purpose of Dojo 1.7?',
-    options: [
-      'To build provably fair onchain games',
-      'To create NFT marketplaces',
-      'To deploy smart contracts',
-      'To mine cryptocurrency',
-    ],
-  },
-  {
-    id: 2,
-    text: 'Which component is responsible for state management in Dojo?',
-    options: [
-      'Models',
-      'Views',
-      'Controllers',
-      'Routes',
-    ],
-  },
-  {
-    id: 3,
-    text: 'What does ECS stand for in the context of Dojo?',
-    options: [
-      'Entity Component System',
-      'Event Control Structure',
-      'Encrypted Chain State',
-      'External Call Service',
-    ],
-  },
-];
+interface ChiQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  answer_hash: string;
+}
 
-// Correct answer indices (0-based)
-const CORRECT_ANSWERS = [0, 0, 0];
+interface ShuffledQuestion {
+  originalId: number;
+  displayId: number;
+  question: string;
+  options: string[];
+  optionMapping: number[]; // Maps displayed index to original index
+}
+
+// Fisher-Yates shuffle
+function shuffle<T>(array: T[]): T[] {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
+
+/**
+ * Hash an answer using the format: keccak256(question_index + ":" + answer_text)
+ */
+function hashAnswer(questionIndex: number, answerText: string): string {
+  const hashInput = `${questionIndex}:${answerText}`;
+  return `0x${hash.starknetKeccak(hashInput).toString(16)}`;
+}
 
 export function ChiTrial({ status, onComplete }: ChiTrialProps) {
   const { submitQuiz, isLoading, error, success } = useChiQuiz();
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [localError, setLocalError] = useState<string | null>(null);
-  const [showValidation, setShowValidation] = useState(false);
 
   const isDisabled = status === 'completed' || status === 'locked';
   const isCompleted = status === 'completed';
-  const allAnswered = QUIZ_QUESTIONS.every((q) => answers[q.id] !== undefined);
+
+  // Randomly select 3 questions and shuffle both questions and options
+  const shuffledQuestions = useMemo<ShuffledQuestion[]>(() => {
+    const allQuestions = chiData.questions as ChiQuestion[];
+
+    // Select 3 random questions
+    const selectedQuestions = shuffle(allQuestions).slice(0, 3);
+
+    // Shuffle the selected questions
+    const shuffledSelected = shuffle(selectedQuestions);
+
+    // For each question, shuffle the options and track the mapping
+    return shuffledSelected.map((q, displayIndex) => {
+      const optionsWithIndices = q.options.map((opt, idx) => ({ opt, idx }));
+      const shuffledOptions = shuffle(optionsWithIndices);
+
+      return {
+        originalId: q.id,
+        displayId: displayIndex,
+        question: q.question,
+        options: shuffledOptions.map(o => o.opt),
+        optionMapping: shuffledOptions.map(o => o.idx)
+      };
+    });
+  }, []); // Empty deps - only generate once on mount
+
+  const allAnswered = shuffledQuestions.every((q) => answers[q.displayId] !== undefined);
 
   useTrialCompletion(success, onComplete);
 
-  const handleAnswerSelect = (questionId: number, optionIndex: number) => {
+  const handleAnswerSelect = (displayId: number, displayOptionIndex: number) => {
     if (isDisabled) return;
-    setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
+    setAnswers((prev) => ({ ...prev, [displayId]: displayOptionIndex }));
     setLocalError(null);
-    setShowValidation(false);
   };
 
   const handleSubmit = async () => {
@@ -73,26 +94,21 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
       return;
     }
 
-    // Validate answers locally first
-    const isCorrect = QUIZ_QUESTIONS.every(
-      (q, idx) => answers[q.id] === CORRECT_ANSWERS[idx]
-    );
+    // Prepare data for contract submission
+    // Contract expects: arrays of question indices and answer hashes
+    const questionIndices: number[] = [];
+    const answerHashes: string[] = [];
 
-    if (!isCorrect) {
-      setLocalError('Some answers are incorrect. Review your responses and try again.');
-      setShowValidation(true);
-      return;
-    }
+    shuffledQuestions.forEach((q) => {
+      const displayOptionIndex = answers[q.displayId];
+      const originalOptionIndex = q.optionMapping[displayOptionIndex];
+      const answerText = chiData.questions[q.originalId].options[originalOptionIndex];
 
-    // Submit to contract
-    const answerArray = QUIZ_QUESTIONS.map((q) => answers[q.id].toString());
-    await submitQuiz(answerArray);
-  };
+      questionIndices.push(q.originalId);
+      answerHashes.push(hashAnswer(q.originalId, answerText));
+    });
 
-  const isAnswerCorrect = (questionId: number, optionIndex: number): boolean | null => {
-    if (!showValidation) return null;
-    const questionIndex = QUIZ_QUESTIONS.findIndex((q) => q.id === questionId);
-    return CORRECT_ANSWERS[questionIndex] === optionIndex;
+    await submitQuiz(questionIndices, answerHashes);
   };
 
   return (
@@ -106,42 +122,26 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
       ) : (
         <>
           <div className="space-y-6 mb-6">
-            {QUIZ_QUESTIONS.map((question, qIndex) => (
-              <div key={question.id} className="bg-ronin-dark/30 rounded-md p-4 border border-ronin-light/10">
+            {shuffledQuestions.map((question, qIndex) => (
+              <div key={question.displayId} className="bg-ronin-dark/30 rounded-md p-4 border border-ronin-light/10">
                 <p className="text-ronin-secondary font-medium mb-4 flex items-start gap-2">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-ronin-accent/20 text-ronin-accent text-sm flex items-center justify-center font-bold">
                     {qIndex + 1}
                   </span>
-                  <span>{question.text}</span>
+                  <span>{question.question}</span>
                 </p>
                 <div className="space-y-2 ml-8">
                   {question.options.map((option, optionIndex) => {
-                    const isSelected = answers[question.id] === optionIndex;
-                    const validationState = isAnswerCorrect(question.id, optionIndex);
+                    const isSelected = answers[question.displayId] === optionIndex;
 
-                    let borderColor = 'border-ronin-light/20';
-                    let bgColor = 'bg-ronin-light/10';
-                    let textColor = 'text-ronin-secondary';
-
-                    if (isSelected) {
-                      if (validationState === true) {
-                        borderColor = 'border-green-500/50';
-                        bgColor = 'bg-green-900/20';
-                        textColor = 'text-green-400';
-                      } else if (validationState === false) {
-                        borderColor = 'border-red-500/50';
-                        bgColor = 'bg-red-900/20';
-                        textColor = 'text-red-400';
-                      } else {
-                        borderColor = 'border-ronin-accent/50';
-                        bgColor = 'bg-ronin-accent/10';
-                      }
-                    }
+                    const borderColor = isSelected ? 'border-ronin-accent/50' : 'border-ronin-light/20';
+                    const bgColor = isSelected ? 'bg-ronin-accent/10' : 'bg-ronin-light/10';
+                    const textColor = 'text-ronin-secondary';
 
                     return (
                       <button
                         key={optionIndex}
-                        onClick={() => handleAnswerSelect(question.id, optionIndex)}
+                        onClick={() => handleAnswerSelect(question.displayId, optionIndex)}
                         disabled={isDisabled}
                         className={`w-full text-left px-4 py-3 rounded-md border ${borderColor} ${bgColor} hover:border-ronin-accent/40 disabled:cursor-not-allowed transition-all ${textColor}`}
                       >
@@ -156,16 +156,6 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
                             )}
                           </div>
                           <span className="text-sm">{option}</span>
-                          {validationState === true && (
-                            <svg className="w-5 h-5 ml-auto text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                          {validationState === false && (
-                            <svg className="w-5 h-5 ml-auto text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                            </svg>
-                          )}
                         </div>
                       </button>
                     );
@@ -201,7 +191,7 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
         <StatusMessage
           type="error"
           message={error || localError || ''}
-          detail={showValidation ? "You can retake the quiz as many times as needed" : undefined}
+          detail="You need at least 3 correct answers to pass"
         />
       )}
 

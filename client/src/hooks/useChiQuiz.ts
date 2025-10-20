@@ -4,9 +4,10 @@ import { useAccount } from '@starknet-react/core';
 
 import { QUEST_MANAGER_ADDRESS } from '@/lib/config';
 import { isMockEnabled, mockCompleteChi } from '@/lib/mockContracts';
+import { useTrialProgress } from './useTrialProgress';
 
 interface UseChiQuizReturn {
-  submitQuiz: (answers: string[]) => Promise<void>;
+  submitQuiz: (questionIndices: number[], answerHashes: string[]) => Promise<void>;
   isLoading: boolean;
   error: string | null;
   success: boolean;
@@ -14,6 +15,7 @@ interface UseChiQuizReturn {
 
 export function useChiQuiz(): UseChiQuizReturn {
   const { account, address } = useAccount();
+  const { tokenId } = useTrialProgress();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -22,13 +24,18 @@ export function useChiQuiz(): UseChiQuizReturn {
 
   // Submit quiz answers
   const submitQuiz = useCallback(
-    async (answers: string[]) => {
+    async (questionIndices: number[], answerHashes: string[]) => {
       if (!account || !address) {
         setError('Please connect your wallet');
         return;
       }
 
-      if (!answers || answers.length === 0) {
+      if (!tokenId) {
+        setError('Token ID not found');
+        return;
+      }
+
+      if (!questionIndices || questionIndices.length === 0 || !answerHashes || answerHashes.length === 0) {
         setError('Please provide answers');
         return;
       }
@@ -40,16 +47,23 @@ export function useChiQuiz(): UseChiQuizReturn {
       try {
         if (useMock) {
           // Use mock contract implementation
-          await mockCompleteChi(address, answers);
+          await mockCompleteChi(address, answerHashes);
           setSuccess(true);
           setError(null);
         } else {
           // Use real contract implementation
-          // Call complete_chi on Quest Manager contract directly
+          // Contract signature: complete_chi(token_id: u256, questions: Array<u32>, answers: Array<felt252>)
           const tx = await account.execute([{
             contractAddress: QUEST_MANAGER_ADDRESS,
             entrypoint: 'complete_chi',
-            calldata: answers,
+            calldata: [
+              tokenId, // u256 low
+              '0',     // u256 high
+              questionIndices.length, // questions array length
+              ...questionIndices,
+              answerHashes.length,   // answers array length
+              ...answerHashes,
+            ],
           }]);
 
           // Wait for transaction confirmation
@@ -66,8 +80,8 @@ export function useChiQuiz(): UseChiQuizReturn {
 
         if (err?.message) {
           // Check for common error patterns
-          if (err.message.includes('incorrect') || err.message.includes('wrong')) {
-            errorMessage = 'Some answers are incorrect. Please try again.';
+          if (err.message.includes('incorrect') || err.message.includes('Incorrect answers')) {
+            errorMessage = 'Not enough correct answers. You need at least 3 correct to pass.';
           } else if (err.message.includes('already completed')) {
             errorMessage = 'You have already completed this trial';
           } else {
@@ -81,7 +95,7 @@ export function useChiQuiz(): UseChiQuizReturn {
         setIsLoading(false);
       }
     },
-    [account, address, useMock]
+    [account, address, tokenId, useMock]
   );
 
   return {

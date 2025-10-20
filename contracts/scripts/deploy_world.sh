@@ -150,10 +150,37 @@ else
     echo -e "${RED}✗ Failed to set Pact address${NC}"
 fi
 
+# Configure Chi trial quiz answers
+echo -e "${BLUE}Setting Chi trial quiz answers...${NC}"
+# Read answer hashes from chi.json in the spec directory
+CHI_JSON="$CONTRACTS_DIR/../spec/chi.json"
+if [ -f "$CHI_JSON" ]; then
+    # Count number of questions
+    QUESTION_COUNT=$(jq '.questions | length' "$CHI_JSON")
+    # Extract answer_hash values using jq and convert to space-separated list
+    ANSWER_HASHES=$(jq -r '.questions[].answer_hash' "$CHI_JSON" | tr '\n' ' ')
+
+    if [ ! -z "$ANSWER_HASHES" ]; then
+        # Execute set_quiz with array length first, then the answer hashes
+        # Cairo arrays need length as first parameter
+        sozo execute --profile dev --wait ronin_quest-actions set_quiz $QUESTION_COUNT $ANSWER_HASHES
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✓ Chi trial quiz configured with $QUESTION_COUNT questions${NC}"
+        else
+            echo -e "${RED}✗ Failed to set quiz answers${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Warning: No answer hashes found in chi.json${NC}"
+    fi
+else
+    echo -e "${YELLOW}Warning: chi.json not found at $CHI_JSON${NC}"
+fi
+
 echo -e "${GREEN}Contract configuration complete!${NC}"
 
 # Step 5: Start Torii
 echo -e "\n${YELLOW}Step 5: Starting Torii indexer...${NC}"
+
 torii \
     --world "$WORLD_ADDRESS" \
     --http.cors_origins "*" \
