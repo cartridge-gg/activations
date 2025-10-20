@@ -1,0 +1,129 @@
+BEFORE SIMPLIFICATION
+=====================
+
+┌─────────────────────────────────────────────────────────────┐
+│                      Application Layer                       │
+│  (Components, Hooks using configuration)                     │
+└────────┬────────────────────────────────────────────────────┘
+         │
+         │ Imports from 6 different files
+         ├──────────┬──────────┬──────────┬──────────┬──────────┐
+         ▼          ▼          ▼          ▼          ▼          ▼
+    ┌─────────┐┌─────────┐┌─────────┐┌─────────┐┌─────────┐┌─────────┐
+    │ dojo.ts ││dojoConfig││constants││chains.ts││controller││starknet.││
+    │         ││   .ts   ││   .ts   ││         ││   .ts   ││   ts    │
+    │ 101 L   ││   7 L   ││  82 L   ││  29 L   ││  60 L   ││  68 L   │
+    └────┬────┘└────┬────┘└────┬────┘└────┬────┘└────┬────┘└────┬────┘
+         │          │          │          │          │          │
+         │          │          │          └──────────┼──────────┘
+         │          │          │                     │
+         └──────────┴──────────┴─────────────────────┘
+                              │
+         ┌────────────────────┴────────────────────┐
+         ▼                                         ▼
+  Environment Logic                         Manifest Import
+  ├─ getEnvironment()                       └─ manifest_dev.json
+  ├─ getEnvironmentConfig()
+  ├─ ENVIRONMENT_CONFIGS
+  │  ├─ local
+  │  ├─ sepolia
+  │  └─ mainnet
+  └─ Dynamic switching
+
+COMPLEXITY ISSUES:
+- 6 separate files to maintain
+- Cross-file dependencies
+- Environment switching logic
+- Multiple import paths for related concerns
+- Duplicated configuration patterns
+
+
+AFTER SIMPLIFICATION
+====================
+
+┌─────────────────────────────────────────────────────────────┐
+│                      Application Layer                       │
+│  (Components, Hooks using configuration)                     │
+└────────┬────────────────────────────────────────────────────┘
+         │
+         │ Imports from 2 focused files
+         ├───────────────────────────┬──────────────────────────┐
+         ▼                           ▼                          ▼
+    ┌──────────────┐         ┌──────────────┐          ┌──────────────┐
+    │  config.ts   │         │ starknet.ts  │          │  useDojo.ts  │
+    │              │         │              │          │   (hook)     │
+    │   169 L      │         │    70 L      │          │    21 L      │
+    └──────┬───────┘         └──────┬───────┘          └──────────────┘
+           │                        │
+           │                        │
+           ├────────────────────────┴────────────────────┐
+           │                                             │
+           ▼                                             ▼
+    ┌────────────────────┐                    ┌──────────────────┐
+    │ Manifest & SDK     │                    │ Wallet & Chain   │
+    │ ├─ dojoConfig      │                    │ ├─ Controller    │
+    │ ├─ initDojoSdk()   │                    │ ├─ Provider      │
+    │ ├─ Katana config   │                    │ └─ Chains        │
+    │ └─ Addresses       │                    └──────────────────┘
+    │                    │
+    │ Constants          │
+    │ ├─ TRIALS          │
+    │ ├─ COLLECTIONS     │
+    │ └─ SHARE_*         │
+    └────────────────────┘
+           │
+           ▼
+    ┌────────────────┐
+    │ Manifest       │
+    │ manifest_dev   │
+    │ .json          │
+    └────────────────┘
+
+BENEFITS:
+✓ 2 configuration files (down from 6)
+✓ Clear separation: config.ts (what) vs starknet.ts (how)
+✓ No environment switching complexity
+✓ Single import path for related concerns
+✓ 108 fewer lines of code
+✓ Hardcoded for local development
+✓ Room to grow when needed
+
+
+IMPORT MAPPING
+==============
+
+OLD PATTERN:
+  import { RONIN_PACT_ADDRESS } from '@/lib/constants';
+  import { initDojoSdk } from '@/lib/dojo';
+  import { dojoConfig } from '@/lib/dojoConfig';
+  import { controller } from '@/lib/controller';
+  import { katana } from '@/lib/chains';
+
+NEW PATTERN:
+  import { RONIN_PACT_ADDRESS, initDojoSdk, dojoConfig, katana } from '@/lib/config';
+  import { controller } from '@/lib/starknet';
+
+
+FILES REMOVED
+=============
+✗ src/lib/dojo.ts         (multi-env SDK init)
+✗ src/lib/dojoConfig.ts   (manifest wrapper)
+✗ src/lib/constants.ts    (addresses & constants)
+✗ src/lib/chains.ts       (chain definitions)
+✗ src/lib/controller.ts   (controller setup)
+
+
+FILES UPDATED (9 total)
+=======================
+Components:
+  ✓ providers/StarknetProvider.tsx
+  ✓ ConnectWallet.tsx
+  ✓ TrialCard.tsx
+  ✓ WazaTrial.tsx
+  ✓ ShareButton.tsx
+
+Hooks:
+  ✓ useChiQuiz.ts
+  ✓ useShinTrial.ts
+  ✓ useTrialProgress.ts
+  ✓ useWazaClaim.ts

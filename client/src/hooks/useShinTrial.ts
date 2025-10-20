@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useAccount, useContract } from '@starknet-react/core';
-import { RONIN_PACT_ADDRESS } from '@/lib/constants';
-import RoninPactAbi from '@/lib/contracts/RoninPact.abi.json';
+import { useAccount } from '@starknet-react/core';
+import { QUEST_MANAGER_ADDRESS } from '@/lib/config';
 import { SignerInfo } from '@/types';
 import { isMockEnabled, mockGetSigners, mockCompleteShin } from '@/lib/mockContracts';
 
@@ -42,12 +41,6 @@ export function useShinTrial(): UseShinTrialReturn {
   const [success, setSuccess] = useState(false);
 
   const useMock = isMockEnabled();
-
-  // Contract instance for RoninPact
-  const { contract: roninPactContract } = useContract({
-    address: RONIN_PACT_ADDRESS,
-    abi: RoninPactAbi,
-  });
 
   // Helper function to determine signer type for display
   const credentialToAuthType = (metadata: Signer['metadata']): string => {
@@ -168,11 +161,6 @@ export function useShinTrial(): UseShinTrialReturn {
         return { success: false };
       }
 
-      if (!useMock && !roninPactContract) {
-        setError('Contract not initialized');
-        return { success: false };
-      }
-
       if (!selectedSigner) {
         setError('Please select a signer');
         return { success: false };
@@ -191,13 +179,13 @@ export function useShinTrial(): UseShinTrialReturn {
           return { success: true };
         }
 
-        // Call complete_shin with just the signer GUID
-        // Contract will verify it's registered on the caller's account
-        const tx = await account.execute({
-          contractAddress: RONIN_PACT_ADDRESS,
+        // Call complete_shin on Quest Manager contract directly
+        // Contract will verify the signer GUID is registered on the caller's account
+        const tx = await account.execute([{
+          contractAddress: QUEST_MANAGER_ADDRESS,
           entrypoint: 'complete_shin',
-          calldata: [selectedSigner.guid], // Just the GUID, no signatures needed!
-        });
+          calldata: [selectedSigner.guid],
+        }]);
 
         // Wait for transaction confirmation
         await account.waitForTransaction(tx.transaction_hash);
@@ -228,7 +216,7 @@ export function useShinTrial(): UseShinTrialReturn {
         setIsLoading(false);
       }
     },
-    [account, address, roninPactContract, useMock, selectedSigner]
+    [account, address, useMock, selectedSigner]
   );
 
   return {

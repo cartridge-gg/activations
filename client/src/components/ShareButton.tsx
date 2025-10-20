@@ -1,5 +1,5 @@
 import { TrialProgress } from '@/types';
-import { SHARE_URL, SHARE_HASHTAGS } from '@/lib/constants';
+import { SHARE_URL, SHARE_HASHTAGS } from '@/lib/config';
 
 interface ShareButtonProps {
   progress: TrialProgress;

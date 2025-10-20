@@ -1,6 +1,6 @@
 import { useAccount } from '@starknet-react/core';
 import { ConnectWallet } from './components/ConnectWallet';
-import { MintTestButton } from './components/MintTestButton';
+import { MintButton } from './components/MintButton';
 import { QuestDashboard } from './components/QuestDashboard';
 import { WazaTrial } from './components/WazaTrial';
 import { ChiTrial } from './components/ChiTrial';
@@ -9,11 +9,11 @@ import { ShareButton } from './components/ShareButton';
 import { useTrialProgress } from './hooks/useTrialProgress';
 import { useState, useEffect, useCallback } from 'react';
 import { TrialProgress } from './types';
-import { TrialName } from './lib/constants';
+import { TrialName } from './lib/config';
 
 function App() {
   const { address } = useAccount();
-  const { progress: fetchedProgress, isLoading } = useTrialProgress();
+  const { progress: fetchedProgress, isLoading, hasNFT } = useTrialProgress();
 
   // Local progress state for instant updates
   const [progress, setProgress] = useState<TrialProgress | null>(null);
@@ -57,18 +57,15 @@ function App() {
 
         {/* Main Content */}
         <main>
-          {/* Test Mint Button - Remove after testing */}
-          {address && (
-            <div style={{ marginBottom: '2rem', padding: '1rem', border: '2px solid yellow' }}>
-              <MintTestButton />
-            </div>
-          )}
-
           {address ? (
             isLoading ? (
               <div className="text-center py-20">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ronin-primary"></div>
                 <p className="text-ronin-secondary mt-4">Loading your progress...</p>
+              </div>
+            ) : !hasNFT ? (
+              <div className="py-12 md:py-20">
+                <MintButton />
               </div>
             ) : progress ? (
               <QuestDashboard

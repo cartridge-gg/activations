@@ -1,13 +1,19 @@
-// Cartridge Controller connector setup for The Rōnin's Pact
+// Starknet provider and connector configuration
+// Simplified for local Katana development
+
+import { jsonRpcProvider } from "@starknet-react/core";
 import { ControllerConnector } from "@cartridge/connector";
 import { SessionPolicies } from "@cartridge/controller";
-import { RONIN_PACT_ADDRESS } from "./constants";
-import { getEnvironment, getEnvironmentConfig } from "./dojo";
+import { katana, KATANA_RPC_URL, KATANA_CHAIN_ID, RONIN_PACT_ADDRESS, QUEST_MANAGER_ADDRESS } from "./config";
+
+// ============================================================================
+// CONTROLLER CONNECTOR
+// ============================================================================
 
 // Define session policies for gasless transactions
 const policies: SessionPolicies = {
   contracts: {
-    [RONIN_PACT_ADDRESS]: {
+    [QUEST_MANAGER_ADDRESS]: {
       methods: [
         {
           name: "mint",
@@ -34,26 +40,31 @@ const policies: SessionPolicies = {
   },
 };
 
-// Get configuration based on environment
-function getControllerConfig() {
-  const env = getEnvironment();
-  const config = getEnvironmentConfig(env);
-
-  // Return both chains array and defaultChainId
-  // The chains array tells Controller which chains are available
-  // The defaultChainId tells it which one to use
-  return {
-    chains: [{ rpcUrl: config.rpcUrl }],
-    defaultChainId: config.chainId,
-  };
-}
-
-// Create controller connector instance
+// Create controller connector instance for local Katana
 export const controller = new ControllerConnector({
   policies,
-  signupOptions: [
-    "webauthn",
-    "discord",
-  ],
-  ...getControllerConfig(),
+  signupOptions: ["webauthn", "discord"],
+  chains: [{ rpcUrl: KATANA_RPC_URL }],
+  defaultChainId: KATANA_CHAIN_ID,
 });
+
+// ============================================================================
+// PROVIDER CONFIGURATION
+// ============================================================================
+
+// JSON RPC provider setup for local Katana
+export const provider = jsonRpcProvider({
+  rpc: () => ({
+    nodeUrl: KATANA_RPC_URL
+  }),
+});
+
+// ============================================================================
+// CHAIN CONFIGURATION
+// ============================================================================
+
+// Supported chains - only Katana for local development
+export const chains = [katana];
+
+// Default chain - Katana
+export const defaultChainId = katana.id;

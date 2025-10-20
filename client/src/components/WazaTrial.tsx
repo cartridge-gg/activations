@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { TrialStatus, AllowlistedCollection } from '@/types';
-import { ALLOWLISTED_COLLECTIONS } from '@/lib/constants';
+import { ALLOWLISTED_COLLECTIONS } from '@/lib/config';
 import { useWazaClaim } from '@/hooks/useWazaClaim';
 import { useTrialCompletion } from '@/hooks/useTrialCompletion';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';

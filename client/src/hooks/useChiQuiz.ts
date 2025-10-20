@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
-import { useAccount, useContract } from '@starknet-react/core';
-import { RONIN_PACT_ADDRESS } from '@/lib/constants';
-import RoninPactAbi from '@/lib/contracts/RoninPact.abi.json';
+import { useAccount } from '@starknet-react/core';
+import { QUEST_MANAGER_ADDRESS } from '@/lib/config';
 import { isMockEnabled, mockCompleteChi } from '@/lib/mockContracts';
 
 interface UseChiQuizReturn {
@@ -19,22 +18,11 @@ export function useChiQuiz(): UseChiQuizReturn {
 
   const useMock = isMockEnabled();
 
-  // Contract instance for RoninPact
-  const { contract: roninPactContract } = useContract({
-    address: RONIN_PACT_ADDRESS,
-    abi: RoninPactAbi,
-  });
-
   // Submit quiz answers
   const submitQuiz = useCallback(
     async (answers: string[]) => {
       if (!account || !address) {
         setError('Please connect your wallet');
-        return;
-      }
-
-      if (!roninPactContract && !useMock) {
-        setError('Contract not initialized');
         return;
       }
 
@@ -55,16 +43,12 @@ export function useChiQuiz(): UseChiQuizReturn {
           setError(null);
         } else {
           // Use real contract implementation
-          // Convert string answers to felt252 array
-          // Answers should already be in the correct format (felt252-compatible strings)
-          const answerCalldata = answers;
-
-          // Call complete_chi on the contract
-          const tx = await account.execute({
-            contractAddress: RONIN_PACT_ADDRESS,
+          // Call complete_chi on Quest Manager contract directly
+          const tx = await account.execute([{
+            contractAddress: QUEST_MANAGER_ADDRESS,
             entrypoint: 'complete_chi',
-            calldata: answerCalldata,
-          });
+            calldata: answers,
+          }]);
 
           // Wait for transaction confirmation
           await account.waitForTransaction(tx.transaction_hash);
@@ -95,7 +79,7 @@ export function useChiQuiz(): UseChiQuizReturn {
         setIsLoading(false);
       }
     },
-    [account, address, roninPactContract, useMock]
+    [account, address, useMock]
   );
 
   return {

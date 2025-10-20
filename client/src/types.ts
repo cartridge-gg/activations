@@ -25,15 +25,3 @@ export interface SignerInfo {
   type: string; // "discord", "webauthn", "google", "metamask", etc.
   isRevoked: boolean;
 }
-
-export interface NFTMetadata {
-  name: string;
-  description: string;
-  image: string;
-  attributes: Array<{
-    trait_type: string;
-    value: string;
-  }>;
-}
-
-export type VisualState = 0 | 1 | 2 | 3; // 0-3 slashes lit

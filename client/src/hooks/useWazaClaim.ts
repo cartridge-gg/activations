@@ -1,8 +1,7 @@
 import { useState, useCallback } from 'react';
-import { useAccount, useContract, useReadContract } from '@starknet-react/core';
+import { useAccount } from '@starknet-react/core';
 import { Contract } from 'starknet';
-import { RONIN_PACT_ADDRESS, ALLOWLISTED_COLLECTIONS } from '@/lib/constants';
-import RoninPactAbi from '@/lib/contracts/RoninPact.abi.json';
+import { QUEST_MANAGER_ADDRESS, ALLOWLISTED_COLLECTIONS } from '@/lib/config';
 import ERC721Abi from '@/lib/contracts/ERC721.abi.json';
 import { isMockEnabled, mockCompleteWaza, mockCheckERC721Ownership } from '@/lib/mockContracts';
 
@@ -20,12 +19,6 @@ export function useWazaClaim(): UseWazaClaimReturn {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const useMock = isMockEnabled();
-
-  // Contract instance for RoninPact
-  const { contract: roninPactContract } = useContract({
-    address: RONIN_PACT_ADDRESS,
-    abi: RoninPactAbi,
-  });
 
   // Helper function to check ownership of an ERC721 collection
   const checkOwnership = async (collectionAddress: string): Promise<boolean> => {
@@ -60,11 +53,6 @@ export function useWazaClaim(): UseWazaClaimReturn {
         return;
       }
 
-      if (!useMock && !roninPactContract) {
-        setError('Contract not initialized');
-        return;
-      }
-
       setIsLoading(true);
       setError(null);
       setSuccess(false);
@@ -96,12 +84,12 @@ export function useWazaClaim(): UseWazaClaimReturn {
             return;
           }
 
-          // Call complete_waza on the contract
-          const tx = await account.execute({
-            contractAddress: RONIN_PACT_ADDRESS,
+          // Call complete_waza on Quest Manager contract directly
+          const tx = await account.execute([{
+            contractAddress: QUEST_MANAGER_ADDRESS,
             entrypoint: 'complete_waza',
             calldata: [collectionAddress],
-          });
+          }]);
 
           // Wait for transaction confirmation
           await account.waitForTransaction(tx.transaction_hash);
@@ -117,7 +105,7 @@ export function useWazaClaim(): UseWazaClaimReturn {
         setIsLoading(false);
       }
     },
-    [account, address, roninPactContract, useMock]
+    [account, address, useMock]
   );
 
   // Try all allowlisted collections

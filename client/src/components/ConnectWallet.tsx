@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAccount, useConnect, useDisconnect } from '@starknet-react/core';
-import { controller } from '@/lib/controller';
+import { ControllerConnector } from '@cartridge/connector';
 
 export function ConnectWallet() {
-  const { address } = useAccount();
-  const { connect } = useConnect();
+  const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
+  const { address } = useAccount();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const controller = connectors[0] as ControllerConnector
 
   // Handle click outside dropdown
   useEffect(() => {
@@ -38,9 +40,9 @@ export function ConnectWallet() {
   // Open Controller profile
   const handleOpenProfile = async () => {
     try {
-      const ctrl = await controller.controller();
+      const ctrl = controller.controller;
       if (ctrl) {
-        ctrl.openProfile();
+        await ctrl.openProfile();
       }
     } catch (error) {
       console.error('Failed to open profile:', error);
@@ -51,7 +53,7 @@ export function ConnectWallet() {
   // Open Controller settings
   const handleOpenSettings = async () => {
     try {
-      const ctrl = await controller.controller();
+      const ctrl = controller.controller;
       if (ctrl) {
         ctrl.openSettings();
       }

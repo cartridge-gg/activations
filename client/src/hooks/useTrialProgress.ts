@@ -1,38 +1,100 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAccount, useReadContract } from '@starknet-react/core';
-import { RONIN_PACT_ADDRESS } from '@/lib/constants';
+import { RONIN_PACT_ADDRESS } from '@/lib/config';
 import RoninPactAbi from '@/lib/contracts/RoninPact.abi.json';
 import { TrialProgress } from '@/types';
 import { isMockEnabled, mockGetTrialProgress } from '@/lib/mockContracts';
+import { Contract, Abi } from 'starknet';
 
 interface UseTrialProgressReturn {
   progress: TrialProgress | null;
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
+  hasNFT: boolean;
+  tokenId: string | null;
 }
 
 export function useTrialProgress(): UseTrialProgressReturn {
-  const { address } = useAccount();
+  const { address, account } = useAccount();
   const [progress, setProgress] = useState<TrialProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [tokenId, setTokenId] = useState<string | null>(null);
 
   const useMock = isMockEnabled();
 
-  // Read contract hook to fetch progress (only used if not mocking)
+  // Step 1: Check balance_of to see if user has an NFT
   const {
-    data,
-    isLoading: contractIsLoading,
-    error: contractError,
-    refetch: contractRefetch,
+    data: balanceData,
+    isLoading: balanceIsLoading,
+    error: balanceError,
   } = useReadContract({
-    address: RONIN_PACT_ADDRESS,
-    abi: RoninPactAbi,
+    address: RONIN_PACT_ADDRESS as `0x${string}`,
+    abi: RoninPactAbi as Abi,
+    functionName: 'balance_of',
+    args: address ? [address as `0x${string}`] : undefined,
+    enabled: !useMock && !!address,
+  });
+
+  // Parse balance
+  const balance = balanceData ? BigInt(balanceData.toString()) : BigInt(0);
+  const hasNFT = balance > BigInt(0);
+
+  // Step 2: Find token_id by searching owner_of if user has NFT
+  useEffect(() => {
+    if (!useMock && hasNFT && !tokenId && address && account) {
+      const findTokenId = async () => {
+        setIsLoading(true);
+        try {
+          // Create a contract instance
+          // @ts-ignore - Contract constructor signature varies between starknet.js versions
+          const contract = new Contract(RoninPactAbi as Abi, RONIN_PACT_ADDRESS, account);
+
+          // Search through token IDs 0-99
+          // Since this is a new contract and each user gets one token, this should be sufficient
+          for (let id = 0; id < 100; id++) {
+            try {
+              const owner = await contract.owner_of(BigInt(id));
+              if (owner.toString().toLowerCase() === address.toLowerCase()) {
+                setTokenId(id.toString());
+                setError(null);
+                setIsLoading(false);
+                return;
+              }
+            } catch (e) {
+              // Token doesn't exist or not owned by user, continue
+              continue;
+            }
+          }
+
+          // If we get here, we didn't find the token
+          setError('Could not find your NFT token ID');
+          setIsLoading(false);
+        } catch (err) {
+          console.error('Error finding token ID:', err);
+          setError('Failed to find NFT token ID');
+          setIsLoading(false);
+        }
+      };
+
+      findTokenId();
+    }
+  }, [useMock, hasNFT, tokenId, address, account]);
+
+  // Step 3: Fetch progress using token_id
+  const {
+    data: progressData,
+    isLoading: progressIsLoading,
+    error: progressError,
+    refetch: progressRefetch,
+  } = useReadContract({
+    address: RONIN_PACT_ADDRESS as `0x${string}`,
+    abi: RoninPactAbi as Abi,
     functionName: 'get_progress',
-    args: address ? [address] : undefined,
-    watch: true, // Enable real-time updates
-    enabled: !useMock && !!address, // Disable if mocking
+    args: tokenId ? [BigInt(tokenId)] : undefined,
+    watch: true,
+    enabled: !useMock && hasNFT && !!tokenId,
   });
 
   // Mock: Fetch progress
@@ -54,13 +116,11 @@ export function useTrialProgress(): UseTrialProgressReturn {
     }
   }, [useMock, address]);
 
-  // Parse and set progress data (real contract)
+  // Parse progress data from contract
   useEffect(() => {
-    if (!useMock && data) {
+    if (!useMock && progressData) {
       try {
-        // Contract returns (bool, bool, bool) tuple
-        const [waza_complete, chi_complete, shin_complete] = data as [boolean, boolean, boolean];
-
+        const [waza_complete, chi_complete, shin_complete] = progressData as [boolean, boolean, boolean];
         setProgress({
           waza_complete,
           chi_complete,
@@ -72,19 +132,30 @@ export function useTrialProgress(): UseTrialProgressReturn {
         setError('Failed to parse progress data');
         setProgress(null);
       }
-    } else if (!address) {
+    } else if (!useMock && !address) {
       setProgress(null);
       setError(null);
+      setTokenId(null);
+    } else if (!useMock && !hasNFT) {
+      // User doesn't have NFT, clear progress
+      setProgress(null);
+      setError(null);
+      setTokenId(null);
     }
-  }, [data, address, useMock]);
+  }, [progressData, address, useMock, hasNFT]);
 
-  // Handle contract errors (real contract)
+  // Handle errors
   useEffect(() => {
-    if (!useMock && contractError) {
-      console.error('Contract error:', contractError);
-      setError(contractError.message || 'Failed to fetch progress');
+    if (!useMock) {
+      if (balanceError) {
+        console.error('Balance check error:', balanceError);
+        setError(balanceError.message || 'Failed to check NFT balance');
+      } else if (progressError) {
+        console.error('Progress fetch error:', progressError);
+        setError(progressError.message || 'Failed to fetch progress');
+      }
     }
-  }, [contractError, useMock]);
+  }, [balanceError, progressError, useMock]);
 
   // Refetch wrapper
   const refetch = useCallback(() => {
@@ -105,14 +176,23 @@ export function useTrialProgress(): UseTrialProgressReturn {
           setIsLoading(false);
         });
     } else {
-      contractRefetch();
+      // Clear token ID to trigger re-search
+      setTokenId(null);
+      progressRefetch();
     }
-  }, [address, useMock, contractRefetch]);
+  }, [address, useMock, progressRefetch]);
+
+  // Calculate combined loading state
+  const combinedIsLoading = useMock
+    ? isLoading
+    : (balanceIsLoading || isLoading || (hasNFT && !tokenId) || progressIsLoading);
 
   return {
     progress,
-    isLoading: useMock ? isLoading : (contractIsLoading && !!address),
+    isLoading: combinedIsLoading && !!address,
     error,
     refetch,
+    hasNFT,
+    tokenId,
   };
 }
