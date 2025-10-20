@@ -156,8 +156,10 @@ echo -e "${GREEN}Contract configuration complete!${NC}"
 echo -e "\n${YELLOW}Step 5: Starting Torii indexer...${NC}"
 torii \
     --world "$WORLD_ADDRESS" \
+    --http.cors_origins "*" \
     --rpc http://localhost:5050 \
     --db-dir /tmp/torii-db \
+    --indexing.controllers \
     --indexing.contracts "ERC721:$TOKEN_ADDRESS" \
     > /tmp/torii.log 2>&1 &
 TORII_PID=$!
