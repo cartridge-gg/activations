@@ -67,19 +67,19 @@ export function setupWorld(provider: DojoProvider) {
 		}
 	};
 
-	const build_actions_setController_calldata = (controller: string): DojoCall => {
+	const build_actions_mint_calldata = (): DojoCall => {
 		return {
 			contractName: "actions",
-			entrypoint: "set_controller",
-			calldata: [controller],
+			entrypoint: "mint",
+			calldata: [],
 		};
 	};
 
-	const actions_setController = async (snAccount: Account | AccountInterface, controller: string) => {
+	const actions_mint = async (snAccount: Account | AccountInterface) => {
 		try {
 			return await provider.execute(
 				snAccount,
-				build_actions_setController_calldata(controller),
+				build_actions_mint_calldata(),
 				"ronin_quest",
 			);
 		} catch (error) {
@@ -101,27 +101,6 @@ export function setupWorld(provider: DojoProvider) {
 			return await provider.execute(
 				snAccount,
 				build_actions_setGames_calldata(games),
-				"ronin_quest",
-			);
-		} catch (error) {
-			console.error(error);
-			throw error;
-		}
-	};
-
-	const build_actions_setOwner_calldata = (owner: string): DojoCall => {
-		return {
-			contractName: "actions",
-			entrypoint: "set_owner",
-			calldata: [owner],
-		};
-	};
-
-	const actions_setOwner = async (snAccount: Account | AccountInterface, owner: string) => {
-		try {
-			return await provider.execute(
-				snAccount,
-				build_actions_setOwner_calldata(owner),
 				"ronin_quest",
 			);
 		} catch (error) {
@@ -182,12 +161,10 @@ export function setupWorld(provider: DojoProvider) {
 			buildCompleteShinCalldata: build_actions_completeShin_calldata,
 			completeWaza: actions_completeWaza,
 			buildCompleteWazaCalldata: build_actions_completeWaza_calldata,
-			setController: actions_setController,
-			buildSetControllerCalldata: build_actions_setController_calldata,
+			mint: actions_mint,
+			buildMintCalldata: build_actions_mint_calldata,
 			setGames: actions_setGames,
 			buildSetGamesCalldata: build_actions_setGames_calldata,
-			setOwner: actions_setOwner,
-			buildSetOwnerCalldata: build_actions_setOwner_calldata,
 			setPact: actions_setPact,
 			buildSetPactCalldata: build_actions_setPact_calldata,
 			setQuiz: actions_setQuiz,

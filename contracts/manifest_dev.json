@@ -1479,8 +1479,8 @@
   },
   "contracts": [
     {
-      "address": "0x772a8796fd7830ddcc7d25cc43f1d9d1a5e588356c0fff6b89c05f2ef8f1cef",
-      "class_hash": "0x1d3a1da102be5fbb0ab327fdba96af0f35f93165374f317322e2a8ef5c3f31c",
+      "address": "0x20d7eb9497bcc20dc21ec163fba43a0429ea6d5f601cf4290a9143899634fa0",
+      "class_hash": "0x2e610eca6512f61e59da2e23b0cefe74f29f304a211ae1a46672a055c3c757e",
       "abi": [
         {
           "type": "impl",
@@ -1585,6 +1585,13 @@
           "type": "interface",
           "name": "ronin_quest::systems::actions::IActions",
           "items": [
+            {
+              "type": "function",
+              "name": "mint",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
             {
               "type": "function",
               "name": "complete_waza",
@@ -1790,6 +1797,7 @@
       "tag": "ronin_quest-actions",
       "selector": "0x26009c5c42d3ea472b86522b3612edfcbf09a9e7b19e970ad9dcabb73d1cc59",
       "systems": [
+        "mint",
         "complete_waza",
         "complete_chi",
         "complete_shin",
@@ -1825,10 +1833,10 @@
   "events": [],
   "external_contracts": [
     {
-      "class_hash": "0xd1acd175e5392f253bc27b2038777631e0ec5ec7440d4031642760f15c7ca4",
+      "class_hash": "0x399ae7a19c10032dfae3f70efdf4b3023299d18431580ac292d446affe561c5",
       "contract_name": "RoninPact",
       "tag": "ronin_quest-ronin_pact_nft",
-      "address": "0x60bb941474c7f8fb76a9b2028aca4fcaba68e46b9eb4adc9f4f913bf2ff055b",
+      "address": "0x7a78750831b203ea8c9353f9104246a934fa2d4f72bf8dc59baf72b52103cc1",
       "abi": [
         {
           "type": "impl",
@@ -2098,7 +2106,12 @@
             {
               "type": "function",
               "name": "mint",
-              "inputs": [],
+              "inputs": [
+                {
+                  "name": "recipient",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
               "outputs": [],
               "state_mutability": "external"
             },
