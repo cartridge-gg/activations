@@ -9,6 +9,7 @@ use ronin_quest::controller::eip191::Signer;
 #[starknet::interface]
 pub trait IActions<T> {
     // Player actions
+    fn mint(ref self: T);
     fn complete_waza(ref self: T, token_id: u256);
     fn complete_chi(ref self: T, token_id: u256, questions: Array<u32>, answers: Array<felt252>);
     fn complete_shin(ref self: T, token_id: u256, signer: Signer);
@@ -34,6 +35,22 @@ pub mod actions {
 
     #[abi(embed_v0)]
     impl ActionsImpl of IActions<ContractState> {
+        fn mint(ref self: ContractState) {
+            let caller = get_caller_address();
+            let world = self.world_default();
+
+            let pact_config: RoninPact = world.read_model(0);
+            let pact_erc721 = IERC721Dispatcher { contract_address: pact_config.pact };
+
+            // Check if caller already has a pact NFT
+            let balance = pact_erc721.balance_of(caller);
+            assert(balance == 0, 'Already owns a pact NFT');
+
+            // Mint the pact NFT to the caller
+            let pact_nft = IRoninPactDispatcher { contract_address: pact_config.pact };
+            pact_nft.mint(caller);
+        }
+
         fn complete_waza(ref self: ContractState, token_id: u256) {
             let caller = get_caller_address();
             let world = self.world_default();

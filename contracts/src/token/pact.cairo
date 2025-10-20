@@ -37,7 +37,7 @@ pub trait IRoninPact<TContractState> {
     ) -> bool;
 
     // Custom functions
-    fn mint(ref self: TContractState);
+    fn mint(ref self: TContractState, recipient: ContractAddress);
     fn get_progress(self: @TContractState, token_id: u256) -> TrialProgress;
 
     // Minting functions (only callable by authorized minter contract)
@@ -181,15 +181,13 @@ pub mod RoninPact {
             self.erc721.is_approved_for_all(owner, operator)
         }
 
-        fn mint(ref self: ContractState) {
-            let caller = get_caller_address();
-
+        fn mint(ref self: ContractState, recipient: ContractAddress) {
             // Get next token ID
             let token_id = self.token_count.read();
             self.token_count.write(token_id + 1);
 
-            // Mint the token
-            self.erc721.mint(caller, token_id);
+            // Mint the token to recipient
+            self.erc721.mint(recipient, token_id);
 
             // Initialize trial progress to 0 (no trials complete)
             self.token_progress.write(token_id, 0);

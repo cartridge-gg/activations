@@ -8,8 +8,8 @@ edition = "2024_07"
 sierra-replace-ids = true
 
 [scripts]
-migrate = "sozo build && sozo migrate"
-mint = "sozo execute ronin_quest-ronin_pact mint --wait"
+test = "snforge test"
+deploy = "./scripts/deploy_world.sh"
 
 [dependencies]
 dojo = "1.7.1"

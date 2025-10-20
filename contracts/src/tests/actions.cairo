@@ -164,8 +164,8 @@ fn test_set_quiz() {
 
 #[test]
 #[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-fn test_mint_nft() {
-    let (_world, _actions, _) = setup_world();
+fn test_mint_nft_via_actions() {
+    let (_world, actions, actions_address) = setup_world();
 
     // Deploy pact contract
     let pact_address = deploy_pact(owner());
@@ -173,14 +173,44 @@ fn test_mint_nft() {
 
     let player_controller = player();
 
-    // Mint NFT from Player (Controller)
-    start_cheat_caller_address(pact_address, player_controller);
-    pact.mint();
-    stop_cheat_caller_address(pact_address);
+    // Configure actions contract
+    start_cheat_caller_address(actions_address, owner());
+    actions.set_pact(pact_address);
+    stop_cheat_caller_address(actions_address);
+
+    // Mint NFT from Player (Controller) via actions contract
+    start_cheat_caller_address(actions_address, player_controller);
+    actions.mint();
+    stop_cheat_caller_address(actions_address);
 
     // Verify NFT was minted to the Controller
     assert(pact.balance_of(player_controller) == 1, 'NFT not minted');
     assert(pact.owner_of(0) == player_controller, 'Wrong owner');
+}
+
+#[test]
+#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
+#[should_panic(expected: ('Already owns a pact NFT',))]
+fn test_mint_duplicate_fails() {
+    let (_world, actions, actions_address) = setup_world();
+
+    // Deploy pact contract
+    let pact_address = deploy_pact(owner());
+    let pact = IRoninPactDispatcher { contract_address: pact_address };
+
+    let player_controller = player();
+
+    // Configure actions contract
+    start_cheat_caller_address(actions_address, owner());
+    actions.set_pact(pact_address);
+    stop_cheat_caller_address(actions_address);
+
+    // Mint first NFT - should succeed
+    start_cheat_caller_address(actions_address, player_controller);
+    actions.mint();
+
+    // Try to mint second NFT - should fail with 'Already owns a pact NFT'
+    actions.mint();
 }
 
 // ============================================================================
@@ -214,7 +244,7 @@ fn test_complete_waza() {
 
     // Player (Controller) mints NFT and game NFT
     start_cheat_caller_address(pact_address, player_controller);
-    pact.mint();
+    pact.mint(player_controller);
     stop_cheat_caller_address(pact_address);
 
     start_cheat_caller_address(game_address, player_controller);
@@ -261,7 +291,7 @@ fn test_waza_no_nft_fails() {
 
     // Player (Controller) mints NFT but NO game NFT
     start_cheat_caller_address(pact_address, player_controller);
-    pact.mint();
+    pact.mint(player_controller);
     stop_cheat_caller_address(pact_address);
 
     // Try to complete waza without game NFT - should fail
@@ -304,7 +334,7 @@ fn test_complete_chi() {
 
     // Player (Controller) mints NFT
     start_cheat_caller_address(pact_address, player_controller);
-    pact.mint();
+    pact.mint(player_controller);
     stop_cheat_caller_address(pact_address);
 
     // Complete chi trial with correct answers (at least 3 correct)
@@ -353,7 +383,7 @@ fn test_chi_wrong_answers_fails() {
 
     // Player (Controller) mints NFT
     start_cheat_caller_address(pact_address, player_controller);
-    pact.mint();
+    pact.mint(player_controller);
     stop_cheat_caller_address(pact_address);
 
     // Try to complete chi trial with wrong answers (only 2 correct out of 3)
@@ -389,7 +419,7 @@ fn test_chi_mismatched_length_fails() {
 
     // Player (Controller) mints NFT
     start_cheat_caller_address(pact_address, player_controller);
-    pact.mint();
+    pact.mint(player_controller);
     stop_cheat_caller_address(pact_address);
 
     // Try with mismatched lengths
@@ -425,7 +455,7 @@ fn test_complete_shin() {
 
     // Player (Controller) mints NFT
     start_cheat_caller_address(pact_address, player_controller);
-    pact.mint();
+    pact.mint(player_controller);
     stop_cheat_caller_address(pact_address);
 
     // Create a test signer (Discord/EIP-191 signer)
@@ -478,7 +508,7 @@ fn test_waza_non_owner_fails() {
 
     // Player (Controller) mints pact NFT
     start_cheat_caller_address(pact_address, player_controller);
-    pact.mint();
+    pact.mint(player_controller);
     stop_cheat_caller_address(pact_address);
 
     // Other (Controller) mints game NFT
@@ -519,7 +549,7 @@ fn test_chi_non_owner_fails() {
 
     // Player (Controller) mints NFT
     start_cheat_caller_address(pact_address, player_controller);
-    pact.mint();
+    pact.mint(player_controller);
     stop_cheat_caller_address(pact_address);
 
     // Other (Controller) tries to complete chi for player's token - should fail
@@ -554,7 +584,7 @@ fn test_shin_non_owner_fails() {
 
     // Player (Controller) mints NFT
     start_cheat_caller_address(pact_address, player_controller);
-    pact.mint();
+    pact.mint(player_controller);
     stop_cheat_caller_address(pact_address);
 
     // Create a test signer
@@ -604,7 +634,7 @@ fn test_full_lifecycle() {
 
     // Player (Controller) setup: mint NFTs
     start_cheat_caller_address(pact_address, player_controller);
-    pact.mint();
+    pact.mint(player_controller);
     stop_cheat_caller_address(pact_address);
 
     start_cheat_caller_address(game_address, player_controller);
