@@ -2,6 +2,7 @@
 import { ControllerConnector } from "@cartridge/connector";
 import { SessionPolicies } from "@cartridge/controller";
 import { RONIN_PACT_ADDRESS } from "./constants";
+import { getEnvironment, getEnvironmentConfig } from "./dojo";
 
 // Define session policies for gasless transactions
 const policies: SessionPolicies = {
@@ -33,23 +34,26 @@ const policies: SessionPolicies = {
   },
 };
 
+// Get configuration based on environment
+function getControllerConfig() {
+  const env = getEnvironment();
+  const config = getEnvironmentConfig(env);
+
+  // Return both chains array and defaultChainId
+  // The chains array tells Controller which chains are available
+  // The defaultChainId tells it which one to use
+  return {
+    chains: [{ rpcUrl: config.rpcUrl }],
+    defaultChainId: config.chainId,
+  };
+}
+
 // Create controller connector instance
 export const controller = new ControllerConnector({
   policies,
-  // Signup options for users
   signupOptions: [
-    "google",
     "webauthn",
     "discord",
-    "walletconnect",
-    "metamask",
-    "password",
   ],
-  // App configuration
-  slot: "ronins-pact",
-  namespace: "ronins-pact",
-  // Token support
-  tokens: {
-    erc20: ["eth", "strk"],
-  },
+  ...getControllerConfig(),
 });

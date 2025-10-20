@@ -1,5 +1,6 @@
 import { useAccount } from '@starknet-react/core';
 import { ConnectWallet } from './components/ConnectWallet';
+import { MintTestButton } from './components/MintTestButton';
 import { QuestDashboard } from './components/QuestDashboard';
 import { WazaTrial } from './components/WazaTrial';
 import { ChiTrial } from './components/ChiTrial';
@@ -56,6 +57,13 @@ function App() {
 
         {/* Main Content */}
         <main>
+          {/* Test Mint Button - Remove after testing */}
+          {address && (
+            <div style={{ marginBottom: '2rem', padding: '1rem', border: '2px solid yellow' }}>
+              <MintTestButton />
+            </div>
+          )}
+
           {address ? (
             isLoading ? (
               <div className="text-center py-20">
