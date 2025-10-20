@@ -15,7 +15,7 @@ import { TrialProgress } from './types';
 
 function App() {
   const { address } = useAccount();
-  const { progress: fetchedProgress, isLoading, hasNFT } = useTrialProgress();
+  const { progress: fetchedProgress, isLoading, hasNFT, tokenId } = useTrialProgress();
 
   // Local progress state for instant updates
   const [progress, setProgress] = useState<TrialProgress | null>(null);
@@ -69,9 +69,10 @@ function App() {
               <div className="py-12 md:py-20">
                 <MintButton />
               </div>
-            ) : progress ? (
+            ) : progress && tokenId ? (
               <QuestDashboard
                 progress={progress}
+                tokenId={tokenId}
                 onCompleteWaza={() => handleTrialComplete('waza')}
                 onCompleteChi={() => handleTrialComplete('chi')}
                 onCompleteShin={() => handleTrialComplete('shin')}

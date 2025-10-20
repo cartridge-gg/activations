@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
 import { useAccount, useReadContract } from '@starknet-react/core';
 import { useTokens } from '@dojoengine/sdk/react';
-import { RONIN_PACT_ADDRESS } from '@/lib/config';
-import RoninPactAbi from '@/lib/contracts/RoninPact.abi.json';
+import { RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
 import { TrialProgress } from '@/types';
 import { Abi } from 'starknet';
 
@@ -19,7 +18,7 @@ export function useTrialProgress(): UseTrialProgressReturn {
   const { address } = useAccount();
 
   // Get user's NFT from Torii
-  const { tokens, isLoading: tokensLoading } = useTokens({
+  const { tokens } = useTokens({
     accountAddresses: address ? [address] : [],
   });
 
@@ -42,7 +41,7 @@ export function useTrialProgress(): UseTrialProgressReturn {
     refetch,
   } = useReadContract({
     address: RONIN_PACT_ADDRESS as `0x${string}`,
-    abi: RoninPactAbi as Abi,
+    abi: RONIN_PACT_ABI as Abi,
     functionName: 'get_progress',
     args: tokenId ? [BigInt(tokenId)] : undefined,
     watch: true,
@@ -60,7 +59,7 @@ export function useTrialProgress(): UseTrialProgressReturn {
     };
   }, [progressData, address, hasNFT]);
 
-  const isLoading = address ? tokensLoading || (hasNFT && !tokenId) || progressIsLoading : false;
+  const isLoading = address ? (hasNFT && !tokenId) || progressIsLoading : false;
 
   return {
     progress,

@@ -1,9 +1,10 @@
 import { TrialProgress, TrialStatus } from '@/types';
-import { NFTPreview } from './NFTPreview';
+import { NFTRender } from './NFTRender';
 import { TrialCard } from './TrialCard';
 
 interface QuestDashboardProps {
   progress: TrialProgress;
+  tokenId: string;
   onCompleteWaza: () => void;
   onCompleteChi: () => void;
   onCompleteShin: () => void;
@@ -14,6 +15,7 @@ interface QuestDashboardProps {
 
 export function QuestDashboard({
   progress,
+  tokenId,
   onCompleteWaza,
   onCompleteChi,
   onCompleteShin,
@@ -34,10 +36,10 @@ export function QuestDashboard({
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: NFT Preview */}
+          {/* Left Column: NFT Render */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              <NFTPreview progress={progress} />
+              <NFTRender progress={progress} tokenId={tokenId} />
             </div>
           </div>
 

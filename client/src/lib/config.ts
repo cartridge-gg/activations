@@ -60,16 +60,19 @@ export const katana: Chain = {
 };
 
 // ============================================================================
-// CONTRACT ADDRESSES FROM MANIFEST
+// CONTRACT ADDRESSES AND ABIS FROM MANIFEST
 // ============================================================================
+// All contract addresses and ABIs are sourced directly from the manifest files
+// (manifest_dev.json for local development, manifest_prod.json for production).
+// This ensures they stay in sync with deployed contracts - no separate ABI files needed.
 
 export const WORLD_ADDRESS = manifest.world.address;
 
 // Find the Ronin Pact NFT contract from external_contracts in the manifest
-// Used for reading state (balance_of, owner_of, get_progress)
-export const RONIN_PACT_ADDRESS =
-  manifest.external_contracts?.find((c: any) => c.tag === "ronin_quest-ronin_pact_nft")?.address ||
-  '0x0';
+// Used for reading state (balance_of, owner_of, get_progress, token_uri)
+const roninPactContract = manifest.external_contracts?.find((c: any) => c.tag === "ronin_quest-ronin_pact_nft");
+export const RONIN_PACT_ADDRESS = roninPactContract?.address || '0x0';
+export const RONIN_PACT_ABI = roninPactContract?.abi;
 
 // Find the Quest Manager (actions) contract from contracts in the manifest
 export const QUEST_MANAGER_ADDRESS =

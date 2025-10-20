@@ -1,11 +1,30 @@
 import { useState, useCallback } from 'react';
 
 import { useAccount } from '@starknet-react/core';
-import { Contract } from 'starknet';
+import { Contract, Abi } from 'starknet';
 
 import { QUEST_MANAGER_ADDRESS, ALLOWLISTED_COLLECTIONS } from '@/lib/config';
-import ERC721Abi from '@/lib/contracts/ERC721.abi.json';
 import { isMockEnabled, mockCompleteWaza, mockCheckERC721Ownership } from '@/lib/mockContracts';
+
+// Minimal ERC721 ABI for balance_of checks
+const ERC721_ABI: Abi = [
+  {
+    type: 'function',
+    name: 'balance_of',
+    inputs: [
+      {
+        name: 'account',
+        type: 'core::starknet::contract_address::ContractAddress',
+      },
+    ],
+    outputs: [
+      {
+        type: 'core::integer::u256',
+      },
+    ],
+    state_mutability: 'view',
+  },
+];
 
 interface UseWazaClaimReturn {
   tryCollection: (collectionAddress: string) => Promise<void>;
@@ -29,7 +48,7 @@ export function useWazaClaim(): UseWazaClaimReturn {
     try {
       // Create ERC721 contract instance
       const erc721Contract = new Contract(
-        ERC721Abi,
+        ERC721_ABI,
         collectionAddress,
         account?.provider
       );
