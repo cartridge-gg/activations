@@ -29,7 +29,7 @@ export interface Eip191Signer {
 export const signer = [
 	'Eip191',
 ] as const;
-export type Signer = { 
+export type Signer = {
 	Eip191: Eip191Signer,
 };
 export type SignerEnum = CairoCustomEnum;
