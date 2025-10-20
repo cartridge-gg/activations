@@ -1,6 +1,8 @@
 import { useState } from 'react';
+
 import { useAccount } from '@starknet-react/core';
 import { Call } from 'starknet';
+
 import { QUEST_MANAGER_ADDRESS } from '@/lib/config';
 
 export function MintButton() {
@@ -52,6 +54,12 @@ export function MintButton() {
 
       console.log('✅ Transaction confirmed!');
       setSuccess(true);
+
+      // Auto-redirect after showing success message
+      setTimeout(() => {
+        console.log('Reloading page to show progress...');
+        window.location.reload();
+      }, 2000); // 2 second delay to show success message
     } catch (err: any) {
       console.error('❌ Mint failed:', err);
       setError(err?.message || 'Failed to mint NFT');
@@ -279,7 +287,7 @@ export function MintButton() {
                       </div>
                     )}
                     <p className="text-ronin-accent text-sm mt-3 italic">
-                      Refresh the page to begin your journey...
+                      Redirecting to your journey in a moment...
                     </p>
                   </div>
                 </div>

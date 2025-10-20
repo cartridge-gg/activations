@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
+
 import { useAccount } from '@starknet-react/core';
 import { Contract } from 'starknet';
+
 import { QUEST_MANAGER_ADDRESS, ALLOWLISTED_COLLECTIONS } from '@/lib/config';
 import ERC721Abi from '@/lib/contracts/ERC721.abi.json';
 import { isMockEnabled, mockCompleteWaza, mockCheckERC721Ownership } from '@/lib/mockContracts';

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { TrialStatus, TrialProgress } from '@/types';
+
 import { TRIALS, TrialName } from '@/lib/config';
+import { TrialStatus, TrialProgress } from '@/types';
 
 interface TrialCardProps {
   trialName: TrialName;

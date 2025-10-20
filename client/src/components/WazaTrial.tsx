@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { TrialStatus, AllowlistedCollection } from '@/types';
+
 import { ALLOWLISTED_COLLECTIONS } from '@/lib/config';
 import { useWazaClaim } from '@/hooks/useWazaClaim';
 import { useTrialCompletion } from '@/hooks/useTrialCompletion';
+import { TrialStatus, AllowlistedCollection } from '@/types';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
 
 interface WazaTrialProps {

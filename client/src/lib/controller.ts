@@ -2,9 +2,11 @@
 // Simplified for local Katana development
 
 import { jsonRpcProvider } from "@starknet-react/core";
+
 import { ControllerConnector } from "@cartridge/connector";
 import { SessionPolicies } from "@cartridge/controller";
-import { katana, KATANA_RPC_URL, KATANA_CHAIN_ID, RONIN_PACT_ADDRESS, QUEST_MANAGER_ADDRESS } from "./config";
+
+import { katana, KATANA_RPC_URL, KATANA_CHAIN_ID, QUEST_MANAGER_ADDRESS } from "./config";
 
 // ============================================================================
 // CONTROLLER CONNECTOR

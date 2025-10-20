@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
+
 import { useAccount } from '@starknet-react/core';
+
 import { QUEST_MANAGER_ADDRESS } from '@/lib/config';
-import { SignerInfo } from '@/types';
 import { isMockEnabled, mockGetSigners, mockCompleteShin } from '@/lib/mockContracts';
+import { SignerInfo } from '@/types';
 
 // Cartridge GraphQL API endpoint
 const CARTRIDGE_API_URL = 'https://api.cartridge.gg/query';

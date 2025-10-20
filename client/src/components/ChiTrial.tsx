@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { TrialStatus, QuizQuestion } from '@/types';
+
 import { useChiQuiz } from '@/hooks/useChiQuiz';
 import { useTrialCompletion } from '@/hooks/useTrialCompletion';
+import { TrialStatus, QuizQuestion } from '@/types';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
 
 interface ChiTrialProps {

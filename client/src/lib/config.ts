@@ -3,10 +3,13 @@
 // Simplified for local development on Katana (localhost:5050)
 
 import { Chain } from "@starknet-react/chains";
+
 import { createDojoConfig } from "@dojoengine/core";
 
-import { AllowlistedCollection } from "../types";
 import manifest from "../../../contracts/manifest_dev.json";
+import { setupWorld } from "../../../contracts/bindings/typescript/contracts.gen";
+import { SchemaType } from "../../../contracts/bindings/typescript/models.gen";
+import { AllowlistedCollection } from "../types";
 
 // ============================================================================
 // MANIFEST & DOJO CONFIG
@@ -15,6 +18,9 @@ import manifest from "../../../contracts/manifest_dev.json";
 export const dojoConfig = createDojoConfig({
   manifest
 });
+
+export { setupWorld };
+export type { SchemaType };
 
 // ============================================================================
 // LOCAL KATANA CONFIGURATION

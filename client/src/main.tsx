@@ -1,23 +1,22 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
 
 import { init } from "@dojoengine/sdk";
 import { DojoSdkProvider } from '@dojoengine/sdk/react'
-import { StarknetProvider } from './components/providers/StarknetProvider.tsx'
 
 import {
   dojoConfig,
+  setupWorld,
   WORLD_ADDRESS,
   KATANA_TORII_URL,
   KATANA_RELAY_URL,
   KATANA_RPC_URL,
   KATANA_CHAIN_ID
 } from './lib/config.ts'
-
-import { setupWorld } from "../../contracts/bindings/typescript/contracts.gen";
-import { SchemaType } from "../../contracts/bindings/typescript/models.gen";
+import type { SchemaType } from './lib/config.ts'
+import { StarknetProvider } from './components/providers/StarknetProvider.tsx'
+import App from './App.tsx'
+import './index.css'
 
 async function main() {
   const sdk = await init<SchemaType>(

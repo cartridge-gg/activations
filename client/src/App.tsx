@@ -1,4 +1,8 @@
+import { useState, useEffect, useCallback } from 'react';
+
 import { useAccount } from '@starknet-react/core';
+
+import { TrialName } from './lib/config';
 import { ConnectWallet } from './components/ConnectWallet';
 import { MintButton } from './components/MintButton';
 import { QuestDashboard } from './components/QuestDashboard';
@@ -7,9 +11,7 @@ import { ChiTrial } from './components/ChiTrial';
 import { ShinTrial } from './components/ShinTrial';
 import { ShareButton } from './components/ShareButton';
 import { useTrialProgress } from './hooks/useTrialProgress';
-import { useState, useEffect, useCallback } from 'react';
 import { TrialProgress } from './types';
-import { TrialName } from './lib/config';
 
 function App() {
   const { address } = useAccount();
