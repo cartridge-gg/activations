@@ -1,4 +1,4 @@
-import { TrialProgress, TrialStatus } from '@/types';
+import { TrialProgress, TrialStatus } from '@/lib/types';
 import { NFTRender } from './NFTRender';
 import { TrialCard } from './TrialCard';
 

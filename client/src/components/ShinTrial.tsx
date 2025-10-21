@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useShinTrial } from '@/hooks/useShinTrial';
 import { useTrialCompletion } from '@/hooks/useTrialCompletion';
-import { TrialStatus, SignerInfo } from '@/types';
+import { TrialStatus, SignerInfo } from '@/lib/types';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
 
 interface ShinTrialProps {

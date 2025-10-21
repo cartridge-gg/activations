@@ -2,30 +2,33 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { init } from "@dojoengine/sdk";
+import { createDojoConfig } from "@dojoengine/core";
 import { DojoSdkProvider } from '@dojoengine/sdk/react'
 
+import { StarknetProvider } from '@/components/StarknetProvider'
+
 import {
-  dojoConfig,
+  manifest,
   setupWorld,
   WORLD_ADDRESS,
   TORII_URL,
   RELAY_URL,
   KATANA_URL,
-  KATANA_CHAIN_ID
-} from './lib/config.ts'
-import type { SchemaType } from './lib/config.ts'
-import { StarknetProvider } from './components/providers/StarknetProvider.tsx'
-import App from './App.tsx'
-import './index.css'
+  KATANA_CHAIN_ID,
+  type SchemaType
+} from '@/lib/config'
+
+import App from '@/App'
+import '@/index.css'
 
 async function main() {
   const sdk = await init<SchemaType>(
     {
       client: {
         worldAddress: WORLD_ADDRESS,
+        rpcUrl: KATANA_URL,
         toriiUrl: TORII_URL,
         relayUrl: RELAY_URL,
-        rpcUrl: KATANA_URL,
       },
       domain: {
         name: "Ronin Pact",
@@ -35,6 +38,12 @@ async function main() {
       },
     },
   );
+
+  const dojoConfig = createDojoConfig({
+    manifest,
+    rpcUrl: KATANA_URL,
+    toriiUrl: TORII_URL,
+  });
 
   createRoot(document.getElementById('root')!).render(
     <StrictMode>

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { TrialProgress } from '@/types';
+import { TrialProgress } from '@/lib/types';
 import { ShareButton } from './ShareButton';
 
 interface NFTPreviewProps {

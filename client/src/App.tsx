@@ -12,7 +12,7 @@ import { ShinTrial } from './components/ShinTrial';
 import { ShareButton } from './components/ShareButton';
 import { DevResetButton } from './components/DevResetButton';
 import { useTrialProgress } from './hooks/useTrialProgress';
-import { TrialProgress } from './types';
+import { TrialProgress } from './lib/types';
 
 function App() {
   const { address } = useAccount();

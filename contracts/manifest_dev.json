@@ -1854,8 +1854,8 @@
     {
       "class_hash": "0x7575675394f623d53e40c046349224b1318de696a9f8ae6e72ac295257fff3b",
       "contract_name": "RoninPact",
-      "tag": "ronin_quest-ronin_pact_nft",
-      "address": "0x1cf03c8b862843f8f29dfe7a6ce12ded260b01d38ff3601cab97c511e50b17c",
+      "tag": "ronin_quest-ronin_pact",
+      "address": "0x7abe91d55f69653132d5a8d99334c5be69a4bae6b09a0a343194403f7a785b7",
       "abi": [
         {
           "type": "impl",

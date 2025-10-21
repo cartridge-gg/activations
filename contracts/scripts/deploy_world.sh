@@ -93,7 +93,7 @@ WORLD_ADDRESS=$(grep -o '"address": "0x[^"]*"' "$CONTRACTS_DIR/manifest_dev.json
 echo -e "${GREEN}World deployed at: $WORLD_ADDRESS${NC}"
 
 # Get the RoninPact token contract address from the manifest (external_contracts section)
-TOKEN_ADDRESS=$(jq -r '.external_contracts[] | select(.tag == "ronin_quest-ronin_pact_nft") | .address' "$CONTRACTS_DIR/manifest_dev.json")
+TOKEN_ADDRESS=$(jq -r '.external_contracts[] | select(.tag == "ronin_quest-ronin_pact") | .address' "$CONTRACTS_DIR/manifest_dev.json")
 if [ -z "$TOKEN_ADDRESS" ] || [ "$TOKEN_ADDRESS" == "null" ]; then
     echo -e "${RED}Error: RoninPact NFT not found in manifest${NC}"
     exit 1

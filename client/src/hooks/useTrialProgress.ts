@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useAccount, useReadContract } from '@starknet-react/core';
 import { useTokens } from '@dojoengine/sdk/react';
 import { RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
-import { TrialProgress } from '@/types';
+import { TrialProgress } from '@/lib/types';
 import { Abi } from 'starknet';
 
 interface UseTrialProgressReturn {

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useReadContract } from '@starknet-react/core';
 import { RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
-import { TrialProgress } from '@/types';
+import { TrialProgress } from '@/lib/types';
 import { Abi } from 'starknet';
 import { ShareButton } from './ShareButton';
 import { BurnButton } from './BurnButton';

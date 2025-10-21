@@ -3,7 +3,7 @@ import { hash } from 'starknet';
 
 import { useChiQuiz } from '@/hooks/useChiQuiz';
 import { useTrialCompletion } from '@/hooks/useTrialCompletion';
-import { TrialStatus } from '@/types';
+import { TrialStatus } from '@/lib/types';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
 import chiData from '../../../spec/chi.json';
 

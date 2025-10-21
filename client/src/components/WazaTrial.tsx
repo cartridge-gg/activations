@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ALLOWLISTED_COLLECTIONS } from '@/lib/config';
 import { useWazaClaim } from '@/hooks/useWazaClaim';
 import { useTrialCompletion } from '@/hooks/useTrialCompletion';
-import { TrialStatus, AllowlistedCollection } from '@/types';
+import { TrialStatus, AllowlistedCollection } from '@/lib/types';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
 
 interface WazaTrialProps {
