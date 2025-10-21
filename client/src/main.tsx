@@ -8,9 +8,9 @@ import {
   dojoConfig,
   setupWorld,
   WORLD_ADDRESS,
-  KATANA_TORII_URL,
-  KATANA_RELAY_URL,
-  KATANA_RPC_URL,
+  TORII_URL,
+  RELAY_URL,
+  KATANA_URL,
   KATANA_CHAIN_ID
 } from './lib/config.ts'
 import type { SchemaType } from './lib/config.ts'
@@ -23,9 +23,9 @@ async function main() {
     {
       client: {
         worldAddress: WORLD_ADDRESS,
-        toriiUrl: KATANA_TORII_URL,
-        relayUrl: KATANA_RELAY_URL,
-        rpcUrl: KATANA_RPC_URL,
+        toriiUrl: TORII_URL,
+        relayUrl: RELAY_URL,
+        rpcUrl: KATANA_URL,
       },
       domain: {
         name: "Ronin Pact",

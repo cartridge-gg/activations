@@ -1,9 +1,8 @@
 import { useState } from 'react';
 
 import { useAccount } from '@starknet-react/core';
-import { Call } from 'starknet';
 
-import { QUEST_MANAGER_ADDRESS } from '@/lib/config';
+import { QUEST_MANAGER_ADDRESS, RONIN_PACT_ADDRESS } from '@/lib/config';
 
 export function MintButton() {
   const { address, account } = useAccount();
@@ -28,19 +27,42 @@ export function MintButton() {
       console.log('Connected address:', address);
       console.log('Quest Manager address:', QUEST_MANAGER_ADDRESS);
 
-      // Call mint on Quest Manager contract directly using account.execute()
-      const call: Call = {
-        contractAddress: QUEST_MANAGER_ADDRESS,
-        entrypoint: 'mint',
-        calldata: [],
-      };
-
-      console.log('Executing call:', JSON.stringify(call, null, 2));
       console.log('Account object:', account);
       console.log('Account type:', account?.constructor?.name);
 
-      // Try with array wrapper (Controller might require array format)
-      const result = await account.execute([call]);
+      // Error: Array length mismatch
+      const result = await account.execute([{
+        contractAddress: QUEST_MANAGER_ADDRESS, // Dojo game
+        entrypoint: 'mint', // fn mint(ref self: T);
+        calldata: [],
+      }]);
+
+      // // Error: Input too long for arguments
+      // const result = await account.execute([{
+      //   contractAddress: QUEST_MANAGER_ADDRESS,
+      //   entrypoint: 'mint', // fn mint(ref self: T);
+      //   calldata: [address],
+      // }]);
+
+      // // Error: Failed to deserialize param #1
+      // const result = await account.execute([{
+      //   contractAddress: RONIN_PACT_ADDRESS, // NFT Contract
+      //   entrypoint: 'mint', // fn mint(ref self: TContractState, recipient: ContractAddress);
+      //   calldata: [],
+      // }]);
+
+      // // Error: Array length mismatch
+      // const result = await account.execute([{
+      //   contractAddress: RONIN_PACT_ADDRESS,
+      //   entrypoint: 'mint', // fn mint(ref self: TContractState, recipient: ContractAddress);
+      //   calldata: [address],
+      // }]);
+
+      // const result = await account.execute([{
+      //   contractAddress: "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+      //   entrypoint: 'transfer',
+      //   calldata: ["0x2af9427c5a277474c079a1283c880ee8a6f0f8fbf73ce969c08d88befec1bba", "0x0", "0x0"],
+      // }]);
 
       console.log('✅ Transaction submitted successfully!');
       console.log('Transaction hash:', result.transaction_hash);

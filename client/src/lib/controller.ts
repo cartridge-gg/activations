@@ -6,7 +6,7 @@ import { jsonRpcProvider } from "@starknet-react/core";
 import { ControllerConnector } from "@cartridge/connector";
 import { SessionPolicies } from "@cartridge/controller";
 
-import { katana, KATANA_RPC_URL, KATANA_CHAIN_ID, QUEST_MANAGER_ADDRESS } from "./config";
+import { katana, KATANA_URL, KATANA_CHAIN_ID, QUEST_MANAGER_ADDRESS } from "./config";
 
 // ============================================================================
 // CONTROLLER CONNECTOR
@@ -44,9 +44,9 @@ const policies: SessionPolicies = {
 
 // Create controller connector instance for local Katana
 export const controller = new ControllerConnector({
-  policies,
+  // policies,
   signupOptions: ["webauthn", "discord"],
-  chains: [{ rpcUrl: KATANA_RPC_URL }],
+  chains: [{ rpcUrl: KATANA_URL }],
   defaultChainId: KATANA_CHAIN_ID,
 });
 
@@ -57,7 +57,7 @@ export const controller = new ControllerConnector({
 // JSON RPC provider setup for local Katana
 export const provider = jsonRpcProvider({
   rpc: () => ({
-    nodeUrl: KATANA_RPC_URL
+    nodeUrl: KATANA_URL
   }),
 });
 

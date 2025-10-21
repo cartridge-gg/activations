@@ -12,24 +12,13 @@ import { SchemaType } from "../../../contracts/bindings/typescript/models.gen";
 import { AllowlistedCollection } from "../types";
 
 // ============================================================================
-// MANIFEST & DOJO CONFIG
-// ============================================================================
-
-export const dojoConfig = createDojoConfig({
-  manifest
-});
-
-export { setupWorld };
-export type { SchemaType };
-
-// ============================================================================
 // LOCAL KATANA CONFIGURATION
 // ============================================================================
 // Hardcoded for local development - environment switching removed for simplicity
 
-export const KATANA_RPC_URL = "http://localhost:5050";
-export const KATANA_TORII_URL = "http://localhost:8080";
-export const KATANA_RELAY_URL = "/ip4/127.0.0.1/tcp/9090";
+export const KATANA_URL = "http://localhost:5050";
+export const TORII_URL = "http://localhost:8080";
+export const RELAY_URL = "/ip4/127.0.0.1/tcp/9090";
 export const KATANA_CHAIN_ID = "0x4b4154414e41"; // "KATANA" hex-encoded
 
 // Katana chain definition for Starknet React
@@ -46,18 +35,31 @@ export const katana: Chain = {
   testnet: true,
   rpcUrls: {
     default: {
-      http: [],
+      http: [KATANA_URL],
     },
     public: {
-      http: [KATANA_RPC_URL],
+      http: [KATANA_URL],
     },
   },
   paymasterRpcUrls: {
     avnu: {
-      http: [KATANA_RPC_URL],
+      http: [KATANA_URL],
     },
   },
 };
+
+// ============================================================================
+// MANIFEST & DOJO CONFIG
+// ============================================================================
+
+export const dojoConfig = createDojoConfig({
+  manifest,
+  rpcUrl: KATANA_URL,
+  toriiUrl: TORII_URL,
+});
+
+export { setupWorld };
+export type { SchemaType };
 
 // ============================================================================
 // CONTRACT ADDRESSES AND ABIS FROM MANIFEST

@@ -10,6 +10,7 @@ import { WazaTrial } from './components/WazaTrial';
 import { ChiTrial } from './components/ChiTrial';
 import { ShinTrial } from './components/ShinTrial';
 import { ShareButton } from './components/ShareButton';
+import { DevResetButton } from './components/DevResetButton';
 import { useTrialProgress } from './hooks/useTrialProgress';
 import { TrialProgress } from './types';
 
@@ -49,6 +50,11 @@ function App() {
             {progress && (
               <div className="w-full sm:w-48 flex-shrink-0">
                 <ShareButton progress={progress} />
+              </div>
+            )}
+            {import.meta.env.DEV && (
+              <div className="w-full sm:w-32 flex-shrink-0">
+                <DevResetButton />
               </div>
             )}
             <div className="w-full sm:w-48 flex-shrink-0">

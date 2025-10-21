@@ -183,9 +183,9 @@ All configuration now points to local development:
 
 ```typescript
 // Network
-KATANA_RPC_URL = "http://localhost:5050"
-KATANA_TORII_URL = "http://localhost:8080"
-KATANA_RELAY_URL = "/ip4/127.0.0.1/tcp/9090"
+KATANA_URL = "http://localhost:5050"
+TORII_URL = "http://localhost:8080"
+RELAY_URL = "/ip4/127.0.0.1/tcp/9090"
 KATANA_CHAIN_ID = "0x4b4154414e41" // "KATANA" hex-encoded
 
 // Contracts (from manifest)
