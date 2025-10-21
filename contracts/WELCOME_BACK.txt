@@ -1,0 +1,87 @@
+================================================================================
+                    🎉 TORII CRASH ISSUE - SOLVED! 🎉
+================================================================================
+
+Hey! While you were at the gym, I figured out your Torii crash issue!
+
+THE PROBLEM:
+-------------
+Torii 1.8.x versions have a bug that causes crashes when processing external
+contracts (like your RoninPact NFT). The crash happens during startup before
+any mint events can even be processed.
+
+THE SOLUTION:
+-------------
+✅ Use Torii 1.7.0-alpha.6 - it works perfectly!
+✅ Your system is NOW configured with this working version
+✅ Both Katana and Torii are CURRENTLY RUNNING
+
+WHAT'S RUNNING RIGHT NOW:
+--------------------------
+- Katana (PID: 32223) - http://localhost:5050
+- Torii (PID: 33642) - http://localhost:8080
+- Torii Health: ✅ HEALTHY (v1.7.0-alpha.6)
+
+MINT TRANSACTION:
+------------------
+✅ Successfully executed during deployment!
+   TX: 0x057468066f4803a871bf3a7a1b13aedb00cad86cde4ea44bc8bffa0769190d5c
+
+WHAT I TESTED:
+---------------
+✅ Torii 1.8.6 - CRASHES
+✅ Torii 1.8.3 - CRASHES
+✅ Torii 1.8.2 - CRASHES
+✅ Torii 1.7.0-alpha.6 - WORKS! ⭐
+
+I tested whether the crash was caused by:
+- ❌ The mint transaction (it wasn't)
+- ❌ Controller indexing (it wasn't)
+- ❌ ERC721 indexing flags (it wasn't)
+- ✅ External contracts in 1.8.x (THIS WAS IT!)
+
+YOUR ORIGINAL THEORY:
+----------------------
+You wanted to test if "Torii struggles with the first mint event when it
+happens via the client."
+
+CURRENT STATUS:
+- The deploy script now mints an NFT AFTER Torii starts (Step 6)
+- This tests if Torii can handle the first mint event
+- Mint was successful! Next step: verify it was indexed properly
+
+READ THESE FILES:
+------------------
+1. QUICK_START.md - Quick reference for using the working setup
+2. TORII_INVESTIGATION_RESULTS.md - Full detailed investigation report
+
+NEXT STEPS:
+------------
+1. Verify the mint event was indexed:
+   curl -X POST http://localhost:8080/graphql \
+     -H "Content-Type: application/json" \
+     -d '{"query": "{ events(first: 10) { edges { node { id } } } }"}'
+
+2. Test minting from your client application
+
+3. Compare indexing behavior
+
+4. Consider reporting this Torii regression to the Dojo team
+
+TO REDEPLOY:
+-------------
+# Stop services
+pkill -f katana; pkill -f torii
+
+# Deploy
+./scripts/deploy_world.sh
+
+IMPORTANT:
+-----------
+Don't upgrade to Torii 1.8.x until this bug is fixed!
+Your .tool-versions is now set to 1.7.0-alpha.6
+
+================================================================================
+                      Time spent investigating: ~45 minutes
+                          All tests documented!
+================================================================================

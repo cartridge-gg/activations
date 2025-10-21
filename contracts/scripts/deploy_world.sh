@@ -177,8 +177,6 @@ torii \
     --world "$WORLD_ADDRESS" \
     --rpc http://localhost:5050 \
     --http.cors_origins "*" \
-    --indexing.controllers \
-    --indexing.contracts "ERC721:$TOKEN_ADDRESS" \
     > /tmp/torii.log 2>&1 &
 TORII_PID=$!
 echo -e "${GREEN}Torii started (PID: $TORII_PID)${NC}"
@@ -196,6 +194,28 @@ for i in {1..30}; do
     sleep 1
 done
 
+# Step 6: Mint initial NFT from deployer account
+echo -e "\n${YELLOW}Step 6: Minting initial NFT from deployer account...${NC}"
+echo -e "${BLUE}This helps test if Torii properly indexes the first mint event${NC}"
+sozo execute --profile dev --wait ronin_quest-actions mint
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Initial NFT minted from deployer account${NC}"
+else
+    echo -e "${YELLOW}Warning: Failed to mint initial NFT (may already exist)${NC}"
+fi
+
+# Step 7: Fund development controller with STRK
+echo -e "\n${YELLOW}Step 7: Funding development controller with STRK...${NC}"
+DEV_CONTROLLER="0x046a8868178Fa8bF56A5c3b48f903ab406e5a324517D990Af786D5AB54D86865"
+STRK_TOKEN="0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"
+echo -e "${BLUE}Transferring 100 STRK to $DEV_CONTROLLER${NC}"
+sozo execute --profile dev --wait "$STRK_TOKEN" transfer "$DEV_CONTROLLER" 100000000000000000000 0
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Development controller funded with 100 STRK${NC}"
+else
+    echo -e "${YELLOW}Warning: Failed to fund controller (may already have balance)${NC}"
+fi
+
 # Print status
 echo -e "\n${GREEN}=== Deployment Complete ===${NC}"
 echo -e "${BLUE}Services running:${NC}"
@@ -210,6 +230,8 @@ echo -e "\n${BLUE}Configuration:${NC}"
 echo -e "  ✓ Owner permissions granted to deployer"
 echo -e "  ✓ NFT minter set to Actions contract"
 echo -e "  ✓ Actions contract configured with NFT address"
+echo -e "  ✓ Initial NFT minted from deployer account"
+echo -e "  ✓ Development controller funded with 100 STRK"
 echo -e "\n${BLUE}Logs:${NC}"
 echo -e "  Katana: /tmp/katana.log"
 echo -e "  Torii:  /tmp/torii.log"

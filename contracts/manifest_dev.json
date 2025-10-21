@@ -1479,8 +1479,8 @@
   },
   "contracts": [
     {
-      "address": "0x7c82ae63eabae66f9409d56a83a69c8f666a3d6c21a4674daccf624a71a99b6",
-      "class_hash": "0x22b24baa46016e991656e7711df43edaacf5046db3972036ff969032b082c52",
+      "address": "0x700d43a618eee7721e557c74fd67a001602a70f9d87ebcfc1cb885dd08cd007",
+      "class_hash": "0x7400d544edf029d715fec9d3e360c35986539140411f52aa437ae2f15bc287e",
       "abi": [
         {
           "type": "impl",
@@ -1839,6 +1839,12 @@
     },
     {
       "members": [],
+      "class_hash": "0x48c09361f0c835c34221daf354cb5250a53ff7878b61e6aed76bacdd6ee5b41",
+      "tag": "ronin_quest-PactMinted",
+      "selector": "0x1db0b7591ba4240a69802e511f2b875064c0eb2fa80e8c7f4de818f23e4c97d"
+    },
+    {
+      "members": [],
       "class_hash": "0x3eda588784d64e36aade224c01c8440747916fc65b4c8f3aa6f02748a27ef8d",
       "tag": "ronin_quest-ShinCompleted",
       "selector": "0x7742c51e8f70bded60692e88687676e974ebd00df1182fd5d53cde40b68cf44"
@@ -1852,10 +1858,10 @@
   ],
   "external_contracts": [
     {
-      "class_hash": "0x7575675394f623d53e40c046349224b1318de696a9f8ae6e72ac295257fff3b",
+      "class_hash": "0x48f0eb1c6bab7ac1719fecb3e00a2a3017bf5c3175e4c78451192daafa074d0",
       "contract_name": "RoninPact",
       "tag": "ronin_quest-ronin_pact",
-      "address": "0x7abe91d55f69653132d5a8d99334c5be69a4bae6b09a0a343194403f7a785b7",
+      "address": "0x360ac3acd12de507b3b3b2996556d84c59dbf6ccd4e8f106aa77d1d3412ea0d",
       "abi": [
         {
           "type": "impl",
@@ -2131,7 +2137,11 @@
                   "type": "core::starknet::contract_address::ContractAddress"
                 }
               ],
-              "outputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u256"
+                }
+              ],
               "state_mutability": "external"
             },
             {

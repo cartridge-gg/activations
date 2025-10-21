@@ -34,7 +34,14 @@ pub mod actions {
     use ronin_quest::models::{RoninPact, RoninGames, RoninAnswers};
     use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 
-    // Quest completion events
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    pub struct PactMinted {
+        #[key]
+        pub player: ContractAddress,
+        pub token_id: u256,
+    }
+
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
     pub struct WazaCompleted {
@@ -63,7 +70,7 @@ pub mod actions {
     impl ActionsImpl of IActions<ContractState> {
         fn mint(ref self: ContractState) {
             let caller = get_caller_address();
-            let world = self.world_default();
+            let mut world = self.world_default();
 
             let pact_config: RoninPact = world.read_model(0);
             let pact_erc721 = IERC721Dispatcher { contract_address: pact_config.pact };
@@ -72,9 +79,12 @@ pub mod actions {
             let balance = pact_erc721.balance_of(caller);
             assert(balance == 0, 'Already owns a pact NFT');
 
-            // Mint the pact NFT to the caller
+            // Mint the pact NFT to the caller and get token_id
             let pact_nft = IRoninPactDispatcher { contract_address: pact_config.pact };
-            pact_nft.mint(caller);
+            let token_id = pact_nft.mint(caller);
+
+            // Emit Dojo event
+            world.emit_event(@PactMinted { player: caller, token_id });
         }
 
         fn complete_waza(ref self: ContractState, token_id: u256) {

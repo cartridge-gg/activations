@@ -52,6 +52,7 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Event("WazaCompleted"),
             TestResource::Event("ChiCompleted"),
             TestResource::Event("ShinCompleted"),
+            TestResource::Event("PactMinted"),
         ].span()
     }
 }
