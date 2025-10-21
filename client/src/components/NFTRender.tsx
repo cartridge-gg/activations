@@ -4,6 +4,7 @@ import { RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
 import { TrialProgress } from '@/types';
 import { Abi } from 'starknet';
 import { ShareButton } from './ShareButton';
+import { BurnButton } from './BurnButton';
 
 interface NFTRenderProps {
   progress: TrialProgress;
@@ -125,6 +126,11 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
             <ShareButton progress={progress} />
           </div>
         )}
+
+        {/* Dev Tools Section */}
+        <div className="w-full pt-4 border-t border-ronin-accent/20">
+          <BurnButton tokenId={tokenId} />
+        </div>
       </div>
     </div>
   );
