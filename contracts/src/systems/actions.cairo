@@ -26,12 +26,38 @@ pub mod actions {
     use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
     use dojo::world::WorldStorage;
     use dojo::model::ModelStorage;
+    use dojo::event::EventStorage;
 
     use super::IActions;
     use ronin_quest::controller::eip191::{Signer, SignerTrait};
     use ronin_quest::controller::interface::{IMultipleOwnersDispatcher, IMultipleOwnersDispatcherTrait};
     use ronin_quest::models::{RoninPact, RoninGames, RoninAnswers};
     use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
+
+    // Quest completion events
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    pub struct WazaCompleted {
+        #[key]
+        pub token_id: u256,
+        pub player: ContractAddress,
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    pub struct ChiCompleted {
+        #[key]
+        pub token_id: u256,
+        pub player: ContractAddress,
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    pub struct ShinCompleted {
+        #[key]
+        pub token_id: u256,
+        pub player: ContractAddress,
+    }
 
     #[abi(embed_v0)]
     impl ActionsImpl of IActions<ContractState> {
@@ -53,7 +79,7 @@ pub mod actions {
 
         fn complete_waza(ref self: ContractState, token_id: u256) {
             let caller = get_caller_address();
-            let world = self.world_default();
+            let mut world = self.world_default();
 
             let pact_config: RoninPact = world.read_model(0);
             let games_config: RoninGames = world.read_model(0);
@@ -73,11 +99,13 @@ pub mod actions {
 
             let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
             nft.complete_waza(token_id);
+
+            world.emit_event(@WazaCompleted { token_id, player: caller });
         }
 
         fn complete_chi(ref self: ContractState, token_id: u256, questions: Array<u32>, answers: Array<felt252>) {
             let caller = get_caller_address();
-            let world = self.world_default();
+            let mut world = self.world_default();
 
             let pact_config: RoninPact = world.read_model(0);
             let answers_config: RoninAnswers = world.read_model(0);
@@ -104,11 +132,13 @@ pub mod actions {
 
             let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
             nft.complete_chi(token_id);
+
+            world.emit_event(@ChiCompleted { token_id, player: caller });
         }
 
         fn complete_shin(ref self: ContractState, token_id: u256, signer: Signer) {
             let caller = get_caller_address();
-            let world = self.world_default();
+            let mut world = self.world_default();
 
             let pact_config: RoninPact = world.read_model(0);
 
@@ -126,6 +156,8 @@ pub mod actions {
 
             let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
             nft.complete_shin(token_id);
+
+            world.emit_event(@ShinCompleted { token_id, player: caller });
         }
 
         // Admin functions

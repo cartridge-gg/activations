@@ -94,24 +94,6 @@ pub mod RoninPact {
         ERC721Event: ERC721Component::Event,
         #[flat]
         SRC5Event: SRC5Component::Event,
-        WazaCompleted: WazaCompleted,
-        ChiCompleted: ChiCompleted,
-        ShinCompleted: ShinCompleted,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct WazaCompleted {
-        token_id: u256,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct ChiCompleted {
-        token_id: u256,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct ShinCompleted {
-        token_id: u256,
     }
 
     #[constructor]
@@ -205,17 +187,14 @@ pub mod RoninPact {
 
         fn complete_waza(ref self: ContractState, token_id: u256) {
             self.complete_challenge(token_id, WAZA_BIT);
-            self.emit(WazaCompleted { token_id });
         }
 
         fn complete_chi(ref self: ContractState, token_id: u256) {
             self.complete_challenge(token_id, CHI_BIT);
-            self.emit(ChiCompleted { token_id });
         }
 
         fn complete_shin(ref self: ContractState, token_id: u256) {
             self.complete_challenge(token_id, SHIN_BIT);
-            self.emit(ShinCompleted { token_id });
         }
 
         fn set_minter(ref self: ContractState, minter: ContractAddress) {

@@ -49,6 +49,9 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model("RoninGames"),
             TestResource::Model("RoninAnswers"),
             TestResource::Contract("actions"),
+            TestResource::Event("WazaCompleted"),
+            TestResource::Event("ChiCompleted"),
+            TestResource::Event("ShinCompleted"),
         ].span()
     }
 }
@@ -196,7 +199,7 @@ fn test_mint_duplicate_fails() {
 
     // Deploy pact contract
     let pact_address = deploy_pact(owner());
-    let pact = IRoninPactDispatcher { contract_address: pact_address };
+    let _pact = IRoninPactDispatcher { contract_address: pact_address };
 
     let player_controller = player();
 

@@ -1479,8 +1479,8 @@
   },
   "contracts": [
     {
-      "address": "0x20d7eb9497bcc20dc21ec163fba43a0429ea6d5f601cf4290a9143899634fa0",
-      "class_hash": "0x2e610eca6512f61e59da2e23b0cefe74f29f304a211ae1a46672a055c3c757e",
+      "address": "0x7c82ae63eabae66f9409d56a83a69c8f666a3d6c21a4674daccf624a71a99b6",
+      "class_hash": "0x22b24baa46016e991656e7711df43edaacf5046db3972036ff969032b082c52",
       "abi": [
         {
           "type": "impl",
@@ -1830,13 +1830,32 @@
       "selector": "0x291959f4c8ad45021375e2cf5c196b1635387da7e4c213cc5c33885dacde539"
     }
   ],
-  "events": [],
+  "events": [
+    {
+      "members": [],
+      "class_hash": "0x37cc4407a4f3851680313a0238176afc4444ca2d17b87a26122c36fdb2d8310",
+      "tag": "ronin_quest-ChiCompleted",
+      "selector": "0x36bb03c946fbaf8a8b9855b6b45b61eca50a2d593273480bf934f23b3f9dcb6"
+    },
+    {
+      "members": [],
+      "class_hash": "0x3eda588784d64e36aade224c01c8440747916fc65b4c8f3aa6f02748a27ef8d",
+      "tag": "ronin_quest-ShinCompleted",
+      "selector": "0x7742c51e8f70bded60692e88687676e974ebd00df1182fd5d53cde40b68cf44"
+    },
+    {
+      "members": [],
+      "class_hash": "0x56e6fd612c5be129f23dd30ea8a25c8908e31ddb237104e6352b8576745e42a",
+      "tag": "ronin_quest-WazaCompleted",
+      "selector": "0x7cdcd23ef5eb755ca82e182e3db53cf000de45902bfd5a06202513491ddbd0f"
+    }
+  ],
   "external_contracts": [
     {
-      "class_hash": "0x399ae7a19c10032dfae3f70efdf4b3023299d18431580ac292d446affe561c5",
+      "class_hash": "0x7575675394f623d53e40c046349224b1318de696a9f8ae6e72ac295257fff3b",
       "contract_name": "RoninPact",
       "tag": "ronin_quest-ronin_pact_nft",
-      "address": "0x7a78750831b203ea8c9353f9104246a934fa2d4f72bf8dc59baf72b52103cc1",
+      "address": "0x1cf03c8b862843f8f29dfe7a6ce12ded260b01d38ff3601cab97c511e50b17c",
       "abi": [
         {
           "type": "impl",
@@ -2298,42 +2317,6 @@
         },
         {
           "type": "event",
-          "name": "ronin_quest::token::pact::RoninPact::WazaCompleted",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "token_id",
-              "type": "core::integer::u256",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "ronin_quest::token::pact::RoninPact::ChiCompleted",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "token_id",
-              "type": "core::integer::u256",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "ronin_quest::token::pact::RoninPact::ShinCompleted",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "token_id",
-              "type": "core::integer::u256",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
           "name": "ronin_quest::token::pact::RoninPact::Event",
           "kind": "enum",
           "variants": [
@@ -2346,21 +2329,6 @@
               "name": "SRC5Event",
               "type": "openzeppelin_introspection::src5::SRC5Component::Event",
               "kind": "flat"
-            },
-            {
-              "name": "WazaCompleted",
-              "type": "ronin_quest::token::pact::RoninPact::WazaCompleted",
-              "kind": "nested"
-            },
-            {
-              "name": "ChiCompleted",
-              "type": "ronin_quest::token::pact::RoninPact::ChiCompleted",
-              "kind": "nested"
-            },
-            {
-              "name": "ShinCompleted",
-              "type": "ronin_quest::token::pact::RoninPact::ShinCompleted",
-              "kind": "nested"
             }
           ]
         }
