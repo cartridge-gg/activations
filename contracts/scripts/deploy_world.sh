@@ -62,15 +62,7 @@ cd "$CONTRACTS_DIR"
 
 # Step 1: Start Katana with Cartridge controller support
 echo -e "\n${YELLOW}Step 1: Starting Katana...${NC}"
-katana \
-    --dev \
-    --dev.accounts 3 \
-    --dev.seed 0 \
-    --dev.no-fee \
-    --http.cors_origins "*" \
-    --cartridge.controllers \
-    --cartridge.paymaster \
-    > /tmp/katana.log 2>&1 &
+katana --config katana.toml --explorer > /tmp/katana.log 2>&1 &
 KATANA_PID=$!
 echo -e "${GREEN}Katana started (PID: $KATANA_PID)${NC}"
 
@@ -183,9 +175,8 @@ echo -e "\n${YELLOW}Step 5: Starting Torii indexer...${NC}"
 
 torii \
     --world "$WORLD_ADDRESS" \
-    --http.cors_origins "*" \
     --rpc http://localhost:5050 \
-    --db-dir /tmp/torii-db \
+    --http.cors_origins "*" \
     --indexing.controllers \
     --indexing.contracts "ERC721:$TOKEN_ADDRESS" \
     > /tmp/torii.log 2>&1 &
