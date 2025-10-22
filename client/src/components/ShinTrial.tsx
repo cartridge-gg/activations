@@ -1,8 +1,6 @@
 import { useState } from 'react';
 
 import { useShinTrial } from '@/hooks/useShinTrial';
-import { useTrialCompletion } from '@/hooks/useTrialCompletion';
-import { useTrialEventSubscription } from '@/hooks/useTrialEventSubscription';
 import { TrialStatus } from '@/lib/types';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
 
@@ -19,24 +17,15 @@ export function ShinTrial({ status, onComplete, tokenId }: ShinTrialProps) {
     completeVow,
     isLoading,
     error,
-    success,
     timeRemaining,
     canComplete,
     timeLockDuration,
-  } = useShinTrial();
+  } = useShinTrial(onComplete);
 
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // Subscribe to ShinCompleted event for this token
-  const { isCompleted: eventSuccess } = useTrialEventSubscription(tokenId, 'ShinCompleted');
-
-  // Use event success if available, otherwise fall back to transaction success
-  const localSuccess = eventSuccess || success;
-
   const isDisabled = status === 'completed' || status === 'locked';
   const isCompleted = status === 'completed';
-
-  useTrialCompletion(localSuccess, onComplete);
 
   const handleVowChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setVowText(e.target.value);
@@ -49,10 +38,7 @@ export function ShinTrial({ status, onComplete, tokenId }: ShinTrialProps) {
       return;
     }
 
-    const result = await completeVow();
-    if (result.success) {
-      onComplete();
-    }
+    await completeVow();
   };
 
   // Format time remaining for display

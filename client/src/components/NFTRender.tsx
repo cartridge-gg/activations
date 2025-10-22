@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useReadContract } from '@starknet-react/core';
 import { RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
 import { TrialProgress } from '@/lib/types';
@@ -18,7 +18,7 @@ const TRIALS = [
 
 export function NFTRender({ progress, tokenId }: NFTRenderProps) {
   // Fetch tokenURI from the contract
-  const { data: tokenURIData, isLoading } = useReadContract({
+  const { data: tokenURIData, isLoading, refetch } = useReadContract({
     address: RONIN_PACT_ADDRESS as `0x${string}`,
     abi: RONIN_PACT_ABI as Abi,
     functionName: 'token_uri',
@@ -26,6 +26,13 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
     watch: true, // Poll for updates when progress changes
     enabled: !!tokenId,
   });
+
+  // Refetch token URI when progress changes
+  useEffect(() => {
+    if (tokenId && refetch) {
+      refetch();
+    }
+  }, [progress.waza_complete, progress.chi_complete, progress.shin_complete, tokenId, refetch]);
 
   // Parse and extract SVG from tokenURI
   const svgContent = useMemo(() => {

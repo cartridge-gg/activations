@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { hash } from 'starknet';
 
 import { useChiQuiz } from '@/hooks/useChiQuiz';
-import { useTrialCompletion } from '@/hooks/useTrialCompletion';
-import { useTrialEventSubscription } from '@/hooks/useTrialEventSubscription';
 import { TrialStatus } from '@/lib/types';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
 import chiData from '../../../spec/chi.json';
@@ -48,12 +46,9 @@ function hashAnswer(questionIndex: number, answerText: string): string {
 }
 
 export function ChiTrial({ status, onComplete, tokenId }: ChiTrialProps) {
-  const { submitQuiz, isLoading, error } = useChiQuiz();
+  const { submitQuiz, isLoading, error } = useChiQuiz(onComplete);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [localError, setLocalError] = useState<string | null>(null);
-
-  // Subscribe to ChiCompleted event for this token
-  const { isCompleted: localSuccess } = useTrialEventSubscription(tokenId, 'ChiCompleted');
 
   const isDisabled = status === 'completed' || status === 'locked';
   const isCompleted = status === 'completed';
@@ -85,8 +80,6 @@ export function ChiTrial({ status, onComplete, tokenId }: ChiTrialProps) {
   });
 
   const allAnswered = shuffledQuestions.every((q) => answers[q.displayId] !== undefined);
-
-  useTrialCompletion(localSuccess, onComplete);
 
   const handleAnswerSelect = (displayId: number, displayOptionIndex: number) => {
     if (isDisabled) return;

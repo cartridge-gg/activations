@@ -11,7 +11,7 @@ interface UseChiQuizReturn {
   error: string | null;
 }
 
-export function useChiQuiz(): UseChiQuizReturn {
+export function useChiQuiz(onSuccess?: () => void): UseChiQuizReturn {
   const { account, address } = useAccount();
   const { tokenId } = useTrialProgress();
   const [isLoading, setIsLoading] = useState(false);
@@ -63,6 +63,11 @@ export function useChiQuiz(): UseChiQuizReturn {
         await account.waitForTransaction(tx.transaction_hash);
 
         console.log('✅ Chi trial transaction confirmed');
+
+        // Call success callback to trigger progress refetch
+        if (onSuccess) {
+          onSuccess();
+        }
       } catch (err: any) {
         console.error('Error submitting quiz:', err);
 
@@ -85,7 +90,7 @@ export function useChiQuiz(): UseChiQuizReturn {
         setIsLoading(false);
       }
     },
-    [account, address, tokenId]
+    [account, address, tokenId, onSuccess]
   );
 
   return {

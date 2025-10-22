@@ -10,22 +10,20 @@ import { useTrialProgress } from '@/hooks/useTrialProgress';
 interface UseShinTrialReturn {
   vowText: string;
   setVowText: (text: string) => void;
-  completeVow: () => Promise<{ success: boolean }>;
+  completeVow: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
-  success: boolean;
   timeRemaining: number | null;
   canComplete: boolean;
   timeLockDuration: number | null;
 }
 
-export function useShinTrial(): UseShinTrialReturn {
+export function useShinTrial(onSuccess?: () => void): UseShinTrialReturn {
   const { account, address } = useAccount();
   const { tokenId } = useTrialProgress();
   const [vowText, setVowText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   // Query the RoninPact model to get time_lock configuration (singleton with game_id = 0)
   useEntityQuery(
@@ -83,25 +81,24 @@ export function useShinTrial(): UseShinTrialReturn {
   }, [mintTimestampData, tokenId, timeLockDuration]);
 
   const completeVow = useCallback(
-    async (): Promise<{ success: boolean }> => {
+    async (): Promise<void> => {
       if (!account || !address) {
         setError('Please connect your wallet');
-        return { success: false };
+        return;
       }
 
       if (!tokenId) {
         setError('Token ID not found');
-        return { success: false };
+        return;
       }
 
       if (!vowText.trim()) {
         setError('Please write your vow');
-        return { success: false };
+        return;
       }
 
       setIsLoading(true);
       setError(null);
-      setSuccess(false);
 
       try {
         // Hash the vow text using Starknet's selector hash
@@ -135,9 +132,12 @@ export function useShinTrial(): UseShinTrialReturn {
         await account.waitForTransaction(tx.transaction_hash);
 
         console.log('✅ Shin trial transaction confirmed');
-        setSuccess(true);
         setError(null);
-        return { success: true };
+
+        // Call success callback to trigger progress refetch
+        if (onSuccess) {
+          onSuccess();
+        }
       } catch (err: any) {
         console.error('Error completing Shin trial:', err);
 
@@ -168,13 +168,11 @@ export function useShinTrial(): UseShinTrialReturn {
         }
 
         setError(errorMessage);
-        setSuccess(false);
-        return { success: false };
       } finally {
         setIsLoading(false);
       }
     },
-    [account, address, tokenId, vowText, timeLockDuration]
+    [account, address, tokenId, vowText, timeLockDuration, onSuccess]
   );
 
   return {
@@ -183,7 +181,6 @@ export function useShinTrial(): UseShinTrialReturn {
     completeVow,
     isLoading,
     error,
-    success,
     timeRemaining,
     canComplete,
     timeLockDuration,

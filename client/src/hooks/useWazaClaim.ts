@@ -10,7 +10,7 @@ interface UseWazaClaimReturn {
   error: string | null;
 }
 
-export function useWazaClaim(tokenId: string): UseWazaClaimReturn {
+export function useWazaClaim(tokenId: string, onSuccess?: () => void): UseWazaClaimReturn {
   const { account, address } = useAccount();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +55,11 @@ export function useWazaClaim(tokenId: string): UseWazaClaimReturn {
         await account.waitForTransaction(tx.transaction_hash);
 
         console.log('✅ Waza trial transaction confirmed');
+
+        // Call success callback to trigger progress refetch
+        if (onSuccess) {
+          onSuccess();
+        }
       } catch (err: any) {
         console.error('Error completing Waza trial:', err);
         setError(err?.message || 'Failed to complete Waza trial');
@@ -62,7 +67,7 @@ export function useWazaClaim(tokenId: string): UseWazaClaimReturn {
         setIsLoading(false);
       }
     },
-    [account, address, tokenId]
+    [account, address, tokenId, onSuccess]
   );
 
   return {

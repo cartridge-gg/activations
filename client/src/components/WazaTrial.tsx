@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 
 import { ALLOWLISTED_COLLECTIONS } from '@/lib/config';
 import { useWazaClaim } from '@/hooks/useWazaClaim';
-import { useTrialCompletion } from '@/hooks/useTrialCompletion';
-import { useTrialEventSubscription } from '@/hooks/useTrialEventSubscription';
 import { TrialStatus, AllowlistedCollection } from '@/lib/types';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
 
@@ -14,41 +12,15 @@ interface WazaTrialProps {
 }
 
 export function WazaTrial({ status, onComplete, tokenId }: WazaTrialProps) {
-  const { tryCollection, isLoading, error } = useWazaClaim(tokenId);
+  const { tryCollection, isLoading, error } = useWazaClaim(tokenId, onComplete);
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
-
-  // Subscribe to WazaCompleted event for this token
-  const { isCompleted: localSuccess, event: wazaCompletedEvent } = useTrialEventSubscription(tokenId, 'WazaCompleted');
-
-  // Debug logging
-  useEffect(() => {
-    console.log('=== WazaTrial Component State ===');
-    console.log('Token ID:', tokenId);
-    console.log('Waza Completed Event:', wazaCompletedEvent);
-    console.log('Status:', status);
-  }, [tokenId, wazaCompletedEvent, status]);
-
-  useTrialCompletion(localSuccess, onComplete);
 
   const isDisabled = status === 'completed' || status === 'locked';
   const isCompleted = status === 'completed';
 
   const handleClaimViaCollection = async (collection: AllowlistedCollection) => {
-    try {
-      console.log('=== WazaTrial Component: handleClaimViaCollection ===');
-      console.log('Collection:', collection);
-      console.log('Token ID:', tokenId);
-      console.log('Is Disabled:', isDisabled);
-      console.log('Is Loading:', isLoading);
-
-      setSelectedCollection(collection.name);
-      await tryCollection(collection.address);
-
-      console.log('=== WazaTrial Component: tryCollection completed ===');
-    } catch (err) {
-      console.error('=== WazaTrial Component: Error in handleClaimViaCollection ===');
-      console.error(err);
-    }
+    setSelectedCollection(collection.name);
+    await tryCollection(collection.address);
   };
 
   return (
