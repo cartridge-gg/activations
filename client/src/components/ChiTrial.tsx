@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { hash } from 'starknet';
+import { useEventQuery, useModel } from '@dojoengine/sdk/react';
+import { KeysClause, ToriiQueryBuilder } from '@dojoengine/sdk';
 
 import { useChiQuiz } from '@/hooks/useChiQuiz';
 import { useTrialCompletion } from '@/hooks/useTrialCompletion';
@@ -10,6 +12,7 @@ import chiData from '../../../spec/chi.json';
 interface ChiTrialProps {
   status: TrialStatus;
   onComplete: () => void;
+  tokenId: string;
 }
 
 interface ChiQuestion {
@@ -45,16 +48,36 @@ function hashAnswer(questionIndex: number, answerText: string): string {
   return `0x${hash.starknetKeccak(hashInput).toString(16)}`;
 }
 
-export function ChiTrial({ status, onComplete }: ChiTrialProps) {
-  const { submitQuiz, isLoading, error, success } = useChiQuiz();
+export function ChiTrial({ status, onComplete, tokenId }: ChiTrialProps) {
+  const { submitQuiz, isLoading, error } = useChiQuiz();
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [localError, setLocalError] = useState<string | null>(null);
+
+  // Subscribe to ChiCompleted event for this token
+  useEventQuery(
+    new ToriiQueryBuilder()
+      .withClause(
+        KeysClause(
+          ['ronin_quest-ChiCompleted'],
+          [tokenId ? `0x${BigInt(tokenId).toString(16)}` : undefined],
+          'VariableLen'
+        ).build()
+      )
+      .includeHashedKeys()
+  );
+
+  // Retrieve ChiCompleted event from store
+  const chiCompletedEvent = useModel(tokenId, 'ronin_quest-ChiCompleted');
+
+  // The event itself confirms completion - no need to refetch
+  const localSuccess = !!chiCompletedEvent;
 
   const isDisabled = status === 'completed' || status === 'locked';
   const isCompleted = status === 'completed';
 
   // Randomly select 3 questions and shuffle both questions and options
-  const shuffledQuestions = useMemo<ShuffledQuestion[]>(() => {
+  // Using useState with function initializer ensures fresh shuffle on every mount
+  const [shuffledQuestions] = useState<ShuffledQuestion[]>(() => {
     const allQuestions = chiData.questions as ChiQuestion[];
 
     // Select 3 random questions
@@ -76,7 +99,7 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
         optionMapping: shuffledOptions.map(o => o.idx)
       };
     });
-  }, []); // Empty deps - only generate once on mount
+  });
 
   const allAnswered = shuffledQuestions.every((q) => answers[q.displayId] !== undefined);
 
@@ -187,6 +210,14 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
         </>
       )}
 
+      {isLoading && !isCompleted && (
+        <StatusMessage
+          type="info"
+          message="Transaction submitted"
+          detail="Waiting for confirmation on-chain..."
+        />
+      )}
+
       {(error || localError) && !isCompleted && (
         <StatusMessage
           type="error"
@@ -195,7 +226,7 @@ export function ChiTrial({ status, onComplete }: ChiTrialProps) {
         />
       )}
 
-      {success && !isCompleted && (
+      {localSuccess && !isCompleted && (
         <StatusMessage
           type="success"
           message="Chi trial completed successfully!"

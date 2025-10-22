@@ -60,11 +60,16 @@ export const ALLOWLISTED_COLLECTIONS: AllowlistedCollection[] = [
     name: 'loot-survivor',
     displayName: 'Loot Survivor',
   },
-  // {
-  //   address: '0x0', // TODO: Replace with actual Pistols contract address
-  //   name: 'pistols',
-  //   displayName: 'Pistols at Dawn',
-  // },
+  {
+    address: '0x0',
+    name: 'pistols',
+    displayName: 'Pistols at Dawn',
+  },
+  {
+    address: '0x360ac3acd12de507b3b3b2996556d84c59dbf6ccd4e8f106aa77d1d3412ea0d',
+    name: 'ronin-pact',
+    displayName: 'Ronin Pact',
+  },
 ];
 
 // Social sharing

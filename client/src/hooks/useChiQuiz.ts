@@ -10,7 +10,6 @@ interface UseChiQuizReturn {
   submitQuiz: (questionIndices: number[], answerHashes: string[]) => Promise<void>;
   isLoading: boolean;
   error: string | null;
-  success: boolean;
 }
 
 export function useChiQuiz(): UseChiQuizReturn {
@@ -18,7 +17,6 @@ export function useChiQuiz(): UseChiQuizReturn {
   const { tokenId } = useTrialProgress();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const useMock = isMockEnabled();
 
@@ -42,14 +40,11 @@ export function useChiQuiz(): UseChiQuizReturn {
 
       setIsLoading(true);
       setError(null);
-      setSuccess(false);
 
       try {
         if (useMock) {
           // Use mock contract implementation
           await mockCompleteChi(address, answerHashes);
-          setSuccess(true);
-          setError(null);
         } else {
           // Use real contract implementation
           // Contract signature: complete_chi(token_id: u256, questions: Array<u32>, answers: Array<felt252>)
@@ -68,9 +63,6 @@ export function useChiQuiz(): UseChiQuizReturn {
 
           // Wait for transaction confirmation
           await account.waitForTransaction(tx.transaction_hash);
-
-          setSuccess(true);
-          setError(null);
         }
       } catch (err: any) {
         console.error('Error submitting quiz:', err);
@@ -90,7 +82,6 @@ export function useChiQuiz(): UseChiQuizReturn {
         }
 
         setError(errorMessage);
-        setSuccess(false);
       } finally {
         setIsLoading(false);
       }
@@ -102,6 +93,5 @@ export function useChiQuiz(): UseChiQuizReturn {
     submitQuiz,
     isLoading,
     error,
-    success,
   };
 }

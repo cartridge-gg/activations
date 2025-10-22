@@ -8,7 +8,8 @@ interface TrialCardProps {
   status: TrialStatus;
   progress: TrialProgress;
   onComplete: () => void;
-  children: (props: { status: TrialStatus; onComplete: () => void }) => React.ReactNode;
+  tokenId: string;
+  children: (props: { status: TrialStatus; onComplete: () => void; tokenId: string }) => React.ReactNode;
 }
 
 export function TrialCard({
@@ -16,6 +17,7 @@ export function TrialCard({
   status,
   progress,
   onComplete,
+  tokenId,
   children,
 }: TrialCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -78,7 +80,7 @@ export function TrialCard({
             </div>
           )}
 
-          {status !== 'locked' && !isComplete && children({ status, onComplete })}
+          {status !== 'locked' && !isComplete && children({ status, onComplete, tokenId })}
 
           {isComplete && (
             <div className="bg-ronin-primary/10 border border-ronin-primary/30 rounded-lg p-4 text-center">
