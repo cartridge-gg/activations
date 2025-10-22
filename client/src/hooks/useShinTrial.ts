@@ -6,6 +6,7 @@ import { KeysClause, ToriiQueryBuilder } from '@dojoengine/sdk';
 
 import { QUEST_MANAGER_ADDRESS, RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
 import { useTrialProgress } from '@/hooks/useTrialProgress';
+import { splitTokenIdToU256, parseContractError, executeTx } from '@/lib/utils';
 
 interface UseShinTrialReturn {
   vowText: string;
@@ -105,33 +106,23 @@ export function useShinTrial(onSuccess?: () => void): UseShinTrialReturn {
         const vowHash = hash.getSelectorFromName(vowText.trim());
 
         // Convert tokenId to u256 (low, high)
-        const tokenIdBigInt = BigInt(tokenId);
-        const tokenIdLow = (tokenIdBigInt & ((1n << 128n) - 1n)).toString();
-        const tokenIdHigh = (tokenIdBigInt >> 128n).toString();
-
-        console.log('=== Shin Trial Completion ===');
-        console.log('Token ID:', tokenId);
-        console.log('Vow Text:', vowText);
-        console.log('Vow Hash:', vowHash);
-        console.log('Calldata:', { tokenIdLow, tokenIdHigh, vowHash });
+        const { low: tokenIdLow, high: tokenIdHigh } = splitTokenIdToU256(tokenId);
 
         // Call complete_shin on Quest Manager contract
-        const tx = await account.execute([{
-          contractAddress: QUEST_MANAGER_ADDRESS,
-          entrypoint: 'complete_shin',
-          calldata: [
-            tokenIdLow,
-            tokenIdHigh,
-            vowHash,
-          ],
-        }]);
+        await executeTx(
+          account,
+          [{
+            contractAddress: QUEST_MANAGER_ADDRESS,
+            entrypoint: 'complete_shin',
+            calldata: [
+              tokenIdLow,
+              tokenIdHigh,
+              vowHash,
+            ],
+          }],
+          'Shin Trial Transaction'
+        );
 
-        console.log('Transaction hash:', tx.transaction_hash);
-
-        // Wait for transaction confirmation
-        await account.waitForTransaction(tx.transaction_hash);
-
-        console.log('✅ Shin trial transaction confirmed');
         setError(null);
 
         // Call success callback to trigger progress refetch
@@ -140,33 +131,7 @@ export function useShinTrial(onSuccess?: () => void): UseShinTrialReturn {
         }
       } catch (err: any) {
         console.error('Error completing Shin trial:', err);
-
-        let errorMessage = 'Failed to complete Shin trial';
-
-        if (err?.message) {
-          if (err.message.includes('Time lock not elapsed')) {
-            const hours = Math.floor(timeLockDuration / 3600);
-            const minutes = Math.floor(timeLockDuration / 60);
-
-            let timeUnit;
-            if (hours >= 1) {
-              timeUnit = `${hours} hour${hours > 1 ? 's' : ''}`;
-            } else if (minutes >= 1) {
-              timeUnit = `${minutes} minute${minutes > 1 ? 's' : ''}`;
-            } else {
-              timeUnit = `${timeLockDuration} second${timeLockDuration > 1 ? 's' : ''}`;
-            }
-
-            errorMessage = `You must wait ${timeUnit} after minting before completing Shin`;
-          } else if (err.message.includes('Not token owner')) {
-            errorMessage = 'You do not own this token';
-          } else if (err.message.includes('Vow cannot be empty')) {
-            errorMessage = 'Please write your vow';
-          } else {
-            errorMessage = err.message;
-          }
-        }
-
+        const errorMessage = parseContractError(err, timeLockDuration ?? undefined);
         setError(errorMessage);
       } finally {
         setIsLoading(false);

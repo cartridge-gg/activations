@@ -2,7 +2,9 @@ import { useState } from 'react';
 
 import { useShinTrial } from '@/hooks/useShinTrial';
 import { TrialStatus } from '@/lib/types';
-import { StatusMessage, LoadingSpinner } from './TrialStatus';
+import { formatDuration } from '@/lib/utils';
+import { StatusMessage } from './TrialStatus';
+import { SubmitButton } from './SubmitButton';
 
 interface ShinTrialProps {
   status: TrialStatus;
@@ -41,39 +43,6 @@ export function ShinTrial({ status, onComplete, tokenId }: ShinTrialProps) {
     await completeVow();
   };
 
-  // Format time remaining for display
-  const formatTimeRemaining = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-
-    // For durations less than an hour, show seconds
-    if (hours === 0 && minutes === 0) {
-      return `${seconds}s`;
-    }
-    if (hours === 0) {
-      return `${minutes}m`;
-    }
-    return `${hours}h ${minutes}m`;
-  };
-
-  // Format the time lock duration for display
-  const formatTimeLockDuration = () => {
-    if (!timeLockDuration) {
-      return 'the required time';
-    }
-
-    const hours = Math.floor(timeLockDuration / 3600);
-    const minutes = Math.floor(timeLockDuration / 60);
-
-    if (hours >= 1) {
-      return `${hours} hour${hours > 1 ? 's' : ''}`;
-    }
-    if (minutes >= 1) {
-      return `${minutes} minute${minutes > 1 ? 's' : ''}`;
-    }
-    return `${timeLockDuration} second${timeLockDuration > 1 ? 's' : ''}`;
-  };
-
   return (
     <div className="space-y-4">
       {isCompleted ? (
@@ -92,11 +61,11 @@ export function ShinTrial({ status, onComplete, tokenId }: ShinTrialProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="text-sm font-medium">
-                  Time remaining: {formatTimeRemaining(timeRemaining)}
+                  Time remaining: {formatDuration(timeRemaining, { showSeconds: true })}
                 </span>
               </div>
               <p className="text-ronin-accent/60 text-xs mt-1">
-                You must wait {formatTimeLockDuration()} after minting before completing Shin
+                You must wait {timeLockDuration ? formatDuration(timeLockDuration, { verbose: true }) : 'the required time'} after minting before completing Shin
               </p>
             </div>
           )}
@@ -120,25 +89,16 @@ export function ShinTrial({ status, onComplete, tokenId }: ShinTrialProps) {
           </div>
 
           {/* Complete Vow Button */}
-          <button
+          <SubmitButton
             onClick={handleCompleteVow}
             disabled={!vowText.trim() || isDisabled || isLoading || !canComplete}
-            className="w-full bg-ronin-primary hover:bg-ronin-primary/90 disabled:bg-gray-700/50 disabled:cursor-not-allowed rounded-md px-6 py-3 text-ronin-secondary font-bold transition-colors flex items-center justify-center gap-2"
+            isLoading={isLoading}
+            loadingText="Submitting..."
           >
-            {isLoading ? (
-              <>
-                <LoadingSpinner />
-                Submitting...
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {!canComplete ? `Wait ${formatTimeLockDuration()}` : 'Seal Your Vow'}
-              </>
-            )}
-          </button>
+            {!canComplete
+              ? `Wait ${timeLockDuration ? formatDuration(timeLockDuration, { verbose: true }) : 'the required time'}`
+              : 'Seal Your Vow'}
+          </SubmitButton>
         </>
       )}
 

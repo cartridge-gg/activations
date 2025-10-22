@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAccount } from '@starknet-react/core';
 
 import { QUEST_MANAGER_ADDRESS } from '@/lib/config';
+import { executeTx } from '@/lib/utils';
 
 export function MintButton() {
   const { address, account } = useAccount();
@@ -21,37 +22,24 @@ export function MintButton() {
     setSuccess(false);
 
     try {
-      console.log('Starting mint transaction...');
-      console.log('Connected address:', address);
-      console.log('Quest Manager address:', QUEST_MANAGER_ADDRESS);
+      await executeTx(
+        account,
+        [{
+          contractAddress: QUEST_MANAGER_ADDRESS,
+          entrypoint: 'mint',
+          calldata: [],
+        }],
+        'Mint Pact Transaction'
+      );
 
-      console.log('Account object:', account);
-      console.log('Account type:', account?.constructor?.name);
-
-      const result = await account.execute([{
-        contractAddress: QUEST_MANAGER_ADDRESS,
-        entrypoint: 'mint',
-        calldata: [],
-      }]);
-
-      console.log('✅ Transaction submitted successfully!');
-      console.log('Transaction hash:', result.transaction_hash);
-      console.log('Full result:', result);
-
-      // Wait for transaction to be confirmed
-      console.log('Waiting for transaction confirmation...');
-      await account.waitForTransaction(result.transaction_hash);
-
-      console.log('✅ Transaction confirmed!');
       setSuccess(true);
 
       // Auto-redirect after showing success message
       setTimeout(() => {
-        console.log('Reloading page to show progress...');
         window.location.reload();
       }, 2000); // 2 second delay to show success message
     } catch (err: any) {
-      console.error('❌ Mint failed:', err);
+      console.error('Mint failed:', err);
       setError(err?.message || 'Failed to mint NFT');
     } finally {
       setIsLoading(false);

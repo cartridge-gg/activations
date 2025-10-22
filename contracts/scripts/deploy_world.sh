@@ -133,9 +133,9 @@ else
     echo -e "${RED}✗ Failed to set minter on NFT contract${NC}"
 fi
 
-# Configure the actions contract with the NFT address and time lock (3 minutes for testing)
+# Configure the actions contract with the NFT address and time lock (90 seconds for testing)
 echo -e "${BLUE}Setting Pact NFT address in actions contract...${NC}"
-sozo execute --profile dev --wait ronin_quest-actions set_pact "$TOKEN_ADDRESS" 180
+sozo execute --profile dev --wait ronin_quest-actions set_pact "$TOKEN_ADDRESS" 90
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Pact NFT address configured in actions contract with 3-minute time lock (for testing)${NC}"
 else
