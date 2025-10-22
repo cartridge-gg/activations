@@ -24,6 +24,7 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
     abi: RONIN_PACT_ABI as Abi,
     functionName: 'token_uri',
     args: [BigInt(tokenId)],
+    watch: true, // Poll for updates when progress changes
     enabled: !!tokenId,
   });
 

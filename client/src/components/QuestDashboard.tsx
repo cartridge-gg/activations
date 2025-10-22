@@ -5,9 +5,6 @@ import { TrialCard } from './TrialCard';
 interface QuestDashboardProps {
   progress: TrialProgress;
   tokenId: string;
-  onCompleteWaza: () => void;
-  onCompleteChi: () => void;
-  onCompleteShin: () => void;
   wazaContent: (props: { status: TrialStatus; onComplete: () => void }) => React.ReactNode;
   chiContent: (props: { status: TrialStatus; onComplete: () => void }) => React.ReactNode;
   shinContent: (props: { status: TrialStatus; onComplete: () => void }) => React.ReactNode;
@@ -16,9 +13,6 @@ interface QuestDashboardProps {
 export function QuestDashboard({
   progress,
   tokenId,
-  onCompleteWaza,
-  onCompleteChi,
-  onCompleteShin,
   wazaContent,
   chiContent,
   shinContent,
@@ -50,7 +44,7 @@ export function QuestDashboard({
               trialName="waza"
               status="available"
               progress={progress}
-              onComplete={onCompleteWaza}
+              onComplete={() => {}}
             >
               {wazaContent}
             </TrialCard>
@@ -60,7 +54,7 @@ export function QuestDashboard({
               trialName="chi"
               status="available"
               progress={progress}
-              onComplete={onCompleteChi}
+              onComplete={() => {}}
             >
               {chiContent}
             </TrialCard>
@@ -70,7 +64,7 @@ export function QuestDashboard({
               trialName="shin"
               status="available"
               progress={progress}
-              onComplete={onCompleteShin}
+              onComplete={() => {}}
             >
               {shinContent}
             </TrialCard>

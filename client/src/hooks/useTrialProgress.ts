@@ -86,9 +86,9 @@ export function useTrialProgress(): UseTrialProgressReturn {
     if (!address || !hasNFT || !progressData) return null;
     const data = progressData as any;
     return {
-      waza_complete: Boolean(data[0]),
-      chi_complete: Boolean(data[1]),
-      shin_complete: Boolean(data[2]),
+      waza_complete: Boolean(data.waza_complete),
+      chi_complete: Boolean(data.chi_complete),
+      shin_complete: Boolean(data.shin_complete),
     };
   }, [progressData, address, hasNFT]);
 

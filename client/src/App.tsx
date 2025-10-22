@@ -1,8 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
-
 import { useAccount } from '@starknet-react/core';
-
-import { TrialName } from './lib/config';
 import { ConnectWallet } from './components/ConnectWallet';
 import { MintButton } from './components/MintButton';
 import { QuestDashboard } from './components/QuestDashboard';
@@ -12,26 +8,10 @@ import { ShinTrial } from './components/ShinTrial';
 import { ShareButton } from './components/ShareButton';
 import { DevResetButton } from './components/DevResetButton';
 import { useTrialProgress } from './hooks/useTrialProgress';
-import { TrialProgress } from './lib/types';
 
 function App() {
   const { address } = useAccount();
-  const { progress: fetchedProgress, isLoading, hasNFT, tokenId } = useTrialProgress();
-
-  // Local progress state for instant updates
-  const [progress, setProgress] = useState<TrialProgress | null>(null);
-
-  // Sync local progress with fetched progress
-  useEffect(() => {
-    if (fetchedProgress) {
-      setProgress(fetchedProgress);
-    }
-  }, [fetchedProgress]);
-
-  // Generic trial completion handler
-  const handleTrialComplete = useCallback((trial: TrialName) => {
-    setProgress(prev => prev ? { ...prev, [`${trial}_complete`]: true } : null);
-  }, []);
+  const { progress, isLoading, hasNFT, tokenId } = useTrialProgress();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-ronin-dark to-gray-900 text-ronin-secondary">
@@ -79,9 +59,6 @@ function App() {
               <QuestDashboard
                 progress={progress}
                 tokenId={tokenId}
-                onCompleteWaza={() => handleTrialComplete('waza')}
-                onCompleteChi={() => handleTrialComplete('chi')}
-                onCompleteShin={() => handleTrialComplete('shin')}
                 wazaContent={(props) => <WazaTrial {...props} />}
                 chiContent={(props) => <ChiTrial {...props} />}
                 shinContent={(props) => <ShinTrial {...props} />}
