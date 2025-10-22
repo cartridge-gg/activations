@@ -214,18 +214,6 @@ else
     echo -e "${YELLOW}Warning: Failed to mint initial NFT (may already exist)${NC}"
 fi
 
-# Step 7: Fund development controller with STRK
-echo -e "\n${YELLOW}Step 7: Funding development controller with STRK...${NC}"
-DEV_CONTROLLER="0x046a8868178Fa8bF56A5c3b48f903ab406e5a324517D990Af786D5AB54D86865"
-STRK_TOKEN="0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"
-echo -e "${BLUE}Transferring 100 STRK to $DEV_CONTROLLER${NC}"
-sozo execute --profile dev --wait "$STRK_TOKEN" transfer "$DEV_CONTROLLER" 100000000000000000000 0
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓ Development controller funded with 100 STRK${NC}"
-else
-    echo -e "${YELLOW}Warning: Failed to fund controller (may already have balance)${NC}"
-fi
-
 # Print status
 echo -e "\n${GREEN}=== Deployment Complete ===${NC}"
 echo -e "${BLUE}Services running:${NC}"
