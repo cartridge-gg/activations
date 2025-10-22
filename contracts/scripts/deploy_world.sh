@@ -54,7 +54,8 @@ for tool in katana sozo torii; do
         echo -e "${RED}Error: $tool not found. Please install Dojo toolchain.${NC}"
         exit 1
     fi
-    echo -e "${GREEN}✓ $tool found${NC}"
+    version=$($tool --version 2>&1 | head -n 1)
+    echo -e "${GREEN}✓ $version found${NC}"
 done
 
 # Navigate to contracts directory
