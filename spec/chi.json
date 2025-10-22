@@ -4,10 +4,10 @@
       "id": 0,
       "question": "What is the primary role of the World contract in Dojo?",
       "options": [
-        "Store game state",
+        "Store and manage all game state data",
         "Manage permissions and route calls",
-        "Handle token transfers",
-        "Generate random numbers"
+        "Handle token transfers and payments",
+        "Generate random numbers for gameplay"
       ],
       "answer_hash": "0x338dd0aa80475fef901a056436443603af083f9945ac3f200a7596740cfc987"
     },
@@ -26,10 +26,10 @@
       "id": 2,
       "question": "What does the #[key] attribute do in a Dojo model?",
       "options": [
-        "Makes the field private",
+        "Makes the field private and inaccessible externally",
         "Marks the field for indexing and entity identification",
-        "Enables field encryption",
-        "Sets a default value"
+        "Enables automatic field encryption for security",
+        "Sets a default value for the field if none provided"
       ],
       "answer_hash": "0x2e2feaa547158ea07ae63918b69509c43e349e8d48fbfeec60aea4961785c82"
     },
@@ -48,10 +48,10 @@
       "id": 4,
       "question": "What is the purpose of Torii in the Dojo stack?",
       "options": [
-        "Contract deployment tool",
+        "Contract deployment and migration tool for Dojo",
         "Indexer and GraphQL server for querying game state",
-        "Wallet management system",
-        "Random number generator"
+        "Wallet management system for player authentication",
+        "Random number generator for onchain gameplay"
       ],
       "answer_hash": "0x9c9580b4a5a468038a758a3b6d1e18f7fd3bdf916d2e2b826348a86730a6a0"
     },
@@ -62,7 +62,7 @@
         "dojo build && dojo migrate",
         "sozo build && sozo migrate",
         "scarb build && scarb deploy",
-        "katana deploy"
+        "katana deploy && katana start"
       ],
       "answer_hash": "0x172208ec51a5968d69575fb358a24b5057285ba8513815533319ff5419b6bbd"
     },
@@ -70,10 +70,10 @@
       "id": 6,
       "question": "In ECS architecture, what do Systems do?",
       "options": [
-        "Store data",
-        "Define data structures",
+        "Store data in persistent blockchain storage",
+        "Define data structures and schema definitions",
         "Contain game logic that operates on entities",
-        "Generate random events"
+        "Generate random events for dynamic gameplay"
       ],
       "answer_hash": "0x19db675e15ed72137edacb53f9b65836f360adb0cf1a4c980e2e42f7ebc8d58"
     },

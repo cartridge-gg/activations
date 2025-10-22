@@ -66,7 +66,7 @@ export const ALLOWLISTED_COLLECTIONS: AllowlistedCollection[] = [
     displayName: 'Pistols at Dawn',
   },
   {
-    address: '0x7347f027aa350a617e19394839a161cd9cd478359a3ce4da707ae8918fe4b5a',
+    address: RONIN_PACT_ADDRESS,
     name: 'ronin-pact',
     displayName: 'Ronin Pact',
   },
