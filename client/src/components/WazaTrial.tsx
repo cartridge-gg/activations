@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useEventQuery, useModel, useEntityId } from '@dojoengine/sdk/react';
-import { KeysClause, ToriiQueryBuilder } from '@dojoengine/sdk';
 
 import { ALLOWLISTED_COLLECTIONS } from '@/lib/config';
 import { useWazaClaim } from '@/hooks/useWazaClaim';
 import { useTrialCompletion } from '@/hooks/useTrialCompletion';
+import { useTrialEventSubscription } from '@/hooks/useTrialEventSubscription';
 import { TrialStatus, AllowlistedCollection } from '@/lib/types';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
 
@@ -19,36 +18,15 @@ export function WazaTrial({ status, onComplete, tokenId }: WazaTrialProps) {
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
 
   // Subscribe to WazaCompleted event for this token
-  const tokenIdHex = tokenId ? `0x${BigInt(tokenId).toString(16)}` : undefined;
-
-  useEventQuery(
-    new ToriiQueryBuilder()
-      .withClause(
-        KeysClause(
-          ['ronin_quest-WazaCompleted'],
-          [tokenIdHex],
-          'VariableLen'
-        ).build()
-      )
-      .includeHashedKeys()
-  );
-
-  // Retrieve WazaCompleted event from store
-  const wazaEventEntityId = useEntityId(tokenIdHex ?? '0x0');
-  const wazaCompletedEvent = useModel(wazaEventEntityId, 'ronin_quest-WazaCompleted');
+  const { isCompleted: localSuccess, event: wazaCompletedEvent } = useTrialEventSubscription(tokenId, 'WazaCompleted');
 
   // Debug logging
   useEffect(() => {
     console.log('=== WazaTrial Component State ===');
     console.log('Token ID:', tokenId);
-    console.log('Token ID Hex:', tokenIdHex);
-    console.log('Entity ID:', wazaEventEntityId);
     console.log('Waza Completed Event:', wazaCompletedEvent);
     console.log('Status:', status);
-  }, [tokenId, tokenIdHex, wazaEventEntityId, wazaCompletedEvent, status]);
-
-  // The event itself confirms completion
-  const localSuccess = !!wazaCompletedEvent;
+  }, [tokenId, wazaCompletedEvent, status]);
 
   useTrialCompletion(localSuccess, onComplete);
 
@@ -109,26 +87,11 @@ export function WazaTrial({ status, onComplete, tokenId }: WazaTrialProps) {
         </>
       )}
 
-      {isLoading && !isCompleted && (
-        <StatusMessage
-          type="info"
-          message="Transaction submitted"
-          detail="Waiting for confirmation on-chain..."
-        />
-      )}
-
       {error && !isCompleted && (
         <StatusMessage
           type="error"
           message={error}
           detail="Ensure you own a token from one of the supported game collections"
-        />
-      )}
-
-      {localSuccess && !isCompleted && (
-        <StatusMessage
-          type="success"
-          message="Waza trial completed successfully!"
         />
       )}
     </div>

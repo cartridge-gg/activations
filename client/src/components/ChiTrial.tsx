@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { hash } from 'starknet';
-import { useEventQuery, useModel, useEntityId } from '@dojoengine/sdk/react';
-import { KeysClause, ToriiQueryBuilder } from '@dojoengine/sdk';
 
 import { useChiQuiz } from '@/hooks/useChiQuiz';
 import { useTrialCompletion } from '@/hooks/useTrialCompletion';
+import { useTrialEventSubscription } from '@/hooks/useTrialEventSubscription';
 import { TrialStatus } from '@/lib/types';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
 import chiData from '../../../spec/chi.json';
@@ -54,26 +53,7 @@ export function ChiTrial({ status, onComplete, tokenId }: ChiTrialProps) {
   const [localError, setLocalError] = useState<string | null>(null);
 
   // Subscribe to ChiCompleted event for this token
-  const tokenIdHex = tokenId ? `0x${BigInt(tokenId).toString(16)}` : undefined;
-
-  useEventQuery(
-    new ToriiQueryBuilder()
-      .withClause(
-        KeysClause(
-          ['ronin_quest-ChiCompleted'],
-          [tokenIdHex],
-          'VariableLen'
-        ).build()
-      )
-      .includeHashedKeys()
-  );
-
-  // Retrieve ChiCompleted event from store
-  const chiEventEntityId = useEntityId(tokenIdHex ?? '0x0');
-  const chiCompletedEvent = useModel(chiEventEntityId, 'ronin_quest-ChiCompleted');
-
-  // The event itself confirms completion
-  const localSuccess = !!chiCompletedEvent;
+  const { isCompleted: localSuccess } = useTrialEventSubscription(tokenId, 'ChiCompleted');
 
   const isDisabled = status === 'completed' || status === 'locked';
   const isCompleted = status === 'completed';
@@ -213,26 +193,11 @@ export function ChiTrial({ status, onComplete, tokenId }: ChiTrialProps) {
         </>
       )}
 
-      {isLoading && !isCompleted && (
-        <StatusMessage
-          type="info"
-          message="Transaction submitted"
-          detail="Waiting for confirmation on-chain..."
-        />
-      )}
-
       {(error || localError) && !isCompleted && (
         <StatusMessage
           type="error"
           message={error || localError || ''}
           detail="You need at least 3 correct answers to pass"
-        />
-      )}
-
-      {localSuccess && !isCompleted && (
-        <StatusMessage
-          type="success"
-          message="Chi trial completed successfully!"
         />
       )}
     </div>

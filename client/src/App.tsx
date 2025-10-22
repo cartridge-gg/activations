@@ -11,7 +11,7 @@ import { useTrialProgress } from './hooks/useTrialProgress';
 
 function App() {
   const { address } = useAccount();
-  const { progress, isLoading, hasNFT, tokenId } = useTrialProgress();
+  const { progress, isLoading, hasNFT, tokenId, refetch } = useTrialProgress();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-ronin-dark to-gray-900 text-ronin-secondary">
@@ -59,6 +59,7 @@ function App() {
               <QuestDashboard
                 progress={progress}
                 tokenId={tokenId}
+                onTrialComplete={refetch}
                 wazaContent={(props) => <WazaTrial {...props} />}
                 chiContent={(props) => <ChiTrial {...props} />}
                 shinContent={(props) => <ShinTrial {...props} />}

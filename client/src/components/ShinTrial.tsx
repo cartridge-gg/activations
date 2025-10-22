@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { useShinTrial } from '@/hooks/useShinTrial';
 import { useTrialCompletion } from '@/hooks/useTrialCompletion';
+import { useTrialEventSubscription } from '@/hooks/useTrialEventSubscription';
 import { TrialStatus } from '@/lib/types';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
 
@@ -11,7 +12,7 @@ interface ShinTrialProps {
   tokenId: string;
 }
 
-export function ShinTrial({ status, onComplete }: ShinTrialProps) {
+export function ShinTrial({ status, onComplete, tokenId }: ShinTrialProps) {
   const {
     vowText,
     setVowText,
@@ -26,10 +27,16 @@ export function ShinTrial({ status, onComplete }: ShinTrialProps) {
 
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Subscribe to ShinCompleted event for this token
+  const { isCompleted: eventSuccess } = useTrialEventSubscription(tokenId, 'ShinCompleted');
+
+  // Use event success if available, otherwise fall back to transaction success
+  const localSuccess = eventSuccess || success;
+
   const isDisabled = status === 'completed' || status === 'locked';
   const isCompleted = status === 'completed';
 
-  useTrialCompletion(success, onComplete);
+  useTrialCompletion(localSuccess, onComplete);
 
   const handleVowChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setVowText(e.target.value);
@@ -135,7 +142,7 @@ export function ShinTrial({ status, onComplete }: ShinTrialProps) {
             {isLoading ? (
               <>
                 <LoadingSpinner />
-                Sealing Your Vow...
+                Submitting...
               </>
             ) : (
               <>
@@ -153,13 +160,6 @@ export function ShinTrial({ status, onComplete }: ShinTrialProps) {
         <StatusMessage
           type="error"
           message={error || localError || ''}
-        />
-      )}
-
-      {success && !isCompleted && (
-        <StatusMessage
-          type="success"
-          message="Shin trial completed! Your vow is sealed on-chain."
         />
       )}
     </div>

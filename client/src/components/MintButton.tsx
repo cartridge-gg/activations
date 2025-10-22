@@ -104,7 +104,9 @@ export function MintButton() {
                 transition-all duration-300 ease-out
                 transform
                 ${
-                  isLoading || !address || success
+                  success
+                    ? 'bg-green-600 text-white cursor-default shadow-lg'
+                    : isLoading || !address
                     ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-ronin-primary to-red-600 hover:from-red-600 hover:to-ronin-primary text-white shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95'
                 }
@@ -175,7 +177,7 @@ export function MintButton() {
             </button>
 
             {/* Helper text for non-connected state */}
-            {!address && (
+            {!address && !success && (
               <p className="text-ronin-accent text-sm flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -188,46 +190,17 @@ export function MintButton() {
                 Connect your wallet to begin
               </p>
             )}
+
+            {/* Redirect message for success state */}
+            {success && (
+              <p className="text-gray-400 text-sm italic animate-in fade-in duration-500">
+                Redirecting to your journey in a moment...
+              </p>
+            )}
           </div>
 
           {/* Status Messages */}
           <div className="min-h-[100px]">
-            {/* Success State */}
-            {success && !isLoading && (
-              <div className="bg-green-900/30 border-2 border-green-500 rounded-xl p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 mt-1">
-                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                      <svg
-                        className="w-5 h-5 text-white"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-green-400 font-semibold mb-2 text-lg">
-                      Success! Your Pact is Forged
-                    </p>
-                    <p className="text-ronin-secondary text-sm mb-3">
-                      Your Rōnin's Pact NFT has been successfully minted. The trials now await you.
-                    </p>
-                    <p className="text-ronin-accent text-sm italic">
-                      Redirecting to your journey in a moment...
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Error State */}
             {error && !isLoading && (
               <div className="bg-red-900/30 border-2 border-ronin-primary rounded-xl p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
