@@ -15,7 +15,7 @@ use snforge_std::{
 use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
 
 use ronin_quest::systems::actions::{IActionsDispatcher, IActionsDispatcherTrait};
-use ronin_quest::models::{RoninPact, RoninGames, RoninAnswers};
+use ronin_quest::models::{RoninPact, RoninGame, RoninAnswers};
 use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 use ronin_quest::controller::eip191::{Signer, Eip191Signer};
 use super::mocks::{IMockERC721Dispatcher, IMockERC721DispatcherTrait};
@@ -46,7 +46,7 @@ fn namespace_def() -> NamespaceDef {
         namespace: "ronin_quest",
         resources: [
             TestResource::Model("RoninPact"),
-            TestResource::Model("RoninGames"),
+            TestResource::Model("RoninGame"),
             TestResource::Model("RoninAnswers"),
             TestResource::Contract("actions"),
             TestResource::Event("WazaCompleted"),
@@ -122,21 +122,21 @@ fn test_set_pact() {
 
 #[test]
 #[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-fn test_set_games() {
+fn test_set_game() {
     let (world, actions, actions_address) = setup_world();
 
-    // Deploy mock game contracts
+    // Deploy mock game contract
     let game1 = deploy_test_game(owner());
-    let game2 = deploy_test_game(owner());
 
-    // Set games
+    // Set game as active
     start_cheat_caller_address(actions_address, owner());
-    actions.set_games(array![game1, game2]);
+    actions.set_game(game1, true);
     stop_cheat_caller_address(actions_address);
 
-    // Verify games were set
-    let games_config: RoninGames = world.read_model(0);
-    assert(games_config.games.len() == 2, 'Games not set');
+    // Verify game was set
+    let game_config: RoninGame = world.read_model(game1);
+    assert(game_config.active == true, 'Game not set active');
+    assert(game_config.contract_address == game1, 'Wrong address');
 }
 
 #[test]
@@ -238,7 +238,7 @@ fn test_complete_waza() {
     // Configure actions contract
     start_cheat_caller_address(actions_address, owner());
     actions.set_pact(pact_address);
-    actions.set_games(array![game_address]);
+    actions.set_game(game_address, true);
     stop_cheat_caller_address(actions_address);
 
     // Set actions as minter in pact
@@ -260,7 +260,7 @@ fn test_complete_waza() {
 
     // Complete waza trial - Player (Controller) calls
     start_cheat_caller_address(actions_address, player_controller);
-    actions.complete_waza(0);
+    actions.complete_waza(0, game_address);
     stop_cheat_caller_address(actions_address);
 
     // Verify waza trial is complete
@@ -272,7 +272,7 @@ fn test_complete_waza() {
 
 #[test]
 #[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
-#[should_panic(expected: ('No tokens owned!',))]
+#[should_panic(expected: ('No game tokens owned!',))]
 fn test_waza_no_nft_fails() {
     let (_world, actions, actions_address) = setup_world();
 
@@ -284,7 +284,7 @@ fn test_waza_no_nft_fails() {
     // Configure actions contract
     start_cheat_caller_address(actions_address, owner());
     actions.set_pact(pact_address);
-    actions.set_games(array![game_address]);
+    actions.set_game(game_address, true);
     stop_cheat_caller_address(actions_address);
 
     start_cheat_caller_address(pact_address, owner());
@@ -300,7 +300,7 @@ fn test_waza_no_nft_fails() {
 
     // Try to complete waza without game NFT - should fail
     start_cheat_caller_address(actions_address, player_controller);
-    actions.complete_waza(0);
+    actions.complete_waza(0, game_address);
 }
 
 // ============================================================================
@@ -499,7 +499,7 @@ fn test_waza_non_owner_fails() {
     // Configure actions contract
     start_cheat_caller_address(actions_address, owner());
     actions.set_pact(pact_address);
-    actions.set_games(array![game_address]);
+    actions.set_game(game_address, true);
     stop_cheat_caller_address(actions_address);
 
     start_cheat_caller_address(pact_address, owner());
@@ -522,7 +522,7 @@ fn test_waza_non_owner_fails() {
 
     // Other (Controller) tries to complete waza for player's token - should fail
     start_cheat_caller_address(actions_address, other_controller);
-    actions.complete_waza(0);
+    actions.complete_waza(0, game_address);
 }
 
 #[test]
@@ -628,7 +628,7 @@ fn test_full_lifecycle() {
 
     start_cheat_caller_address(actions_address, owner());
     actions.set_pact(pact_address);
-    actions.set_games(array![game_address]);
+    actions.set_game(game_address, true);
     actions.set_quiz(answers.clone());
     stop_cheat_caller_address(actions_address);
 
@@ -654,7 +654,7 @@ fn test_full_lifecycle() {
     // Complete all three trials - Player (Controller) calls all (as the NFT owner)
     // 1. Complete Waza (technique) - player calls
     start_cheat_caller_address(actions_address, player_controller);
-    actions.complete_waza(0);
+    actions.complete_waza(0, game_address);
     stop_cheat_caller_address(actions_address);
     let progress = pact.get_progress(0);
     assert(progress.waza_complete == true, 'Waza not complete');

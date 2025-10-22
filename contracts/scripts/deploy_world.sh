@@ -142,6 +142,16 @@ else
     echo -e "${RED}✗ Failed to set Pact address${NC}"
 fi
 
+# Configure Waza trial with whitelisted game (including Pact NFT for testing)
+echo -e "${BLUE}Whitelisting Pact NFT for Waza trial...${NC}"
+echo -e "${YELLOW}Note: Whitelisting Pact NFT itself for testing${NC}"
+sozo execute --profile dev --wait ronin_quest-actions set_game "$TOKEN_ADDRESS" 1
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Pact NFT whitelisted for Waza trial${NC}"
+else
+    echo -e "${RED}✗ Failed to whitelist game${NC}"
+fi
+
 # Configure Chi trial quiz answers
 echo -e "${BLUE}Setting Chi trial quiz answers...${NC}"
 # Read answer hashes from chi.json in the spec directory

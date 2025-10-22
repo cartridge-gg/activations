@@ -10,13 +10,13 @@ use ronin_quest::controller::eip191::Signer;
 pub trait IActions<T> {
     // Player actions
     fn mint(ref self: T);
-    fn complete_waza(ref self: T, token_id: u256);
+    fn complete_waza(ref self: T, token_id: u256, game_address: ContractAddress);
     fn complete_chi(ref self: T, token_id: u256, questions: Array<u32>, answers: Array<felt252>);
     fn complete_shin(ref self: T, token_id: u256, signer: Signer);
 
     // Admin functions
     fn set_pact(ref self: T, pact: ContractAddress);
-    fn set_games(ref self: T, games: Array<ContractAddress>);
+    fn set_game(ref self: T, contract_address: ContractAddress, active: bool);
     fn set_quiz(ref self: T, answers: Array<felt252>);
 }
 
@@ -31,7 +31,7 @@ pub mod actions {
     use super::IActions;
     use ronin_quest::controller::eip191::{Signer, SignerTrait};
     use ronin_quest::controller::interface::{IMultipleOwnersDispatcher, IMultipleOwnersDispatcherTrait};
-    use ronin_quest::models::{RoninPact, RoninGames, RoninAnswers};
+    use ronin_quest::models::{RoninPact, RoninGame, RoninAnswers};
     use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 
     #[derive(Copy, Drop, Serde)]
@@ -87,25 +87,22 @@ pub mod actions {
             world.emit_event(@PactMinted { player: caller, token_id });
         }
 
-        fn complete_waza(ref self: ContractState, token_id: u256) {
+        fn complete_waza(ref self: ContractState, token_id: u256, game_address: ContractAddress) {
             let caller = get_caller_address();
             let mut world = self.world_default();
 
             let pact_config: RoninPact = world.read_model(0);
-            let games_config: RoninGames = world.read_model(0);
+            let game_config: RoninGame = world.read_model(game_address);
+            assert(game_config.active, 'Game not whitelisted');
 
             let pact_erc721 = IERC721Dispatcher { contract_address: pact_config.pact };
             let owner = pact_erc721.owner_of(token_id);
             assert(owner == caller, 'Not token owner');
 
-            // Check balance across all game collections
-            let mut balance: u256 = 0;
-            for game in games_config.games {
-                let erc721 = IERC721Dispatcher { contract_address: game };
-                balance += erc721.balance_of(caller);
-            };
-
-            assert(balance >= 1, 'No tokens owned!');
+            // Check if caller owns an NFT from the specified game
+            let game_erc721 = IERC721Dispatcher { contract_address: game_address };
+            let balance = game_erc721.balance_of(caller);
+            assert(balance >= 1, 'No game tokens owned!');
 
             let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
             nft.complete_waza(token_id);
@@ -117,15 +114,15 @@ pub mod actions {
             let caller = get_caller_address();
             let mut world = self.world_default();
 
+            // Verify answer count matches question count
+            assert(questions.len() == answers.len(), 'Question/answer mismatch');
+
             let pact_config: RoninPact = world.read_model(0);
             let answers_config: RoninAnswers = world.read_model(0);
 
             let pact_erc721 = IERC721Dispatcher { contract_address: pact_config.pact };
             let owner = pact_erc721.owner_of(token_id);
             assert(owner == caller, 'Not token owner');
-
-            // Verify answer count matches question count
-            assert(questions.len() == answers.len(), 'Question/answer mismatch');
 
             let mut correct: u256 = 0;
             for i in 0..questions.len() {
@@ -178,9 +175,9 @@ pub mod actions {
             world.write_model(@config);
         }
 
-        fn set_games(ref self: ContractState, games: Array<ContractAddress>) {
+        fn set_game(ref self: ContractState, contract_address: ContractAddress, active: bool) {
             let mut world = self.world_default();
-            let config = RoninGames { game_id: 0, games };
+            let config = RoninGame { contract_address, active };
             world.write_model(@config);
         }
 

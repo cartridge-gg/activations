@@ -9,13 +9,13 @@ pub struct RoninPact {
     pub pact: ContractAddress,
 }
 
-// Allowlisted game collections
+// Whitelisted game collection
 #[derive(Drop, Serde)]
 #[dojo::model]
-pub struct RoninGames {
+pub struct RoninGame {
     #[key]
-    pub game_id: u32, // Always 0 for singleton
-    pub games: Array<ContractAddress>,
+    pub contract_address: ContractAddress,
+    pub active: bool,
 }
 
 // Quiz answer hashes

@@ -1479,8 +1479,8 @@
   },
   "contracts": [
     {
-      "address": "0x700d43a618eee7721e557c74fd67a001602a70f9d87ebcfc1cb885dd08cd007",
-      "class_hash": "0x7400d544edf029d715fec9d3e360c35986539140411f52aa437ae2f15bc287e",
+      "address": "0x58a330d07930894cd7e1da7c9c2d1e01962191916a83148881a453ab121ecf5",
+      "class_hash": "0x31d92a2f00acc2a54332e5fdcd9e1e8ec33ddaa52a94742f3b49b365e430022",
       "abi": [
         {
           "type": "impl",
@@ -1582,6 +1582,20 @@
           ]
         },
         {
+          "type": "enum",
+          "name": "core::bool",
+          "variants": [
+            {
+              "name": "False",
+              "type": "()"
+            },
+            {
+              "name": "True",
+              "type": "()"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "ronin_quest::systems::actions::IActions",
           "items": [
@@ -1599,6 +1613,10 @@
                 {
                   "name": "token_id",
                   "type": "core::integer::u256"
+                },
+                {
+                  "name": "game_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
                 }
               ],
               "outputs": [],
@@ -1654,11 +1672,15 @@
             },
             {
               "type": "function",
-              "name": "set_games",
+              "name": "set_game",
               "inputs": [
                 {
-                  "name": "games",
-                  "type": "core::array::Array::<core::starknet::contract_address::ContractAddress>"
+                  "name": "contract_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "active",
+                  "type": "core::bool"
                 }
               ],
               "outputs": [],
@@ -1802,7 +1824,7 @@
         "complete_chi",
         "complete_shin",
         "set_pact",
-        "set_games",
+        "set_game",
         "set_quiz",
         "dojo_init",
         "upgrade"
@@ -1819,9 +1841,9 @@
     },
     {
       "members": [],
-      "class_hash": "0x6f5ed3dcd8afb0c74446b6acd13568416943c1de9f1650577b89ca5faeb2f1",
-      "tag": "ronin_quest-RoninGames",
-      "selector": "0x1e3ad28d63a3fd825c2e9f1cc847e239a3e7d9f3c408aecd42864dccb6caa35"
+      "class_hash": "0x6b1427821ff851cd06c9bfc680f942157db8b9ced75b26caebc54fd8449cfa6",
+      "tag": "ronin_quest-RoninGame",
+      "selector": "0x75fe4cd7fda3b2e2bdf2f9155ab64d21fa2de8a1bee80da53516139649440b5"
     },
     {
       "members": [],
