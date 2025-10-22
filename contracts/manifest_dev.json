@@ -1479,8 +1479,8 @@
   },
   "contracts": [
     {
-      "address": "0x58a330d07930894cd7e1da7c9c2d1e01962191916a83148881a453ab121ecf5",
-      "class_hash": "0x31d92a2f00acc2a54332e5fdcd9e1e8ec33ddaa52a94742f3b49b365e430022",
+      "address": "0x7c13974064a733e960642b1a10d7cddf6b6f7b7f2dd7c3559ba40540ab76a4",
+      "class_hash": "0x7b8da8d2c9deb1c4dce471e08ec5cc713d48e8729e71994dffbb09ecff49047",
       "abi": [
         {
           "type": "impl",
@@ -1548,36 +1548,6 @@
             {
               "name": "high",
               "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::starknet::eth_address::EthAddress",
-          "members": [
-            {
-              "name": "address",
-              "type": "core::felt252"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "ronin_quest::controller::eip191::Eip191Signer",
-          "members": [
-            {
-              "name": "eth_address",
-              "type": "core::starknet::eth_address::EthAddress"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "ronin_quest::controller::eip191::Signer",
-          "variants": [
-            {
-              "name": "Eip191",
-              "type": "ronin_quest::controller::eip191::Eip191Signer"
             }
           ]
         },
@@ -1651,8 +1621,8 @@
                   "type": "core::integer::u256"
                 },
                 {
-                  "name": "signer",
-                  "type": "ronin_quest::controller::eip191::Signer"
+                  "name": "vow_hash",
+                  "type": "core::felt252"
                 }
               ],
               "outputs": [],
@@ -1665,6 +1635,10 @@
                 {
                   "name": "pact",
                   "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "time_lock",
+                  "type": "core::integer::u64"
                 }
               ],
               "outputs": [],
@@ -1847,7 +1821,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x212c3076addbe2ee6c3f39fd6290114cfdd2d63a39ae2f57a733d1d9aa41c15",
+      "class_hash": "0x4eceb6553d2f1ed9725d271b0c5a686263ca0b4ec15ba915fff5f622c4d5c21",
       "tag": "ronin_quest-RoninPact",
       "selector": "0x291959f4c8ad45021375e2cf5c196b1635387da7e4c213cc5c33885dacde539"
     }
@@ -1867,7 +1841,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x3eda588784d64e36aade224c01c8440747916fc65b4c8f3aa6f02748a27ef8d",
+      "class_hash": "0x77560629e9cb416444bc8a2be41d759202fa8a2433a09eefd8630398be8ff91",
       "tag": "ronin_quest-ShinCompleted",
       "selector": "0x7742c51e8f70bded60692e88687676e974ebd00df1182fd5d53cde40b68cf44"
     },
@@ -1880,10 +1854,10 @@
   ],
   "external_contracts": [
     {
-      "class_hash": "0x48f0eb1c6bab7ac1719fecb3e00a2a3017bf5c3175e4c78451192daafa074d0",
+      "class_hash": "0x5007d4c24c2db31099167da187afcb7b33baf8769cc7161f60149eebd2b3b91",
       "contract_name": "RoninPact",
       "tag": "ronin_quest-ronin_pact",
-      "address": "0x360ac3acd12de507b3b3b2996556d84c59dbf6ccd4e8f106aa77d1d3412ea0d",
+      "address": "0x7347f027aa350a617e19394839a161cd9cd478359a3ce4da707ae8918fe4b5a",
       "abi": [
         {
           "type": "impl",
@@ -2178,6 +2152,22 @@
               "outputs": [
                 {
                   "type": "ronin_quest::token::pact::TrialProgress"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "get_mint_timestamp",
+              "inputs": [
+                {
+                  "name": "token_id",
+                  "type": "core::integer::u256"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u64"
                 }
               ],
               "state_mutability": "view"

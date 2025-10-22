@@ -9,15 +9,14 @@ use dojo_snf_test::{
     WorldStorageTestTrait
 };
 use snforge_std::{
-    start_cheat_caller_address, stop_cheat_caller_address, declare, ContractClassTrait,
-    DeclareResultTrait
+    start_cheat_caller_address, stop_cheat_caller_address, start_cheat_block_timestamp,
+    declare, ContractClassTrait, DeclareResultTrait
 };
 use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
 
 use ronin_quest::systems::actions::{IActionsDispatcher, IActionsDispatcherTrait};
 use ronin_quest::models::{RoninPact, RoninGame, RoninAnswers};
 use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
-use ronin_quest::controller::eip191::{Signer, Eip191Signer};
 use super::mocks::{IMockERC721Dispatcher, IMockERC721DispatcherTrait};
 
 // ============================================================================
@@ -26,18 +25,19 @@ use super::mocks::{IMockERC721Dispatcher, IMockERC721DispatcherTrait};
 
 // Test account constants
 const OWNER: felt252 = 'OWNER';
+const PLAYER: felt252 = 'PLAYER';
+const OTHER: felt252 = 'OTHER';
 
 fn owner() -> ContractAddress {
     OWNER.try_into().unwrap()
 }
 
-// Deploy mock controllers to simulate real-world Controller usage
 fn player() -> ContractAddress {
-    deploy_mock_controller()
+    PLAYER.try_into().unwrap()
 }
 
 fn other() -> ContractAddress {
-    deploy_mock_controller()
+    OTHER.try_into().unwrap()
 }
 
 // Dojo world configuration
@@ -77,12 +77,6 @@ fn deploy_test_game(owner: ContractAddress) -> ContractAddress {
     game_address
 }
 
-fn deploy_mock_controller() -> ContractAddress {
-    let contract = declare("MockController").unwrap().contract_class();
-    let (controller_address, _) = contract.deploy(@array![]).unwrap();
-    controller_address
-}
-
 // World setup with initialized contracts
 fn setup_world() -> (WorldStorage, IActionsDispatcher, ContractAddress) {
     let ndef = namespace_def();
@@ -110,14 +104,15 @@ fn test_set_pact() {
     // Deploy pact contract
     let pact_address = deploy_pact(owner());
 
-    // Set pact address
+    // Set pact address with 24-hour time lock
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     stop_cheat_caller_address(actions_address);
 
     // Verify pact was set
     let pact_config: RoninPact = world.read_model(0);
     assert(pact_config.pact == pact_address, 'Pact not set');
+    assert(pact_config.time_lock == 86400, 'Time lock not set');
 }
 
 #[test]
@@ -179,7 +174,7 @@ fn test_mint_nft_via_actions() {
 
     // Configure actions contract
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     stop_cheat_caller_address(actions_address);
 
     // Mint NFT from Player (Controller) via actions contract
@@ -206,7 +201,7 @@ fn test_mint_duplicate_fails() {
 
     // Configure actions contract
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     stop_cheat_caller_address(actions_address);
 
     // Mint first NFT - should succeed
@@ -237,7 +232,7 @@ fn test_complete_waza() {
 
     // Configure actions contract
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     actions.set_game(game_address, true);
     stop_cheat_caller_address(actions_address);
 
@@ -283,7 +278,7 @@ fn test_waza_no_nft_fails() {
 
     // Configure actions contract
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     actions.set_game(game_address, true);
     stop_cheat_caller_address(actions_address);
 
@@ -326,7 +321,7 @@ fn test_complete_chi() {
     ];
 
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     actions.set_quiz(answers.clone());
     stop_cheat_caller_address(actions_address);
 
@@ -375,7 +370,7 @@ fn test_chi_wrong_answers_fails() {
     ];
 
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     actions.set_quiz(answers.clone());
     stop_cheat_caller_address(actions_address);
 
@@ -411,7 +406,7 @@ fn test_chi_mismatched_length_fails() {
     let answers = array![0x12345678, 0x23456789, 0x34567890];
 
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     actions.set_quiz(answers);
     stop_cheat_caller_address(actions_address);
 
@@ -446,31 +441,30 @@ fn test_complete_shin() {
     let pact_address = deploy_pact(owner());
     let pact = IRoninPactDispatcher { contract_address: pact_address };
 
-    let player_controller = player();
+    let player_addr = player();
 
     // Configure actions contract
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     stop_cheat_caller_address(actions_address);
 
     start_cheat_caller_address(pact_address, owner());
     pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
-    // Player (Controller) mints NFT
-    start_cheat_caller_address(pact_address, player_controller);
-    pact.mint(player_controller);
+    // Player mints NFT
+    start_cheat_caller_address(pact_address, player_addr);
+    pact.mint(player_addr);
     stop_cheat_caller_address(pact_address);
 
-    // Create a test signer (Discord/EIP-191 signer)
-    let eth_address: starknet::EthAddress = 0x1234567890abcdef_felt252.try_into().unwrap();
-    let test_signer = Signer::Eip191(Eip191Signer { eth_address });
+    // Fast forward 24 hours (86400 seconds)
+    start_cheat_block_timestamp(pact_address, 86401);
+    start_cheat_block_timestamp(actions_address, 86401);
 
-    // Complete shin trial - Player (Controller) is the caller and NFT owner
-    // The caller IS the Controller instance
-    // MockController.is_owner() always returns true
-    start_cheat_caller_address(actions_address, player_controller);
-    actions.complete_shin(0, test_signer);
+    // Complete shin trial with vow hash
+    let vow_hash: felt252 = 0x123456789abcdef;
+    start_cheat_caller_address(actions_address, player_addr);
+    actions.complete_shin(0, vow_hash);
     stop_cheat_caller_address(actions_address);
 
     // Verify shin trial is complete
@@ -478,6 +472,74 @@ fn test_complete_shin() {
     assert(progress.waza_complete == false, 'Waza should not be complete');
     assert(progress.chi_complete == false, 'Chi should not be complete');
     assert(progress.shin_complete == true, 'Shin not complete');
+}
+
+#[test]
+#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
+#[should_panic(expected: ('Time lock not elapsed!',))]
+fn test_shin_timelock_fails() {
+    let (_world, actions, actions_address) = setup_world();
+
+    // Setup: Deploy pact
+    let pact_address = deploy_pact(owner());
+    let pact = IRoninPactDispatcher { contract_address: pact_address };
+
+    let player_addr = player();
+
+    // Configure actions contract
+    start_cheat_caller_address(actions_address, owner());
+    actions.set_pact(pact_address, 86400);
+    stop_cheat_caller_address(actions_address);
+
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
+    stop_cheat_caller_address(pact_address);
+
+    // Player mints NFT
+    start_cheat_caller_address(pact_address, player_addr);
+    pact.mint(player_addr);
+    stop_cheat_caller_address(pact_address);
+
+    // Try to complete immediately without waiting 24 hours - should fail
+    let vow_hash: felt252 = 0x123456789abcdef;
+    start_cheat_caller_address(actions_address, player_addr);
+    actions.complete_shin(0, vow_hash);
+}
+
+#[test]
+#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
+#[should_panic(expected: ('Vow cannot be empty',))]
+fn test_shin_empty_vow_fails() {
+    let (_world, actions, actions_address) = setup_world();
+
+    // Setup: Deploy pact
+    let pact_address = deploy_pact(owner());
+    let pact = IRoninPactDispatcher { contract_address: pact_address };
+
+    let player_addr = player();
+
+    // Configure actions contract
+    start_cheat_caller_address(actions_address, owner());
+    actions.set_pact(pact_address, 86400);
+    stop_cheat_caller_address(actions_address);
+
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
+    stop_cheat_caller_address(pact_address);
+
+    // Player mints NFT
+    start_cheat_caller_address(pact_address, player_addr);
+    pact.mint(player_addr);
+    stop_cheat_caller_address(pact_address);
+
+    // Fast forward 24 hours
+    start_cheat_block_timestamp(pact_address, 86401);
+    start_cheat_block_timestamp(actions_address, 86401);
+
+    // Try to complete with empty vow hash - should fail
+    let vow_hash: felt252 = 0;
+    start_cheat_caller_address(actions_address, player_addr);
+    actions.complete_shin(0, vow_hash);
 }
 
 // ============================================================================
@@ -498,7 +560,7 @@ fn test_waza_non_owner_fails() {
 
     // Configure actions contract
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     actions.set_game(game_address, true);
     stop_cheat_caller_address(actions_address);
 
@@ -539,7 +601,7 @@ fn test_chi_non_owner_fails() {
     let answers = array![0x12345678, 0x23456789, 0x34567890];
 
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     actions.set_quiz(answers);
     stop_cheat_caller_address(actions_address);
 
@@ -573,31 +635,31 @@ fn test_shin_non_owner_fails() {
     let pact_address = deploy_pact(owner());
     let pact = IRoninPactDispatcher { contract_address: pact_address };
 
-    // player() and other() return different Controller instances
-    let player_controller = player();
-    let other_controller = other();
+    let player_addr = player();
+    let other_addr = other();
 
     // Configure actions contract
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     stop_cheat_caller_address(actions_address);
 
     start_cheat_caller_address(pact_address, owner());
     pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
-    // Player (Controller) mints NFT
-    start_cheat_caller_address(pact_address, player_controller);
-    pact.mint(player_controller);
+    // Player mints NFT
+    start_cheat_caller_address(pact_address, player_addr);
+    pact.mint(player_addr);
     stop_cheat_caller_address(pact_address);
 
-    // Create a test signer
-    let eth_address: starknet::EthAddress = 0x1234567890abcdef_felt252.try_into().unwrap();
-    let test_signer = Signer::Eip191(Eip191Signer { eth_address });
+    // Fast forward 24 hours
+    start_cheat_block_timestamp(pact_address, 86401);
+    start_cheat_block_timestamp(actions_address, 86401);
 
-    // Other (Controller) tries to complete shin for player's token - should fail
-    start_cheat_caller_address(actions_address, other_controller);
-    actions.complete_shin(0, test_signer);
+    // Other tries to complete shin for player's token - should fail
+    let vow_hash: felt252 = 0x123456789abcdef;
+    start_cheat_caller_address(actions_address, other_addr);
+    actions.complete_shin(0, vow_hash);
 }
 
 // ============================================================================
@@ -605,7 +667,7 @@ fn test_shin_non_owner_fails() {
 // ============================================================================
 
 #[test]
-#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
+#[available_gas(l1_gas: 0, l1_data_gas: 12000, l2_gas: 25000000)]
 fn test_full_lifecycle() {
     let (_world, actions, actions_address) = setup_world();
 
@@ -627,7 +689,7 @@ fn test_full_lifecycle() {
     ];
 
     start_cheat_caller_address(actions_address, owner());
-    actions.set_pact(pact_address);
+    actions.set_pact(pact_address, 86400);
     actions.set_game(game_address, true);
     actions.set_quiz(answers.clone());
     stop_cheat_caller_address(actions_address);
@@ -668,15 +730,14 @@ fn test_full_lifecycle() {
     let progress = pact.get_progress(0);
     assert(progress.chi_complete == true, 'Chi not complete');
 
-    // 3. Complete Shin (spirit) - Player (Controller) calls
-    // Create a test signer (Discord/EIP-191 signer)
-    let eth_address: starknet::EthAddress = 0x1234567890abcdef_felt252.try_into().unwrap();
-    let test_signer = Signer::Eip191(Eip191Signer { eth_address });
+    // 3. Complete Shin (spirit) - Player calls
+    // Fast forward 24 hours to pass time lock
+    start_cheat_block_timestamp(pact_address, 86401);
+    start_cheat_block_timestamp(actions_address, 86401);
 
-    // Player (Controller) is the caller and NFT owner - it IS the Controller instance
-    // MockController.is_owner() always returns true
+    let vow_hash: felt252 = 0x123456789abcdef;
     start_cheat_caller_address(actions_address, player_controller);
-    actions.complete_shin(0, test_signer);
+    actions.complete_shin(0, vow_hash);
     stop_cheat_caller_address(actions_address);
 
     // Verify final state - all three trials complete

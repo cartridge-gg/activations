@@ -7,6 +7,7 @@ pub struct RoninPact {
     #[key]
     pub game_id: u32, // Always 0 for singleton
     pub pact: ContractAddress,
+    pub time_lock: u64,
 }
 
 // Whitelisted game collection

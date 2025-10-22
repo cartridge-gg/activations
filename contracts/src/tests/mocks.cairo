@@ -66,28 +66,3 @@ pub mod MockERC721 {
         }
     }
 }
-
-// ============================================================================
-// Mock Controller - for testing Controller account ownership
-// ============================================================================
-
-use ronin_quest::controller::interface::IMultipleOwners;
-
-/// Mock Controller contract for testing
-/// Always returns true for is_owner to allow testing without deploying real Controller
-#[starknet::contract]
-pub mod MockController {
-    use super::IMultipleOwners;
-
-    #[storage]
-    struct Storage {}
-
-    #[abi(embed_v0)]
-    impl MockControllerImpl of IMultipleOwners<ContractState> {
-        /// Mock implementation that always returns true
-        /// In production, this would verify the GUID against registered signers
-        fn is_owner(self: @ContractState, guid: felt252) -> bool {
-            true
-        }
-    }
-}

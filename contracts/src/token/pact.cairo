@@ -39,6 +39,7 @@ pub trait IRoninPact<TContractState> {
     // Custom functions
     fn mint(ref self: TContractState, recipient: ContractAddress) -> u256;
     fn get_progress(self: @TContractState, token_id: u256) -> TrialProgress;
+    fn get_mint_timestamp(self: @TContractState, token_id: u256) -> u64;
 
     // Minting functions (only callable by authorized minter contract)
     fn complete_waza(ref self: TContractState, token_id: u256);
@@ -85,6 +86,7 @@ pub mod RoninPact {
         minter: ContractAddress,
         token_count: u256,
         token_progress: Map<u256, u8>,
+        mint_timestamps: Map<u256, u64>,
     }
 
     #[event]
@@ -174,6 +176,10 @@ pub mod RoninPact {
             // Initialize trial progress to 0 (no trials complete)
             self.token_progress.write(token_id, 0);
 
+            // Store mint timestamp
+            let mint_timestamp = starknet::get_block_timestamp();
+            self.mint_timestamps.write(token_id, mint_timestamp);
+
             token_id
         }
 
@@ -185,6 +191,10 @@ pub mod RoninPact {
                 chi_complete: (progress & CHI_BIT) != 0,
                 shin_complete: (progress & SHIN_BIT) != 0,
             }
+        }
+
+        fn get_mint_timestamp(self: @ContractState, token_id: u256) -> u64 {
+            self.mint_timestamps.read(token_id)
         }
 
         fn complete_waza(ref self: ContractState, token_id: u256) {

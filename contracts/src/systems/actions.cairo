@@ -3,7 +3,6 @@
 // Player progress is stored in the NFT contract (pact.cairo)
 
 use starknet::ContractAddress;
-use ronin_quest::controller::eip191::Signer;
 
 // Quest actions interface
 #[starknet::interface]
@@ -12,10 +11,10 @@ pub trait IActions<T> {
     fn mint(ref self: T);
     fn complete_waza(ref self: T, token_id: u256, game_address: ContractAddress);
     fn complete_chi(ref self: T, token_id: u256, questions: Array<u32>, answers: Array<felt252>);
-    fn complete_shin(ref self: T, token_id: u256, signer: Signer);
+    fn complete_shin(ref self: T, token_id: u256, vow_hash: felt252);
 
     // Admin functions
-    fn set_pact(ref self: T, pact: ContractAddress);
+    fn set_pact(ref self: T, pact: ContractAddress, time_lock: u64);
     fn set_game(ref self: T, contract_address: ContractAddress, active: bool);
     fn set_quiz(ref self: T, answers: Array<felt252>);
 }
@@ -29,8 +28,6 @@ pub mod actions {
     use dojo::event::EventStorage;
 
     use super::IActions;
-    use ronin_quest::controller::eip191::{Signer, SignerTrait};
-    use ronin_quest::controller::interface::{IMultipleOwnersDispatcher, IMultipleOwnersDispatcherTrait};
     use ronin_quest::models::{RoninPact, RoninGame, RoninAnswers};
     use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 
@@ -64,6 +61,7 @@ pub mod actions {
         #[key]
         pub token_id: u256,
         pub player: ContractAddress,
+        pub vow_hash: felt252,
     }
 
     #[abi(embed_v0)]
@@ -143,35 +141,39 @@ pub mod actions {
             world.emit_event(@ChiCompleted { token_id, player: caller });
         }
 
-        fn complete_shin(ref self: ContractState, token_id: u256, signer: Signer) {
+        fn complete_shin(ref self: ContractState, token_id: u256, vow_hash: felt252) {
             let caller = get_caller_address();
             let mut world = self.world_default();
 
+            // Verify vow hash is not empty
+            assert(vow_hash != 0, 'Vow cannot be empty');
+
             let pact_config: RoninPact = world.read_model(0);
 
+            // Verify caller owns the token
             let pact_erc721 = IERC721Dispatcher { contract_address: pact_config.pact };
             let owner = pact_erc721.owner_of(token_id);
             assert(owner == caller, 'Not token owner');
 
-            // Caller is a Controller instance
-            let controller = IMultipleOwnersDispatcher { contract_address: caller };
-
-            // Verify the signer GUID is registered in this Controller instance
-            let signer_guid = signer.into_guid();
-            let is_owner = controller.is_owner(signer_guid);
-            assert(is_owner, 'Signer not registered');
-
+            // Get mint timestamp and check time lock
             let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
+            let mint_timestamp = nft.get_mint_timestamp(token_id);
+            let current_time = starknet::get_block_timestamp();
+
+            assert(current_time - mint_timestamp >= pact_config.time_lock, 'Time lock not elapsed!');
+
+            // Complete the trial
             nft.complete_shin(token_id);
 
-            world.emit_event(@ShinCompleted { token_id, player: caller });
+            // Emit completion event
+            world.emit_event(@ShinCompleted { token_id, player: caller, vow_hash });
         }
 
         // Admin functions
         // Note: Authorization is handled by Dojo's permission system (owners in dojo_<profile>.toml)
-        fn set_pact(ref self: ContractState, pact: ContractAddress) {
+        fn set_pact(ref self: ContractState, pact: ContractAddress, time_lock: u64) {
             let mut world = self.world_default();
-            let config = RoninPact { game_id: 0, pact };
+            let config = RoninPact { game_id: 0, pact, time_lock };
             world.write_model(@config);
         }
 
