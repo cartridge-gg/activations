@@ -23,9 +23,9 @@ fn get_occlusion_svg() -> ByteArray {
     "<g id=\"_2JLexQ.tif\" data-name=\"2JLexQ.tif\"><g><path fill=\"#e9283a\" d=\"M45.96,23.81c-.29-5.71-.87-11.39-1.82-17.03-10.82-.1-23.59,0-32.48.12.42,5.78.82,11.37,1.17,16.91h33.13Z\"/></g></g>"
 }
 
-// SVG Art Constants - Yellow Glow (appears when fully forged)
+// SVG Art Constants - Purple/Magenta Glow (appears when fully forged)
 fn get_yellow_glow() -> ByteArray {
-    "<defs><radialGradient id=\"yellowGlow\" cx=\"50%\" cy=\"50%\"><stop offset=\"0%\" style=\"stop-color:#FFD700;stop-opacity:0.8\" /><stop offset=\"30%\" style=\"stop-color:#FFA500;stop-opacity:0.5\" /><stop offset=\"70%\" style=\"stop-color:#FF8C00;stop-opacity:0.2\" /><stop offset=\"100%\" style=\"stop-color:#FF8C00;stop-opacity:0\" /></radialGradient></defs><ellipse cx=\"512.5\" cy=\"675\" rx=\"180\" ry=\"120\" fill=\"url(#yellowGlow)\" opacity=\"0.9\"/>"
+    "<defs><radialGradient id=\"purpleGlow\" cx=\"50%\" cy=\"50%\"><stop offset=\"0%\" style=\"stop-color:#FF00FF;stop-opacity:0.8\" /><stop offset=\"30%\" style=\"stop-color:#C71585;stop-opacity:0.5\" /><stop offset=\"70%\" style=\"stop-color:#8B008B;stop-opacity:0.2\" /><stop offset=\"100%\" style=\"stop-color:#8B008B;stop-opacity:0\" /></radialGradient></defs><ellipse cx=\"512.5\" cy=\"675\" rx=\"180\" ry=\"120\" fill=\"url(#purpleGlow)\" opacity=\"0.9\"/>"
 }
 
 // Helper functions to generate swords with transforms at specific Y offsets

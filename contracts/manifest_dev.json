@@ -1854,10 +1854,10 @@
   ],
   "external_contracts": [
     {
-      "class_hash": "0x232fdfb165e5c28900f6318207059ab99fb9b048fc85075eb9d684db5b6b121",
+      "class_hash": "0x761d80dc326fa2f5ec22e0bb9c6b26dce06a0eefe768e7fc627dcd389baac19",
       "contract_name": "RoninPact",
       "tag": "ronin_quest-ronin_pact",
-      "address": "0x31db4ee890250b7e51a3e804dd6eb2faf6f78dd6144c3d572b65f397d979597",
+      "address": "0x11c24dde41013228388ca7776113133cfecd67acc686f035f99b77f753dac82",
       "abi": [
         {
           "type": "impl",
