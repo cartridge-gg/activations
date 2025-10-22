@@ -1,22 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import { ALLOWLISTED_COLLECTIONS } from '@/lib/config';
 import { useWazaClaim } from '@/hooks/useWazaClaim';
-import { TrialStatus, AllowlistedCollection } from '@/lib/types';
+import { useTrialError } from '@/hooks/useTrialError';
+import { BaseTrialProps, AllowlistedCollection } from '@/lib/types';
+import { getTrialStatusFlags } from '@/lib/utils';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
 
-interface WazaTrialProps {
-  status: TrialStatus;
-  onComplete: () => void;
-  tokenId: string;
-}
-
-export function WazaTrial({ status, onComplete, tokenId }: WazaTrialProps) {
+export function WazaTrial({ status, onComplete, tokenId }: BaseTrialProps) {
   const { tryCollection, isLoading, error } = useWazaClaim(tokenId, onComplete);
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
 
-  const isDisabled = status === 'completed' || status === 'locked';
-  const isCompleted = status === 'completed';
+  const { isDisabled, isCompleted } = getTrialStatusFlags(status);
+  const { displayError, showError } = useTrialError(error, isCompleted);
 
   const handleClaimViaCollection = async (collection: AllowlistedCollection) => {
     setSelectedCollection(collection.name);
@@ -59,10 +55,10 @@ export function WazaTrial({ status, onComplete, tokenId }: WazaTrialProps) {
         </>
       )}
 
-      {error && !isCompleted && (
+      {showError && (
         <StatusMessage
           type="error"
-          message={error}
+          message={displayError}
           detail="Ensure you own a token from one of the supported game collections"
         />
       )}

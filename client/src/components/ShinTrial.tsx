@@ -1,18 +1,11 @@
-import { useState } from 'react';
-
 import { useShinTrial } from '@/hooks/useShinTrial';
-import { TrialStatus } from '@/lib/types';
-import { formatDuration } from '@/lib/utils';
+import { useTrialError } from '@/hooks/useTrialError';
+import { BaseTrialProps } from '@/lib/types';
+import { formatDuration, getTrialStatusFlags } from '@/lib/utils';
 import { StatusMessage } from './TrialStatus';
 import { SubmitButton } from './SubmitButton';
 
-interface ShinTrialProps {
-  status: TrialStatus;
-  onComplete: () => void;
-  tokenId: string;
-}
-
-export function ShinTrial({ status, onComplete, tokenId }: ShinTrialProps) {
+export function ShinTrial({ status, onComplete, tokenId }: BaseTrialProps) {
   const {
     vowText,
     setVowText,
@@ -22,12 +15,10 @@ export function ShinTrial({ status, onComplete, tokenId }: ShinTrialProps) {
     timeRemaining,
     canComplete,
     timeLockDuration,
-  } = useShinTrial(onComplete);
+  } = useShinTrial(tokenId, onComplete);
 
-  const [localError, setLocalError] = useState<string | null>(null);
-
-  const isDisabled = status === 'completed' || status === 'locked';
-  const isCompleted = status === 'completed';
+  const { isDisabled, isCompleted } = getTrialStatusFlags(status);
+  const { setLocalError, displayError, showError } = useTrialError(error, isCompleted);
 
   const handleVowChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setVowText(e.target.value);
@@ -102,10 +93,10 @@ export function ShinTrial({ status, onComplete, tokenId }: ShinTrialProps) {
         </>
       )}
 
-      {(error || localError) && !isCompleted && (
+      {showError && (
         <StatusMessage
           type="error"
-          message={error || localError || ''}
+          message={displayError}
         />
       )}
     </div>

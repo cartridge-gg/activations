@@ -25,3 +25,9 @@ export interface SignerInfo {
   type: string; // "discord", "webauthn", "google", "metamask", etc.
   isRevoked: boolean;
 }
+
+export interface BaseTrialProps {
+  status: TrialStatus;
+  onComplete: () => void;
+  tokenId: string;
+}

@@ -1,4 +1,5 @@
 import { AccountInterface, Call } from 'starknet';
+import { TrialStatus } from './types';
 
 /**
  * Splits a token ID string into u256 components (low, high).
@@ -256,4 +257,28 @@ export async function executeTx(
   console.log('Tx confirmed!');
 
   return tx;
+}
+
+/**
+ * Returns a set of boolean flags based on the trial status.
+ *
+ * This utility provides convenient boolean flags for common trial status checks,
+ * reducing duplication across trial components.
+ *
+ * @param status - The current status of the trial
+ * @returns An object containing boolean flags for different status states
+ *
+ * @example
+ * ```typescript
+ * const { isDisabled, isCompleted, isAvailable, isLocked } = getTrialStatusFlags('completed');
+ * // Returns: { isDisabled: true, isCompleted: true, isAvailable: false, isLocked: false }
+ * ```
+ */
+export function getTrialStatusFlags(status: TrialStatus) {
+  return {
+    isDisabled: status === 'completed' || status === 'locked',
+    isCompleted: status === 'completed',
+    isAvailable: status === 'available',
+    isLocked: status === 'locked',
+  };
 }

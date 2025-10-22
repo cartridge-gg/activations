@@ -1,12 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useAccount, useReadContract } from '@starknet-react/core';
+import { useReadContract } from '@starknet-react/core';
 import { hash, Abi } from 'starknet';
 import { useModel, useEntityId, useEntityQuery } from '@dojoengine/sdk/react';
 import { KeysClause, ToriiQueryBuilder } from '@dojoengine/sdk';
 
-import { QUEST_MANAGER_ADDRESS, RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
-import { useTrialProgress } from '@/hooks/useTrialProgress';
-import { splitTokenIdToU256, parseContractError, executeTx } from '@/lib/utils';
+import { RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
+import { splitTokenIdToU256, parseContractError } from '@/lib/utils';
+import { useTrialTransaction } from './useTrialTransaction';
 
 interface UseShinTrialReturn {
   vowText: string;
@@ -19,11 +19,8 @@ interface UseShinTrialReturn {
   timeLockDuration: number | null;
 }
 
-export function useShinTrial(onSuccess?: () => void): UseShinTrialReturn {
-  const { account, address } = useAccount();
-  const { tokenId } = useTrialProgress();
+export function useShinTrial(tokenId: string, onSuccess?: () => void): UseShinTrialReturn {
   const [vowText, setVowText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Query the RoninPact model to get time_lock configuration (singleton with game_id = 0)
@@ -81,13 +78,16 @@ export function useShinTrial(onSuccess?: () => void): UseShinTrialReturn {
     };
   }, [mintTimestampData, tokenId, timeLockDuration]);
 
+  // Use the base transaction hook with custom error parsing
+  const { execute, isLoading: txIsLoading, error: txError } = useTrialTransaction({
+    entrypoint: 'complete_shin',
+    label: 'Shin Trial Transaction',
+    onSuccess,
+    parseError: (err) => parseContractError(err, timeLockDuration ?? undefined),
+  });
+
   const completeVow = useCallback(
     async (): Promise<void> => {
-      if (!account || !address) {
-        setError('Please connect your wallet');
-        return;
-      }
-
       if (!tokenId) {
         setError('Token ID not found');
         return;
@@ -98,54 +98,26 @@ export function useShinTrial(onSuccess?: () => void): UseShinTrialReturn {
         return;
       }
 
-      setIsLoading(true);
       setError(null);
 
-      try {
-        // Hash the vow text using Starknet's selector hash
-        const vowHash = hash.getSelectorFromName(vowText.trim());
+      // Hash the vow text using Starknet's selector hash
+      const vowHash = hash.getSelectorFromName(vowText.trim());
 
-        // Convert tokenId to u256 (low, high)
-        const { low: tokenIdLow, high: tokenIdHigh } = splitTokenIdToU256(tokenId);
+      // Convert tokenId to u256 (low, high)
+      const { low: tokenIdLow, high: tokenIdHigh } = splitTokenIdToU256(tokenId);
 
-        // Call complete_shin on Quest Manager contract
-        await executeTx(
-          account,
-          [{
-            contractAddress: QUEST_MANAGER_ADDRESS,
-            entrypoint: 'complete_shin',
-            calldata: [
-              tokenIdLow,
-              tokenIdHigh,
-              vowHash,
-            ],
-          }],
-          'Shin Trial Transaction'
-        );
-
-        setError(null);
-
-        // Call success callback to trigger progress refetch
-        if (onSuccess) {
-          onSuccess();
-        }
-      } catch (err: any) {
-        console.error('Error completing Shin trial:', err);
-        const errorMessage = parseContractError(err, timeLockDuration ?? undefined);
-        setError(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
+      // Call complete_shin on Quest Manager contract
+      await execute([tokenIdLow, tokenIdHigh, vowHash]);
     },
-    [account, address, tokenId, vowText, timeLockDuration, onSuccess]
+    [tokenId, vowText, execute]
   );
 
   return {
     vowText,
     setVowText,
     completeVow,
-    isLoading,
-    error,
+    isLoading: txIsLoading,
+    error: error || txError,
     timeRemaining,
     canComplete,
     timeLockDuration,

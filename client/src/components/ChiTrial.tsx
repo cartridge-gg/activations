@@ -2,16 +2,12 @@ import { useState } from 'react';
 import { hash } from 'starknet';
 
 import { useChiQuiz } from '@/hooks/useChiQuiz';
-import { TrialStatus } from '@/lib/types';
+import { useTrialError } from '@/hooks/useTrialError';
+import { BaseTrialProps } from '@/lib/types';
+import { getTrialStatusFlags } from '@/lib/utils';
 import { StatusMessage } from './TrialStatus';
 import { SubmitButton } from './SubmitButton';
 import chiData from '../../../spec/chi.json';
-
-interface ChiTrialProps {
-  status: TrialStatus;
-  onComplete: () => void;
-  tokenId: string;
-}
 
 interface ChiQuestion {
   id: number;
@@ -46,13 +42,12 @@ function hashAnswer(questionIndex: number, answerText: string): string {
   return `0x${hash.starknetKeccak(hashInput).toString(16)}`;
 }
 
-export function ChiTrial({ status, onComplete, tokenId }: ChiTrialProps) {
-  const { submitQuiz, isLoading, error } = useChiQuiz(onComplete);
+export function ChiTrial({ status, onComplete, tokenId }: BaseTrialProps) {
+  const { submitQuiz, isLoading, error } = useChiQuiz(tokenId, onComplete);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [localError, setLocalError] = useState<string | null>(null);
 
-  const isDisabled = status === 'completed' || status === 'locked';
-  const isCompleted = status === 'completed';
+  const { isDisabled, isCompleted } = getTrialStatusFlags(status);
+  const { setLocalError, displayError, showError } = useTrialError(error, isCompleted);
 
   // Randomly select 3 questions and shuffle both questions and options
   // Using useState with function initializer ensures fresh shuffle on every mount
@@ -176,10 +171,10 @@ export function ChiTrial({ status, onComplete, tokenId }: ChiTrialProps) {
         </>
       )}
 
-      {(error || localError) && !isCompleted && (
+      {showError && (
         <StatusMessage
           type="error"
-          message={error || localError || ''}
+          message={displayError}
           detail="You need at least 3 correct answers to pass"
         />
       )}

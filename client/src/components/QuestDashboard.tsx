@@ -1,4 +1,4 @@
-import { TrialProgress, TrialStatus } from '@/lib/types';
+import { TrialProgress, BaseTrialProps } from '@/lib/types';
 import { NFTRender } from './NFTRender';
 import { TrialCard } from './TrialCard';
 
@@ -6,9 +6,9 @@ interface QuestDashboardProps {
   progress: TrialProgress;
   tokenId: string;
   onTrialComplete: () => void;
-  wazaContent: (props: { status: TrialStatus; onComplete: () => void; tokenId: string }) => React.ReactNode;
-  chiContent: (props: { status: TrialStatus; onComplete: () => void; tokenId: string }) => React.ReactNode;
-  shinContent: (props: { status: TrialStatus; onComplete: () => void; tokenId: string }) => React.ReactNode;
+  wazaContent: (props: BaseTrialProps) => React.ReactNode;
+  chiContent: (props: BaseTrialProps) => React.ReactNode;
+  shinContent: (props: BaseTrialProps) => React.ReactNode;
 }
 
 export function QuestDashboard({

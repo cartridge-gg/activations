@@ -77,7 +77,6 @@ export function useTrialProgress(): UseTrialProgressReturn {
     abi: RONIN_PACT_ABI as Abi,
     functionName: 'get_progress',
     args: tokenId ? [BigInt(tokenId)] : undefined,
-    watch: true,
     enabled: hasNFT && !!tokenId,
   });
 
@@ -85,12 +84,18 @@ export function useTrialProgress(): UseTrialProgressReturn {
   const progress = useMemo(() => {
     if (!address || !hasNFT || !progressData) return null;
     const data = progressData as any;
-    return {
+    const parsed = {
       waza_complete: Boolean(data.waza_complete),
       chi_complete: Boolean(data.chi_complete),
       shin_complete: Boolean(data.shin_complete),
     };
-  }, [progressData, address, hasNFT]);
+
+    console.log('=== get_progress ===');
+    console.log('token_id:', tokenId);
+    console.log('progress:', parsed);
+
+    return parsed;
+  }, [progressData, address, hasNFT, tokenId]);
 
   const isLoading = address ? (balanceIsLoading || progressIsLoading) : false;
 
