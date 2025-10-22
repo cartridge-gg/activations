@@ -3,7 +3,6 @@ import { useState, useCallback } from 'react';
 import { useAccount } from '@starknet-react/core';
 
 import { QUEST_MANAGER_ADDRESS } from '@/lib/config';
-import { isMockEnabled, mockCompleteChi } from '@/lib/mockContracts';
 import { useTrialProgress } from './useTrialProgress';
 
 interface UseChiQuizReturn {
@@ -17,8 +16,6 @@ export function useChiQuiz(): UseChiQuizReturn {
   const { tokenId } = useTrialProgress();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const useMock = isMockEnabled();
 
   // Submit quiz answers
   const submitQuiz = useCallback(
@@ -42,28 +39,30 @@ export function useChiQuiz(): UseChiQuizReturn {
       setError(null);
 
       try {
-        if (useMock) {
-          // Use mock contract implementation
-          await mockCompleteChi(address, answerHashes);
-        } else {
-          // Use real contract implementation
-          // Contract signature: complete_chi(token_id: u256, questions: Array<u32>, answers: Array<felt252>)
-          const tx = await account.execute([{
-            contractAddress: QUEST_MANAGER_ADDRESS,
-            entrypoint: 'complete_chi',
-            calldata: [
-              tokenId, // u256 low
-              '0',     // u256 high
-              questionIndices.length, // questions array length
-              ...questionIndices,
-              answerHashes.length,   // answers array length
-              ...answerHashes,
-            ],
-          }]);
+        // Contract signature: complete_chi(token_id: u256, questions: Array<u32>, answers: Array<felt252>)
+        const tx = await account.execute([{
+          contractAddress: QUEST_MANAGER_ADDRESS,
+          entrypoint: 'complete_chi',
+          calldata: [
+            tokenId, // u256 low
+            '0',     // u256 high
+            questionIndices.length, // questions array length
+            ...questionIndices,
+            answerHashes.length,   // answers array length
+            ...answerHashes,
+          ],
+        }]);
 
-          // Wait for transaction confirmation
-          await account.waitForTransaction(tx.transaction_hash);
-        }
+        console.log('=== Chi Trial Transaction ===');
+        console.log('Transaction hash:', tx.transaction_hash);
+        console.log('Token ID:', tokenId);
+        console.log('Questions:', questionIndices);
+        console.log('Answer hashes:', answerHashes);
+
+        // Wait for transaction confirmation
+        await account.waitForTransaction(tx.transaction_hash);
+
+        console.log('✅ Chi trial transaction confirmed');
       } catch (err: any) {
         console.error('Error submitting quiz:', err);
 
@@ -86,7 +85,7 @@ export function useChiQuiz(): UseChiQuizReturn {
         setIsLoading(false);
       }
     },
-    [account, address, tokenId, useMock]
+    [account, address, tokenId]
   );
 
   return {

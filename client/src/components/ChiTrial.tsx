@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { hash } from 'starknet';
-import { useEventQuery, useModel } from '@dojoengine/sdk/react';
+import { useEventQuery, useModel, useEntityId } from '@dojoengine/sdk/react';
 import { KeysClause, ToriiQueryBuilder } from '@dojoengine/sdk';
 
 import { useChiQuiz } from '@/hooks/useChiQuiz';
@@ -54,12 +54,14 @@ export function ChiTrial({ status, onComplete, tokenId }: ChiTrialProps) {
   const [localError, setLocalError] = useState<string | null>(null);
 
   // Subscribe to ChiCompleted event for this token
+  const tokenIdHex = tokenId ? `0x${BigInt(tokenId).toString(16)}` : undefined;
+
   useEventQuery(
     new ToriiQueryBuilder()
       .withClause(
         KeysClause(
           ['ronin_quest-ChiCompleted'],
-          [tokenId ? `0x${BigInt(tokenId).toString(16)}` : undefined],
+          [tokenIdHex],
           'VariableLen'
         ).build()
       )
@@ -67,9 +69,10 @@ export function ChiTrial({ status, onComplete, tokenId }: ChiTrialProps) {
   );
 
   // Retrieve ChiCompleted event from store
-  const chiCompletedEvent = useModel(tokenId, 'ronin_quest-ChiCompleted');
+  const chiEventEntityId = useEntityId(tokenIdHex ?? '0x0');
+  const chiCompletedEvent = useModel(chiEventEntityId, 'ronin_quest-ChiCompleted');
 
-  // The event itself confirms completion - no need to refetch
+  // The event itself confirms completion
   const localSuccess = !!chiCompletedEvent;
 
   const isDisabled = status === 'completed' || status === 'locked';
@@ -103,7 +106,7 @@ export function ChiTrial({ status, onComplete, tokenId }: ChiTrialProps) {
 
   const allAnswered = shuffledQuestions.every((q) => answers[q.displayId] !== undefined);
 
-  useTrialCompletion(success, onComplete);
+  useTrialCompletion(localSuccess, onComplete);
 
   const handleAnswerSelect = (displayId: number, displayOptionIndex: number) => {
     if (isDisabled) return;

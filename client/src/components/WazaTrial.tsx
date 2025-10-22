@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useEventQuery, useModel } from '@dojoengine/sdk/react';
+import { useEventQuery, useModel, useEntityId } from '@dojoengine/sdk/react';
 import { KeysClause, ToriiQueryBuilder } from '@dojoengine/sdk';
 
 import { ALLOWLISTED_COLLECTIONS } from '@/lib/config';
@@ -19,12 +19,14 @@ export function WazaTrial({ status, onComplete, tokenId }: WazaTrialProps) {
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
 
   // Subscribe to WazaCompleted event for this token
+  const tokenIdHex = tokenId ? `0x${BigInt(tokenId).toString(16)}` : undefined;
+
   useEventQuery(
     new ToriiQueryBuilder()
       .withClause(
         KeysClause(
           ['ronin_quest-WazaCompleted'],
-          [tokenId ? `0x${BigInt(tokenId).toString(16)}` : undefined],
+          [tokenIdHex],
           'VariableLen'
         ).build()
       )
@@ -32,20 +34,44 @@ export function WazaTrial({ status, onComplete, tokenId }: WazaTrialProps) {
   );
 
   // Retrieve WazaCompleted event from store
-  const wazaCompletedEvent = useModel(tokenId, 'ronin_quest-WazaCompleted');
+  const wazaEventEntityId = useEntityId(tokenIdHex ?? '0x0');
+  const wazaCompletedEvent = useModel(wazaEventEntityId, 'ronin_quest-WazaCompleted');
 
-  // The event itself confirms completion - no need to refetch
+  // Debug logging
+  useEffect(() => {
+    console.log('=== WazaTrial Component State ===');
+    console.log('Token ID:', tokenId);
+    console.log('Token ID Hex:', tokenIdHex);
+    console.log('Entity ID:', wazaEventEntityId);
+    console.log('Waza Completed Event:', wazaCompletedEvent);
+    console.log('Status:', status);
+  }, [tokenId, tokenIdHex, wazaEventEntityId, wazaCompletedEvent, status]);
+
+  // The event itself confirms completion
   const localSuccess = !!wazaCompletedEvent;
 
   useTrialCompletion(localSuccess, onComplete);
 
-  const handleClaimViaCollection = async (collection: AllowlistedCollection) => {
-    setSelectedCollection(collection.name);
-    await tryCollection(collection.address);
-  };
-
   const isDisabled = status === 'completed' || status === 'locked';
   const isCompleted = status === 'completed';
+
+  const handleClaimViaCollection = async (collection: AllowlistedCollection) => {
+    try {
+      console.log('=== WazaTrial Component: handleClaimViaCollection ===');
+      console.log('Collection:', collection);
+      console.log('Token ID:', tokenId);
+      console.log('Is Disabled:', isDisabled);
+      console.log('Is Loading:', isLoading);
+
+      setSelectedCollection(collection.name);
+      await tryCollection(collection.address);
+
+      console.log('=== WazaTrial Component: tryCollection completed ===');
+    } catch (err) {
+      console.error('=== WazaTrial Component: Error in handleClaimViaCollection ===');
+      console.error(err);
+    }
+  };
 
   return (
     <div className="space-y-4">

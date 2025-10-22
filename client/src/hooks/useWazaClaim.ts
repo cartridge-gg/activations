@@ -3,7 +3,6 @@ import { useState, useCallback } from 'react';
 import { useAccount } from '@starknet-react/core';
 
 import { QUEST_MANAGER_ADDRESS } from '@/lib/config';
-import { isMockEnabled, mockCompleteWaza, mockCheckERC721Ownership } from '@/lib/mockContracts';
 
 interface UseWazaClaimReturn {
   tryCollection: (collectionAddress: string) => Promise<void>;
@@ -15,12 +14,17 @@ export function useWazaClaim(tokenId: string): UseWazaClaimReturn {
   const { account, address } = useAccount();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const useMock = isMockEnabled();
 
   // Try to complete Waza trial with a specific collection
   const tryCollection = useCallback(
     async (collectionAddress: string) => {
+      console.log('=== Waza Trial Attempt ===');
+      console.log('Account:', address);
+      console.log('Token ID:', tokenId);
+      console.log('Collection address:', collectionAddress);
+
       if (!account || !address) {
+        console.error('No account or address');
         setError('Please connect your wallet');
         return;
       }
@@ -29,35 +33,28 @@ export function useWazaClaim(tokenId: string): UseWazaClaimReturn {
       setError(null);
 
       try {
-        if (useMock) {
-          // Use mock implementations
-          const ownsNFT = await mockCheckERC721Ownership(collectionAddress, address);
+        // Call complete_waza on Quest Manager contract directly
+        // The contract will verify ownership
+        // Convert tokenId to u256 (low, high)
+        const tokenIdBigInt = BigInt(tokenId);
+        const low = tokenIdBigInt & ((1n << 128n) - 1n);
+        const high = tokenIdBigInt >> 128n;
 
-          if (!ownsNFT) {
-            setError('You do not own an NFT from this collection');
-            setIsLoading(false);
-            return;
-          }
+        const tx = await account.execute([{
+          contractAddress: QUEST_MANAGER_ADDRESS,
+          entrypoint: 'complete_waza',
+          calldata: [low.toString(), high.toString(), collectionAddress],
+        }]);
 
-          // Call mock complete_waza
-          await mockCompleteWaza(address, collectionAddress);
-        } else {
-          // Call complete_waza on Quest Manager contract directly
-          // The contract will verify ownership
-          // Convert tokenId to u256 (low, high)
-          const tokenIdBigInt = BigInt(tokenId);
-          const low = tokenIdBigInt & ((1n << 128n) - 1n);
-          const high = tokenIdBigInt >> 128n;
+        console.log('=== Waza Trial Transaction ===');
+        console.log('Transaction hash:', tx.transaction_hash);
+        console.log('Token ID:', tokenId);
+        console.log('Collection address:', collectionAddress);
 
-          const tx = await account.execute([{
-            contractAddress: QUEST_MANAGER_ADDRESS,
-            entrypoint: 'complete_waza',
-            calldata: [low.toString(), high.toString(), collectionAddress],
-          }]);
+        // Wait for transaction confirmation
+        await account.waitForTransaction(tx.transaction_hash);
 
-          // Wait for transaction confirmation
-          await account.waitForTransaction(tx.transaction_hash);
-        }
+        console.log('✅ Waza trial transaction confirmed');
       } catch (err: any) {
         console.error('Error completing Waza trial:', err);
         setError(err?.message || 'Failed to complete Waza trial');
@@ -65,7 +62,7 @@ export function useWazaClaim(tokenId: string): UseWazaClaimReturn {
         setIsLoading(false);
       }
     },
-    [account, address, tokenId, useMock]
+    [account, address, tokenId]
   );
 
   return {

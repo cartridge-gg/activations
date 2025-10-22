@@ -9,7 +9,6 @@ export function MintButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [txHash, setTxHash] = useState<string | null>(null);
 
   const handleMint = async () => {
     if (!account || !address) {
@@ -20,7 +19,6 @@ export function MintButton() {
     setIsLoading(true);
     setError(null);
     setSuccess(false);
-    setTxHash(null);
 
     try {
       console.log('Starting mint transaction...');
@@ -39,8 +37,6 @@ export function MintButton() {
       console.log('✅ Transaction submitted successfully!');
       console.log('Transaction hash:', result.transaction_hash);
       console.log('Full result:', result);
-
-      setTxHash(result.transaction_hash);
 
       // Wait for transaction to be confirmed
       console.log('Waiting for transaction confirmation...');
@@ -196,54 +192,6 @@ export function MintButton() {
 
           {/* Status Messages */}
           <div className="min-h-[100px]">
-            {/* Loading State */}
-            {isLoading && (
-              <div className="bg-ronin-light/20 border-2 border-ronin-light rounded-xl p-6 animate-pulse">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 mt-1">
-                    <div className="w-8 h-8 rounded-full bg-ronin-light flex items-center justify-center">
-                      <svg
-                        className="w-5 h-5 text-ronin-dark animate-spin"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-ronin-secondary font-semibold mb-2">
-                      Transaction in Progress
-                    </p>
-                    <p className="text-ronin-accent text-sm mb-2">
-                      Please wait while your pact is being forged on the blockchain...
-                    </p>
-                    {txHash && (
-                      <div className="mt-3 p-3 bg-ronin-dark/50 rounded-lg">
-                        <p className="text-xs text-ronin-accent mb-1">Transaction Hash:</p>
-                        <p className="text-xs text-ronin-secondary font-mono break-all">
-                          {txHash}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Success State */}
             {success && !isLoading && (
               <div className="bg-green-900/30 border-2 border-green-500 rounded-xl p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -272,15 +220,7 @@ export function MintButton() {
                     <p className="text-ronin-secondary text-sm mb-3">
                       Your Rōnin's Pact NFT has been successfully minted. The trials now await you.
                     </p>
-                    {txHash && (
-                      <div className="mt-3 p-3 bg-ronin-dark/50 rounded-lg">
-                        <p className="text-xs text-ronin-accent mb-1">Transaction Hash:</p>
-                        <p className="text-xs text-green-400 font-mono break-all">
-                          {txHash}
-                        </p>
-                      </div>
-                    )}
-                    <p className="text-ronin-accent text-sm mt-3 italic">
+                    <p className="text-ronin-accent text-sm italic">
                       Redirecting to your journey in a moment...
                     </p>
                   </div>

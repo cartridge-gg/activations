@@ -23,8 +23,8 @@ export function QuestDashboard({
         {/* Header */}
         <div className="text-center">
           <p className="text-lg text-ronin-secondary/80 max-w-4xl mx-auto">
-            Forge your legend by mastering three trials. Each completed trial
-            lights a slash on your Pact NFT.
+            Forge your legend by mastering three trials.
+            Each trial adds a blade to your Pact.
           </p>
         </div>
 
