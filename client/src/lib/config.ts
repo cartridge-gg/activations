@@ -72,27 +72,6 @@ export const ALLOWLISTED_COLLECTIONS: AllowlistedCollection[] = [
   },
 ];
 
-// Social sharing
-export const SHARE_URL = 'https://ronin-pact.xyz'; // TODO: Update with actual URL
-export const SHARE_HASHTAGS = ['RoninsPact', 'DojoEngine', 'Starknet'];
-
-// Trial metadata - consolidated structure
-export const TRIALS = {
-  waza: {
-    name: 'Waza',
-    subtitle: 'The Way of Technique',
-    description: 'Prove your mastery by demonstrating game ownership in a Dojo-powered world.',
-  },
-  chi: {
-    name: 'Chi',
-    subtitle: 'The Way of Wisdom',
-    description: 'Test your knowledge of Dojo 1.7 architecture and principles.',
-  },
-  shin: {
-    name: 'Shin',
-    subtitle: 'The Way of Spirit',
-    description: 'Pledge your vow and commit your spirit to the journey ahead.',
-  },
-} as const;
-
-export type TrialName = keyof typeof TRIALS;
+// Trial metadata - imported from centralized UI text configuration
+export { TRIAL_METADATA as TRIALS } from './uiText';
+export type TrialName = keyof typeof import('./uiText').TRIAL_METADATA;

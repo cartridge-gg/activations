@@ -1,9 +1,10 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { useReadContract } from '@starknet-react/core';
 import { RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
 import { TrialProgress } from '@/lib/types';
 import { Abi } from 'starknet';
 import { ShareButton } from './ShareButton';
+import { NFT_RENDER_TEXT } from '@/lib/uiText';
 
 interface NFTRenderProps {
   progress: TrialProgress;
@@ -11,12 +12,14 @@ interface NFTRenderProps {
 }
 
 const TRIALS = [
-  { name: 'Waza', key: 'waza_complete' as const },
-  { name: 'Chi', key: 'chi_complete' as const },
-  { name: 'Shin', key: 'shin_complete' as const },
+  { name: NFT_RENDER_TEXT.trials.waza, key: 'waza_complete' as const },
+  { name: NFT_RENDER_TEXT.trials.chi, key: 'chi_complete' as const },
+  { name: NFT_RENDER_TEXT.trials.shin, key: 'shin_complete' as const },
 ];
 
 export function NFTRender({ progress, tokenId }: NFTRenderProps) {
+  const svgContainerRef = useRef<HTMLDivElement>(null);
+
   // Fetch tokenURI from the contract
   const { data: tokenURIData, isLoading, refetch } = useReadContract({
     address: RONIN_PACT_ADDRESS as `0x${string}`,
@@ -67,12 +70,83 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
 
   const allComplete = TRIALS.every(({ key }) => progress[key]);
 
+  // Function to download SVG as PNG
+  const downloadAsPNG = async () => {
+    if (!svgContainerRef.current) return;
+
+    const svgElement = svgContainerRef.current.querySelector('svg');
+    if (!svgElement) return;
+
+    // Create a canvas
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas size (increase for better quality)
+    const scale = 2; // 2x for retina display quality
+    canvas.width = 1200 * scale; // Twitter recommended width
+    canvas.height = 630 * scale; // Twitter recommended height for large image cards
+
+    // Scale context for high quality
+    ctx.scale(scale, scale);
+
+    // Get SVG data
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    // Create image and draw to canvas
+    const img = new Image();
+    img.onload = () => {
+      // Fill background with dark color (matching your theme)
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, 0, 1200, 630);
+
+      // Calculate dimensions to fit SVG centered
+      const imgAspect = img.width / img.height;
+      const canvasAspect = 1200 / 630;
+
+      let drawWidth, drawHeight, offsetX, offsetY;
+
+      if (imgAspect > canvasAspect) {
+        // Image is wider than canvas
+        drawWidth = 1200;
+        drawHeight = 1200 / imgAspect;
+        offsetX = 0;
+        offsetY = (630 - drawHeight) / 2;
+      } else {
+        // Image is taller than canvas
+        drawHeight = 630;
+        drawWidth = 630 * imgAspect;
+        offsetX = (1200 - drawWidth) / 2;
+        offsetY = 0;
+      }
+
+      ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+
+      // Convert canvas to blob and download
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const pngUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = pngUrl;
+        link.download = 'ronin-pact-complete.png';
+        link.click();
+        URL.revokeObjectURL(pngUrl);
+      }, 'image/png');
+
+      URL.revokeObjectURL(url);
+    };
+
+    img.src = url;
+  };
+
   if (isLoading) {
     return (
       <div className="bg-gradient-to-br from-ronin-dark to-ronin-light rounded-lg p-8 shadow-xl">
         <div className="flex flex-col items-center space-y-6">
           <div className="relative w-96 h-96 rounded-lg overflow-hidden bg-ronin-dark/50 flex items-center justify-center">
-            <div className="text-ronin-secondary/50">Loading NFT...</div>
+            <div className="text-ronin-secondary/50">{NFT_RENDER_TEXT.loading}</div>
           </div>
         </div>
       </div>
@@ -84,7 +158,7 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
       <div className="bg-gradient-to-br from-ronin-dark to-ronin-light rounded-lg p-8 shadow-xl">
         <div className="flex flex-col items-center space-y-6">
           <div className="relative w-96 h-96 rounded-lg overflow-hidden bg-ronin-dark/50 flex items-center justify-center">
-            <div className="text-ronin-secondary/50">Failed to load NFT</div>
+            <div className="text-ronin-secondary/50">{NFT_RENDER_TEXT.error}</div>
           </div>
         </div>
       </div>
@@ -94,7 +168,7 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
   return (
     <div className="bg-gradient-to-br from-ronin-dark to-ronin-light rounded-lg p-8 shadow-xl">
       <div className="flex flex-col items-center space-y-6">
-        <div className="relative w-96 h-96 rounded-lg overflow-hidden">
+        <div ref={svgContainerRef} className="relative w-96 h-96 rounded-lg overflow-hidden">
           <div dangerouslySetInnerHTML={{ __html: svgContent }} />
         </div>
 
@@ -121,16 +195,27 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
           <div className="w-full space-y-4 pt-4 border-t border-ronin-primary/30">
             <div className="text-center space-y-2">
               <h3 className="text-xl font-bold text-ronin-secondary">
-                Congratulations, Ronin!
+                {NFT_RENDER_TEXT.completion.title}
               </h3>
               <p className="text-sm text-ronin-secondary/80">
-                You have forged your Pact and mastered all three trials.
+                {NFT_RENDER_TEXT.completion.message}
               </p>
               <p className="text-xs text-ronin-accent">
-                Your legend is complete. Share your achievement with the world.
+                {NFT_RENDER_TEXT.completion.callToAction}
               </p>
             </div>
-            <ShareButton progress={progress} />
+            <div className="space-y-3">
+              <ShareButton progress={progress} />
+              <button
+                onClick={downloadAsPNG}
+                className="text-ronin-accent hover:text-ronin-secondary text-sm underline transition-colors flex items-center justify-center gap-1 mx-auto"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Download as PNG</span>
+              </button>
+            </div>
           </div>
         )}
       </div>

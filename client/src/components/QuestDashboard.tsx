@@ -1,6 +1,7 @@
 import { TrialProgress, BaseTrialProps } from '@/lib/types';
 import { NFTRender } from './NFTRender';
 import { TrialCard } from './TrialCard';
+import { DASHBOARD_TEXT } from '@/lib/uiText';
 
 interface QuestDashboardProps {
   progress: TrialProgress;
@@ -25,8 +26,7 @@ export function QuestDashboard({
         {/* Header */}
         <div className="text-center">
           <p className="text-lg text-ronin-secondary/80 max-w-4xl mx-auto">
-            Forge your legend by mastering three trials.
-            Each trial adds a blade to your Pact.
+            {DASHBOARD_TEXT.description}
           </p>
         </div>
 

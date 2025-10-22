@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { TRIALS, TrialName } from '@/lib/config';
 import { TrialStatus, TrialProgress } from '@/lib/types';
+import { TRIAL_CARD_TEXT } from '@/lib/uiText';
 
 interface TrialCardProps {
   trialName: TrialName;
@@ -23,7 +24,7 @@ export function TrialCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const isComplete = progress[`${trialName}_complete`];
   const trial = TRIALS[trialName];
-  const { name: title, subtitle } = trial;
+  const { name: title, subtitle, description } = trial;
 
   return (
     <div
@@ -47,7 +48,8 @@ export function TrialCard({
             <h3 className="text-2xl font-bold text-ronin-secondary mb-1">
               {title}
             </h3>
-            <p className="text-sm text-ronin-accent italic">{subtitle}</p>
+            <p className="text-sm text-ronin-accent italic mb-2">{subtitle}</p>
+            <p className="text-xs text-ronin-secondary/70">{description}</p>
           </div>
 
           {/* Chevron Icon */}
@@ -76,7 +78,7 @@ export function TrialCard({
         <div className="px-6 pb-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
           {status === 'locked' && (
             <div className="flex items-center justify-center py-8 text-ronin-secondary/50">
-              <p className="text-sm">Complete previous trials to unlock</p>
+              <p className="text-sm">{TRIAL_CARD_TEXT.locked}</p>
             </div>
           )}
 
@@ -98,10 +100,10 @@ export function TrialCard({
                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <span className="font-semibold">Trial Complete!</span>
+                <span className="font-semibold">{TRIAL_CARD_TEXT.complete.title}</span>
               </div>
               <p className="text-sm text-ronin-secondary/70 mt-2">
-                You have mastered {title}
+                {TRIAL_CARD_TEXT.complete.message} {title}
               </p>
             </div>
           )}

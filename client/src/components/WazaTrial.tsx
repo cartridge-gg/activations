@@ -6,6 +6,7 @@ import { useTrialError } from '@/hooks/useTrialError';
 import { BaseTrialProps, AllowlistedCollection } from '@/lib/types';
 import { getTrialStatusFlags } from '@/lib/utils';
 import { StatusMessage, LoadingSpinner } from './TrialStatus';
+import { WAZA_TEXT } from '@/lib/uiText';
 
 export function WazaTrial({ status, onComplete, tokenId }: BaseTrialProps) {
   const { tryCollection, isLoading, error } = useWazaClaim(tokenId, onComplete);
@@ -24,14 +25,14 @@ export function WazaTrial({ status, onComplete, tokenId }: BaseTrialProps) {
       {isCompleted ? (
         <StatusMessage
           type="info"
-          message="Trial Complete"
-          detail="Your technique has been proven"
+          message={WAZA_TEXT.complete.title}
+          detail={WAZA_TEXT.complete.message}
         />
       ) : (
         <>
           <div className="space-y-3 mb-4">
             <p className="text-ronin-secondary text-sm font-medium">
-              Claim via supported games:
+              {WAZA_TEXT.claimPrompt}
             </p>
             {ALLOWLISTED_COLLECTIONS.map((collection) => (
               <button
@@ -59,7 +60,7 @@ export function WazaTrial({ status, onComplete, tokenId }: BaseTrialProps) {
         <StatusMessage
           type="error"
           message={displayError}
-          detail="Ensure you own a token from one of the supported game collections"
+          detail={WAZA_TEXT.error}
         />
       )}
     </div>

@@ -7,6 +7,7 @@ import { ChiTrial } from './components/ChiTrial';
 import { ShinTrial } from './components/ShinTrial';
 import { ShareButton } from './components/ShareButton';
 import { useTrialProgress } from './hooks/useTrialProgress';
+import { APP_TEXT } from './lib/uiText';
 
 function App() {
   const { address } = useAccount();
@@ -19,10 +20,10 @@ function App() {
         <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-6 mb-12">
           <div className="flex-shrink-0">
             <h1 className="text-3xl sm:text-4xl font-bold text-ronin-primary mb-2">
-              The Rōnin's Pact
+              {APP_TEXT.header.title}
             </h1>
             <p className="text-ronin-accent text-base sm:text-lg">
-              Forge your path through three trials
+              {APP_TEXT.header.subtitle}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
@@ -43,7 +44,7 @@ function App() {
             isLoading ? (
               <div className="text-center py-20">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ronin-primary"></div>
-                <p className="text-ronin-secondary mt-4">Loading your progress...</p>
+                <p className="text-ronin-secondary mt-4">{APP_TEXT.loading.progress}</p>
               </div>
             ) : !hasNFT ? (
               <div className="py-12 md:py-20">
@@ -61,20 +62,20 @@ function App() {
             ) : (
               <div className="text-center py-20">
                 <h2 className="text-2xl text-ronin-secondary mb-4">
-                  Unable to load quest data
+                  {APP_TEXT.errors.unableToLoad}
                 </h2>
                 <p className="text-ronin-accent">
-                  Please check your connection and try again
+                  {APP_TEXT.errors.checkConnection}
                 </p>
               </div>
             )
           ) : (
             <div className="text-center py-20">
               <h2 className="text-2xl text-ronin-secondary mb-4">
-                Connect your wallet to begin your journey
+                {APP_TEXT.noWallet.title}
               </h2>
               <p className="text-ronin-accent">
-                The trials await those brave enough to face them
+                {APP_TEXT.noWallet.subtitle}
               </p>
             </div>
           )}
@@ -82,7 +83,7 @@ function App() {
 
         {/* Footer */}
         <footer className="mt-20 text-center text-ronin-accent text-sm">
-          <p>Powered by Cartridge Controller & Starknet</p>
+          <p>{APP_TEXT.footer.poweredBy}</p>
         </footer>
       </div>
     </div>

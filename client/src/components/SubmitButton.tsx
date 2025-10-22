@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { LoadingSpinner } from './TrialStatus';
+import { BUTTON_TEXT } from '@/lib/uiText';
 
 interface SubmitButtonProps {
   onClick: () => void | Promise<void>;
@@ -22,7 +23,7 @@ export function SubmitButton({
   disabled = false,
   isLoading = false,
   children,
-  loadingText = 'Submitting...',
+  loadingText = BUTTON_TEXT.defaultLoading,
   icon,
 }: SubmitButtonProps) {
   return (

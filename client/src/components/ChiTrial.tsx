@@ -8,6 +8,7 @@ import { getTrialStatusFlags } from '@/lib/utils';
 import { StatusMessage } from './TrialStatus';
 import { SubmitButton } from './SubmitButton';
 import chiData from '../../../spec/chi.json';
+import { CHI_TEXT } from '@/lib/uiText';
 
 interface ChiQuestion {
   id: number;
@@ -85,7 +86,7 @@ export function ChiTrial({ status, onComplete, tokenId }: BaseTrialProps) {
 
   const handleSubmit = async () => {
     if (!allAnswered) {
-      setLocalError('Please answer all questions before submitting');
+      setLocalError(CHI_TEXT.errors.answerAll);
       return;
     }
 
@@ -111,8 +112,8 @@ export function ChiTrial({ status, onComplete, tokenId }: BaseTrialProps) {
       {isCompleted ? (
         <StatusMessage
           type="info"
-          message="Trial Complete"
-          detail="Your wisdom has been demonstrated"
+          message={CHI_TEXT.complete.title}
+          detail={CHI_TEXT.complete.message}
         />
       ) : (
         <>
@@ -164,9 +165,9 @@ export function ChiTrial({ status, onComplete, tokenId }: BaseTrialProps) {
             onClick={handleSubmit}
             disabled={!allAnswered || isDisabled}
             isLoading={isLoading}
-            loadingText="Submitting..."
+            loadingText={CHI_TEXT.submitting}
           >
-            Submit Answers
+            {CHI_TEXT.submit}
           </SubmitButton>
         </>
       )}
@@ -175,7 +176,7 @@ export function ChiTrial({ status, onComplete, tokenId }: BaseTrialProps) {
         <StatusMessage
           type="error"
           message={displayError}
-          detail="You need at least 3 correct answers to pass"
+          detail={CHI_TEXT.errors.needCorrect}
         />
       )}
     </div>

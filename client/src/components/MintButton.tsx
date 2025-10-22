@@ -4,6 +4,7 @@ import { useAccount } from '@starknet-react/core';
 
 import { QUEST_MANAGER_ADDRESS } from '@/lib/config';
 import { executeTx } from '@/lib/utils';
+import { MINT_TEXT } from '@/lib/uiText';
 
 export function MintButton() {
   const { address, account } = useAccount();
@@ -13,7 +14,7 @@ export function MintButton() {
 
   const handleMint = async () => {
     if (!account || !address) {
-      setError('Please connect your wallet first');
+      setError(MINT_TEXT.error.pleaseConnect);
       return;
     }
 
@@ -74,10 +75,10 @@ export function MintButton() {
             </div>
 
             <h2 className="text-2xl md:text-3xl font-bold text-ronin-secondary mb-3">
-              Forge Your Pact
+              {MINT_TEXT.header.title}
             </h2>
             <p className="text-ronin-accent text-base md:text-lg max-w-md mx-auto leading-relaxed">
-              Mint your Rōnin's Pact NFT and begin your journey through the three sacred trials
+              {MINT_TEXT.header.description}
             </p>
           </div>
 
@@ -125,7 +126,7 @@ export function MintButton() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  <span>Forging Pact...</span>
+                  <span>{MINT_TEXT.button.minting}</span>
                 </>
               ) : success ? (
                 <>
@@ -142,7 +143,7 @@ export function MintButton() {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  <span>Pact Forged!</span>
+                  <span>{MINT_TEXT.button.success}</span>
                 </>
               ) : (
                 <>
@@ -159,7 +160,7 @@ export function MintButton() {
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                     />
                   </svg>
-                  <span>Mint Your NFT</span>
+                  <span>{MINT_TEXT.button.mint}</span>
                 </>
               )}
             </button>
@@ -175,14 +176,14 @@ export function MintButton() {
                     d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                Connect your wallet to begin
+                {MINT_TEXT.helpText.connectWallet}
               </p>
             )}
 
             {/* Redirect message for success state */}
             {success && (
               <p className="text-gray-400 text-sm italic animate-in fade-in duration-500">
-                Redirecting to your journey in a moment...
+                {MINT_TEXT.helpText.redirecting}
               </p>
             )}
           </div>
@@ -212,7 +213,7 @@ export function MintButton() {
                   </div>
                   <div className="flex-1">
                     <p className="text-ronin-primary font-semibold mb-2">
-                      Transaction Failed
+                      {MINT_TEXT.error.title}
                     </p>
                     <p className="text-ronin-secondary text-sm mb-2">
                       {error}
@@ -221,7 +222,7 @@ export function MintButton() {
                       onClick={() => setError(null)}
                       className="mt-2 text-ronin-accent hover:text-ronin-secondary text-sm underline transition-colors"
                     >
-                      Try again
+                      {MINT_TEXT.error.tryAgain}
                     </button>
                   </div>
                 </div>
@@ -232,7 +233,7 @@ export function MintButton() {
           {/* Info Footer */}
           <div className="mt-8 pt-6 border-t border-ronin-accent/20">
             <p className="text-ronin-accent text-xs md:text-sm text-center">
-              This NFT grants you access to complete the three trials and prove your worth as a true Rōnin
+              {MINT_TEXT.footer.info}
             </p>
           </div>
         </div>

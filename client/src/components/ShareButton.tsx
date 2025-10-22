@@ -1,5 +1,5 @@
-import { SHARE_URL, SHARE_HASHTAGS } from '@/lib/config';
 import { TrialProgress } from '@/lib/types';
+import { SHARE_TEXT } from '@/lib/uiText';
 
 interface ShareButtonProps {
   progress: TrialProgress;
@@ -17,20 +17,23 @@ export function ShareButton({ progress }: ShareButtonProps) {
     let message = '';
 
     if (completedCount === 0) {
-      message = `I've just started my journey on The Ronin's Pact! 🗡️\n\nJoin me in proving mastery across three trials.`;
+      message = SHARE_TEXT.messages.started;
     } else if (completedCount === 1) {
-      message = `First trial complete on The Ronin's Pact! ⚔️\n\n1/3 slashes forged. The journey continues...`;
+      message = SHARE_TEXT.messages.oneTrial;
     } else if (completedCount === 2) {
-      message = `Two trials down, one to go on The Ronin's Pact! 🔥\n\n2/3 slashes forged. Victory is near...`;
+      message = SHARE_TEXT.messages.twoTrials;
     } else {
-      message = `The Ronin's Pact is Fully Forged! 🎌\n\nAll three trials complete. Waza, Chi, and Shin mastered.`;
+      message = SHARE_TEXT.messages.complete;
     }
 
-    // Add hashtags and URL
-    const hashtags = SHARE_HASHTAGS.join(',');
+    // Build full message with tags, URL, and hashtags
+    const tags = SHARE_TEXT.tags.join(' ');
+    const hashtags = SHARE_TEXT.hashtags.map(tag => `#${tag}`).join(' ');
+    const fullMessage = `${message}\n\nGet yours: ${SHARE_TEXT.url}\n\n${tags} ${hashtags}`;
+
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-      message
-    )}&url=${encodeURIComponent(SHARE_URL)}&hashtags=${hashtags}`;
+      fullMessage
+    )}`;
 
     // Open Twitter compose in new window
     window.open(tweetUrl, '_blank', 'width=550,height=420');
@@ -49,7 +52,7 @@ export function ShareButton({ progress }: ShareButtonProps) {
       >
         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
       </svg>
-      <span>Share on X</span>
+      <span>{SHARE_TEXT.button}</span>
     </button>
   );
 }

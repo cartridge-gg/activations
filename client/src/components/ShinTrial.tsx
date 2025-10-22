@@ -4,6 +4,7 @@ import { BaseTrialProps } from '@/lib/types';
 import { formatDuration, getTrialStatusFlags } from '@/lib/utils';
 import { StatusMessage } from './TrialStatus';
 import { SubmitButton } from './SubmitButton';
+import { SHIN_TEXT } from '@/lib/uiText';
 
 export function ShinTrial({ status, onComplete, tokenId }: BaseTrialProps) {
   const {
@@ -27,7 +28,7 @@ export function ShinTrial({ status, onComplete, tokenId }: BaseTrialProps) {
 
   const handleCompleteVow = async () => {
     if (!vowText.trim()) {
-      setLocalError('Please write your vow before completing the trial');
+      setLocalError(SHIN_TEXT.errors.writeVow);
       return;
     }
 
@@ -39,8 +40,8 @@ export function ShinTrial({ status, onComplete, tokenId }: BaseTrialProps) {
       {isCompleted ? (
         <StatusMessage
           type="info"
-          message="Trial Complete"
-          detail="Your vow has been sealed on-chain"
+          message={SHIN_TEXT.complete.title}
+          detail={SHIN_TEXT.complete.message}
         />
       ) : (
         <>
@@ -52,11 +53,11 @@ export function ShinTrial({ status, onComplete, tokenId }: BaseTrialProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="text-sm font-medium">
-                  Time remaining: {formatDuration(timeRemaining, { showSeconds: true })}
+                  {SHIN_TEXT.timer.remaining} {formatDuration(timeRemaining, { showSeconds: true })}
                 </span>
               </div>
               <p className="text-ronin-accent/60 text-xs mt-1">
-                You must wait {timeLockDuration ? formatDuration(timeLockDuration, { verbose: true }) : 'the required time'} after minting before completing Shin
+                {SHIN_TEXT.timer.waitMessage} {timeLockDuration ? formatDuration(timeLockDuration, { verbose: true }) : 'the required time'} {SHIN_TEXT.timer.afterMinting}
               </p>
             </div>
           )}
@@ -64,18 +65,18 @@ export function ShinTrial({ status, onComplete, tokenId }: BaseTrialProps) {
           {/* Vow Text Input */}
           <div className="mb-6">
             <label className="block text-ronin-secondary text-sm font-medium mb-2">
-              Write Your Vow
+              {SHIN_TEXT.form.label}
             </label>
             <textarea
               value={vowText}
               onChange={handleVowChange}
               disabled={isDisabled}
-              placeholder="I pledge to bravely explore the new horizons of onchain gaming, courageously engage with new dynamics and mechanisms, and fearlessly experiment with fresh ideas..."
+              placeholder={SHIN_TEXT.form.placeholder}
               rows={4}
               className="w-full bg-ronin-dark/30 border border-ronin-light/20 rounded-md px-4 py-3 text-ronin-secondary placeholder-ronin-accent/40 focus:outline-none focus:ring-2 focus:ring-ronin-accent/50 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 resize-none"
             />
             <p className="text-ronin-accent/60 text-xs mt-1">
-              Your vow will be recorded on-chain as a permanent commitment
+              {SHIN_TEXT.form.info}
             </p>
           </div>
 
@@ -84,11 +85,11 @@ export function ShinTrial({ status, onComplete, tokenId }: BaseTrialProps) {
             onClick={handleCompleteVow}
             disabled={!vowText.trim() || isDisabled || isLoading || !canComplete}
             isLoading={isLoading}
-            loadingText="Submitting..."
+            loadingText={SHIN_TEXT.buttons.submitting}
           >
             {!canComplete
-              ? `Wait ${timeLockDuration ? formatDuration(timeLockDuration, { verbose: true }) : 'the required time'}`
-              : 'Seal Your Vow'}
+              ? `${SHIN_TEXT.buttons.wait} ${timeLockDuration ? formatDuration(timeLockDuration, { verbose: true }) : 'the required time'}`
+              : SHIN_TEXT.buttons.seal}
           </SubmitButton>
         </>
       )}
