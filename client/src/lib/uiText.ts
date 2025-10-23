@@ -151,7 +151,7 @@ export const WALLET_TEXT = {
 export const MINT_TEXT = {
   header: {
     title: "Forge Your Pact",
-    description: "Mint your Rōnin's Pact NFT and begin your journey through the three sacred trials",
+    description: "Mint your Rōnin's Pact and begin your journey through three sacred trials",
   },
   button: {
     mint: "Mint Your NFT",
@@ -160,7 +160,7 @@ export const MINT_TEXT = {
   },
   helpText: {
     connectWallet: "Connect your wallet to begin",
-    redirecting: "Redirecting to your journey in a moment...",
+    redirecting: "Redirecting you to your journey...",
   },
   error: {
     title: "Transaction Failed",
@@ -168,7 +168,7 @@ export const MINT_TEXT = {
     pleaseConnect: "Please connect your wallet first",
   },
   footer: {
-    info: "This NFT grants you access to complete the three trials and prove your worth as a true Rōnin",
+    info: "This NFT marks your progress across the three trials and marks your worth as a true Rōnin",
   },
 } as const;
 

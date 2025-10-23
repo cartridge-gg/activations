@@ -54,7 +54,7 @@ export function useShinTrial(tokenId: string, onSuccess?: () => void): UseShinTr
   const { data: mintTimestampData } = useReadContract({
     address: RONIN_PACT_ADDRESS as `0x${string}`,
     abi: RONIN_PACT_ABI as Abi,
-    functionName: 'get_mint_timestamp',
+    functionName: 'get_timestamp',
     args: tokenId ? [BigInt(tokenId)] : undefined,
     watch: true,
     enabled: !!tokenId,

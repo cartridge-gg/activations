@@ -1,6 +1,8 @@
 import { useState } from 'react';
 
-import { useAccount } from '@starknet-react/core';
+import { useAccount, useConnect } from '@starknet-react/core';
+import { CallData } from 'starknet';
+import { ControllerConnector } from '@cartridge/connector';
 
 import { QUEST_MANAGER_ADDRESS } from '@/lib/config';
 import { executeTx } from '@/lib/utils';
@@ -8,6 +10,8 @@ import { MINT_TEXT } from '@/lib/uiText';
 
 export function MintButton() {
   const { address, account } = useAccount();
+  const { connectors } = useConnect();
+  const controller = connectors[0] as ControllerConnector;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -23,12 +27,14 @@ export function MintButton() {
     setSuccess(false);
 
     try {
+      const username = (await controller.username()) || "ronin";
+
       await executeTx(
         account,
         [{
           contractAddress: QUEST_MANAGER_ADDRESS,
           entrypoint: 'mint',
-          calldata: [],
+          calldata: CallData.compile([username.slice(0, 31)]), // Truncate for felt252 compatibility
         }],
         'Mint Pact Transaction'
       );

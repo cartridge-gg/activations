@@ -29,7 +29,7 @@ export function ShareButton({ progress }: ShareButtonProps) {
     // Build full message with tags, URL, and hashtags
     const tags = SHARE_TEXT.tags.join(' ');
     const hashtags = SHARE_TEXT.hashtags.map(tag => `#${tag}`).join(' ');
-    const fullMessage = `${message}\n\nGet yours: ${SHARE_TEXT.url}\n\n${tags} ${hashtags}`;
+    const fullMessage = `${message}\n\nForge your own: ${SHARE_TEXT.url}\n\n${tags} ${hashtags}`;
 
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
       fullMessage
