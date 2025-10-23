@@ -1479,8 +1479,8 @@
   },
   "contracts": [
     {
-      "address": "0x7c13974064a733e960642b1a10d7cddf6b6f7b7f2dd7c3559ba40540ab76a4",
-      "class_hash": "0x7b8da8d2c9deb1c4dce471e08ec5cc713d48e8729e71994dffbb09ecff49047",
+      "address": "0x2a3a2cb917ba40b4b453cc7040e080f7c9ace6f784d56a563ee0a27d295b85e",
+      "class_hash": "0x64ac6831e3d8aaef325fcecaf00fd25b1bfaf8b511d5fe6db92173ba95ae2fb",
       "abi": [
         {
           "type": "impl",
@@ -1572,7 +1572,12 @@
             {
               "type": "function",
               "name": "mint",
-              "inputs": [],
+              "inputs": [
+                {
+                  "name": "username",
+                  "type": "core::felt252"
+                }
+              ],
               "outputs": [],
               "state_mutability": "external"
             },
@@ -1854,10 +1859,10 @@
   ],
   "external_contracts": [
     {
-      "class_hash": "0x761d80dc326fa2f5ec22e0bb9c6b26dce06a0eefe768e7fc627dcd389baac19",
+      "class_hash": "0x62f1e71c974feaf6dc8ae207ff74338f7758ed539215a601980d432f2a0782b",
       "contract_name": "RoninPact",
       "tag": "ronin_quest-ronin_pact",
-      "address": "0x11c24dde41013228388ca7776113133cfecd67acc686f035f99b77f753dac82",
+      "address": "0x4bed69d61ac9b183ce7b7210d6c6d4a2f2225dff95be2a6bea280aee5a288b7",
       "abi": [
         {
           "type": "impl",
@@ -2131,6 +2136,10 @@
                 {
                   "name": "recipient",
                   "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "username",
+                  "type": "core::felt252"
                 }
               ],
               "outputs": [
@@ -2158,7 +2167,7 @@
             },
             {
               "type": "function",
-              "name": "get_mint_timestamp",
+              "name": "get_timestamp",
               "inputs": [
                 {
                   "name": "token_id",
@@ -2168,6 +2177,22 @@
               "outputs": [
                 {
                   "type": "core::integer::u64"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "get_username",
+              "inputs": [
+                {
+                  "name": "token_id",
+                  "type": "core::integer::u256"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::felt252"
                 }
               ],
               "state_mutability": "view"

@@ -8,7 +8,7 @@ use starknet::ContractAddress;
 #[starknet::interface]
 pub trait IActions<T> {
     // Player actions
-    fn mint(ref self: T);
+    fn mint(ref self: T, username: felt252);
     fn complete_waza(ref self: T, token_id: u256, game_address: ContractAddress);
     fn complete_chi(ref self: T, token_id: u256, questions: Array<u32>, answers: Array<felt252>);
     fn complete_shin(ref self: T, token_id: u256, vow_hash: felt252);
@@ -66,7 +66,7 @@ pub mod actions {
 
     #[abi(embed_v0)]
     impl ActionsImpl of IActions<ContractState> {
-        fn mint(ref self: ContractState) {
+        fn mint(ref self: ContractState, username: felt252) {
             let caller = get_caller_address();
             let mut world = self.world_default();
 
@@ -79,7 +79,7 @@ pub mod actions {
 
             // Mint the pact NFT to the caller and get token_id
             let pact_nft = IRoninPactDispatcher { contract_address: pact_config.pact };
-            let token_id = pact_nft.mint(caller);
+            let token_id = pact_nft.mint(caller, username);
 
             // Emit Dojo event
             world.emit_event(@PactMinted { player: caller, token_id });
@@ -157,7 +157,7 @@ pub mod actions {
 
             // Get mint timestamp and check time lock
             let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
-            let mint_timestamp = nft.get_mint_timestamp(token_id);
+            let mint_timestamp = nft.get_timestamp(token_id);
             let current_time = starknet::get_block_timestamp();
 
             assert(current_time - mint_timestamp >= pact_config.time_lock, 'Time lock not elapsed!');

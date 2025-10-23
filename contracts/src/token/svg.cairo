@@ -62,9 +62,39 @@ fn get_sword_shin() -> ByteArray {
     result
 }
 
+// Helper function to convert felt252 short string to ByteArray
+// Calculates the length of the string and uses append_word
+fn felt252_to_bytearray(value: felt252) -> ByteArray {
+    // Convert to u256 for easier manipulation
+    let value_u256: u256 = value.into();
+
+    // Calculate the length of the short string (max 31 bytes)
+    let mut len: usize = 0;
+    let mut temp = value_u256;
+
+    // Count bytes by dividing by 256 until we reach 0
+    loop {
+        if temp == 0 {
+            break;
+        }
+        len += 1;
+        temp = temp / 256;
+    };
+
+    // Handle empty string case
+    if len == 0 {
+        return "";
+    }
+
+    // Create ByteArray and append the word
+    let mut result: ByteArray = "";
+    result.append_word(value, len);
+    result
+}
+
 // Main SVG generation function
 // Generates a complete SVG based on trial progress
-pub fn generate_svg(progress: TrialProgress) -> ByteArray {
+pub fn generate_svg(progress: TrialProgress, username: felt252) -> ByteArray {
     let mut svg: ByteArray = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1025 1024' width='100%' height='100%'>";
 
     // Add background
@@ -93,6 +123,11 @@ pub fn generate_svg(progress: TrialProgress) -> ByteArray {
     if progress.shin_complete {
         svg.append(@get_sword_shin());
     }
+
+    // Add username text (below the rack)
+    svg.append(@"<text x=\"512\" y=\"780\" font-family=\"monospace\" font-size=\"24\" fill=\"#ff0000\" text-anchor=\"middle\" font-weight=\"bold\">");
+    svg.append(@felt252_to_bytearray(username));
+    svg.append(@"</text>");
 
     svg.append(@"</svg>");
 

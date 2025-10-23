@@ -11,7 +11,7 @@ fn test_svg_generation_no_trials() {
         shin_complete: false,
     };
 
-    let svg_output = svg::generate_svg(progress);
+    let svg_output = svg::generate_svg(progress, 'testuser');
 
     // Basic assertions
     assert(svg_output.len() > 0, 'SVG should not be empty');
@@ -29,7 +29,7 @@ fn test_svg_generation_waza_only() {
         shin_complete: false,
     };
 
-    let svg_output = svg::generate_svg(progress);
+    let svg_output = svg::generate_svg(progress, 'testuser');
 
     assert(svg_output.len() > 0, 'SVG should not be empty');
 
@@ -39,7 +39,7 @@ fn test_svg_generation_waza_only() {
         chi_complete: false,
         shin_complete: false,
     };
-    let empty_svg = svg::generate_svg(empty_progress);
+    let empty_svg = svg::generate_svg(empty_progress, 'testuser');
     assert(svg_output.len() > empty_svg.len(), 'Should be larger with sword');
 }
 
@@ -52,7 +52,7 @@ fn test_svg_generation_all_complete() {
         shin_complete: true,
     };
 
-    let svg_output = svg::generate_svg(progress);
+    let svg_output = svg::generate_svg(progress, 'testuser');
 
     assert(svg_output.len() > 0, 'SVG should not be empty');
 
@@ -69,7 +69,7 @@ fn test_svg_size_check() {
         shin_complete: true,
     };
 
-    let svg_output = svg::generate_svg(progress);
+    let svg_output = svg::generate_svg(progress, 'testuser');
     let size = svg_output.len();
 
     // The complete SVG should be around 29-30 KB

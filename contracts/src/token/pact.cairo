@@ -37,9 +37,10 @@ pub trait IRoninPact<TContractState> {
     ) -> bool;
 
     // Custom functions
-    fn mint(ref self: TContractState, recipient: ContractAddress) -> u256;
+    fn mint(ref self: TContractState, recipient: ContractAddress, username: felt252) -> u256;
     fn get_progress(self: @TContractState, token_id: u256) -> TrialProgress;
-    fn get_mint_timestamp(self: @TContractState, token_id: u256) -> u64;
+    fn get_timestamp(self: @TContractState, token_id: u256) -> u64;
+    fn get_username(self: @TContractState, token_id: u256) -> felt252;
 
     // Minting functions (only callable by authorized minter contract)
     fn complete_waza(ref self: TContractState, token_id: u256);
@@ -87,6 +88,7 @@ pub mod RoninPact {
         token_count: u256,
         token_progress: Map<u256, u8>,
         mint_timestamps: Map<u256, u64>,
+        minter_usernames: Map<u256, felt252>,
     }
 
     #[event]
@@ -118,7 +120,8 @@ pub mod RoninPact {
 
         fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
             let progress = self.get_progress(token_id);
-            svg::generate_svg(progress)
+            let username = self.get_username(token_id);
+            svg::generate_svg(progress, username)
         }
 
         fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
@@ -165,20 +168,19 @@ pub mod RoninPact {
             self.erc721.is_approved_for_all(owner, operator)
         }
 
-        fn mint(ref self: ContractState, recipient: ContractAddress) -> u256 {
+        fn mint(ref self: ContractState, recipient: ContractAddress, username: felt252) -> u256 {
             // Get next token ID
             let token_id = self.token_count.read();
             self.token_count.write(token_id + 1);
 
-            // Mint the token to recipient
+            // Mint the token to recipient and initialize progress
             self.erc721.mint(recipient, token_id);
-
-            // Initialize trial progress to 0 (no trials complete)
             self.token_progress.write(token_id, 0);
 
-            // Store mint timestamp
+            // Store mint timestamp and username
             let mint_timestamp = starknet::get_block_timestamp();
             self.mint_timestamps.write(token_id, mint_timestamp);
+            self.minter_usernames.write(token_id, username);
 
             token_id
         }
@@ -193,8 +195,12 @@ pub mod RoninPact {
             }
         }
 
-        fn get_mint_timestamp(self: @ContractState, token_id: u256) -> u64 {
+        fn get_timestamp(self: @ContractState, token_id: u256) -> u64 {
             self.mint_timestamps.read(token_id)
+        }
+
+        fn get_username(self: @ContractState, token_id: u256) -> felt252 {
+            self.minter_usernames.read(token_id)
         }
 
         fn complete_waza(ref self: ContractState, token_id: u256) {

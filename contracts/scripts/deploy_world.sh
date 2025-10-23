@@ -208,7 +208,7 @@ done
 # Step 6: Mint initial NFT from deployer account
 echo -e "\n${YELLOW}Step 6: Minting initial NFT from deployer account...${NC}"
 echo -e "${BLUE}This helps test if Torii properly indexes the first mint event${NC}"
-sozo execute --profile dev --wait ronin_quest-actions mint
+sozo execute --profile dev --wait ronin_quest-actions mint sstr:deployer
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Initial NFT minted from deployer account${NC}"
 else
@@ -230,7 +230,6 @@ echo -e "  ✓ Owner permissions granted to deployer"
 echo -e "  ✓ NFT minter set to Actions contract"
 echo -e "  ✓ Actions contract configured with NFT address"
 echo -e "  ✓ Initial NFT minted from deployer account"
-echo -e "  ✓ Development controller funded with 100 STRK"
 echo -e "\n${BLUE}Logs:${NC}"
 echo -e "  Katana: /tmp/katana.log"
 echo -e "  Torii:  /tmp/torii.log"
