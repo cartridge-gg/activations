@@ -24,11 +24,9 @@ export function useShinTrial(tokenId: string, onSuccess?: () => void): UseShinTr
   // Fetch time lock from Quest Manager contract
   const {
     data: timeLockData,
-    isPending: timeLockIsPending,
-    error: timeLockError,
   } = useReadContract({
     abi: QUEST_MANAGER_ABI as Abi,
-    address: QUEST_MANAGER_ADDRESS,
+    address: QUEST_MANAGER_ADDRESS as `0x${string}`,
     functionName: 'get_time_lock',
     args: [],
     enabled: !!QUEST_MANAGER_ADDRESS,
@@ -42,7 +40,7 @@ export function useShinTrial(tokenId: string, onSuccess?: () => void): UseShinTr
   // Fetch mint timestamp from NFT contract
   const { data: mintTimestampData } = useReadContract({
     abi: RONIN_PACT_ABI as Abi,
-    address: RONIN_PACT_ADDRESS,
+    address: RONIN_PACT_ADDRESS as `0x${string}`,
     functionName: 'get_timestamp',
     args: [tokenId ? BigInt(tokenId) : 0n],
     enabled: !!tokenId && !!RONIN_PACT_ADDRESS,

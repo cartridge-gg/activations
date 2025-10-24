@@ -20,8 +20,6 @@ export function useTrialProgress(): UseTrialProgressReturn {
   const {
     data: tokenIdData,
     isPending: tokenIdIsPending,
-    error: tokenIdError,
-    status: tokenIdStatus,
   } = useReadContract({
     abi: QUEST_MANAGER_ABI as Abi,
     address: QUEST_MANAGER_ADDRESS as `0x${string}`,

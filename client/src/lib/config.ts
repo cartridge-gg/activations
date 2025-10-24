@@ -3,8 +3,6 @@
 // Simplified for local development on Katana (localhost:5050)
 
 import manifest from "../../../contracts/manifest_dev.json";
-import { setupWorld } from "../../../contracts/bindings/typescript/contracts.gen";
-import { SchemaType } from "../../../contracts/bindings/typescript/models.gen";
 import { AllowlistedCollection } from "./types";
 
 // ============================================================================
@@ -14,14 +12,6 @@ import { AllowlistedCollection } from "./types";
 
 export const KATANA_CHAIN_ID = "0x4b4154414e41"; // "KATANA" hex-encoded
 export const KATANA_URL = "http://localhost:5050";
-export const RELAY_URL = "/ip4/127.0.0.1/tcp/9090";
-
-// ============================================================================
-// MANIFEST & DOJO CONFIG
-// ============================================================================
-
-export { manifest, setupWorld };
-export type { SchemaType };
 
 // ============================================================================
 // CONTRACT ADDRESSES AND ABIS FROM MANIFEST
