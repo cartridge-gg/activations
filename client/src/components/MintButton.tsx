@@ -55,14 +55,26 @@ export function MintButton() {
 
   return (
     <div className="max-w-xl mx-auto">
-      {/* Main Container with gradient border effect */}
-      <div className="relative p-1 rounded-2xl bg-gradient-to-br from-ronin-primary via-ronin-accent to-ronin-light shadow-2xl">
-        <div className="bg-ronin-dark rounded-2xl p-6 md:p-8">
+      {/* Main Container with decorative frame */}
+      <div className="relative border-4 border-ronin-primary/40 bg-gray-900 shadow-2xl">
+        {/* Outer corner decorations */}
+        <div className="absolute -top-3 -left-3 w-8 h-8 border-t-4 border-l-4 border-ronin-primary"></div>
+        <div className="absolute -top-3 -right-3 w-8 h-8 border-t-4 border-r-4 border-ronin-primary"></div>
+        <div className="absolute -bottom-3 -left-3 w-8 h-8 border-b-4 border-l-4 border-ronin-primary"></div>
+        <div className="absolute -bottom-3 -right-3 w-8 h-8 border-b-4 border-r-4 border-ronin-primary"></div>
+
+        <div className="p-6 md:p-8">
 
           {/* Header Section */}
           <div className="text-center mb-6">
             {/* Decorative Japanese-inspired icon */}
-            <div className="inline-flex items-center justify-center w-16 h-16 mb-3 rounded-full bg-gradient-to-br from-ronin-primary to-red-700 shadow-lg">
+            <div className="inline-flex items-center justify-center w-16 h-16 mb-3 bg-ronin-primary border-4 border-ronin-secondary/30 relative">
+              {/* Corner accents */}
+              <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-ronin-secondary"></div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-ronin-secondary"></div>
+              <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-ronin-secondary"></div>
+              <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-ronin-secondary"></div>
+
               <svg
                 className="w-8 h-8 text-ronin-secondary"
                 fill="none"
@@ -95,18 +107,18 @@ export function MintButton() {
               disabled={isLoading || !address || success}
               className={`
                 w-full md:w-auto
-                px-8 py-3 rounded-xl font-bold text-base
+                px-8 py-3 font-bold text-base
                 transition-all duration-300 ease-out
-                transform
+                border-2
                 ${
                   success
-                    ? 'bg-green-600 text-white cursor-default shadow-lg'
+                    ? 'bg-green-600 text-white cursor-default border-green-400'
                     : isLoading || !address
-                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-ronin-primary to-red-600 hover:from-red-600 hover:to-ronin-primary text-white shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95'
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed border-gray-500'
+                    : 'bg-ronin-primary hover:bg-red-600 text-white border-ronin-secondary/30 hover:border-ronin-secondary'
                 }
-                disabled:transform-none disabled:shadow-none
                 flex items-center justify-center gap-3
+                relative
               `}
             >
               {isLoading ? (
@@ -198,10 +210,16 @@ export function MintButton() {
           <div className="min-h-[60px]">
             {/* Error State */}
             {error && !isLoading && (
-              <div className="bg-red-900/30 border-2 border-ronin-primary rounded-xl p-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex items-start gap-4">
+              <div className="bg-red-900/30 border-4 border-ronin-primary p-4 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+                {/* Corner accents */}
+                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-ronin-primary"></div>
+                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-ronin-primary"></div>
+                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-ronin-primary"></div>
+                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-ronin-primary"></div>
+
+                <div className="flex items-start gap-4 relative">
                   <div className="flex-shrink-0 mt-1">
-                    <div className="w-8 h-8 rounded-full bg-ronin-primary flex items-center justify-center">
+                    <div className="w-8 h-8 bg-ronin-primary flex items-center justify-center border-2 border-white/30">
                       <svg
                         className="w-5 h-5 text-white"
                         fill="none"

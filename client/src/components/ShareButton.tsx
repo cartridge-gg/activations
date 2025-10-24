@@ -42,7 +42,7 @@ export function ShareButton({ progress }: ShareButtonProps) {
   return (
     <button
       onClick={handleShare}
-      className="w-full bg-gradient-to-r from-ronin-primary to-ronin-light hover:from-ronin-primary/90 hover:to-ronin-light/90 text-ronin-secondary font-semibold py-4 px-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center space-x-3"
+      className="w-full bg-ronin-primary hover:bg-red-600 text-ronin-secondary font-semibold py-4 px-6 border-2 border-ronin-secondary/30 transition-all duration-300 flex items-center justify-center space-x-3"
     >
       <svg
         className="w-5 h-5"

@@ -78,13 +78,19 @@ export function ConnectWallet() {
       <button
         onClick={handleConnect}
         className="
-          px-6 py-3 rounded-lg font-semibold
+          px-6 py-3 font-semibold
           transition-all duration-200
-          bg-ronin-primary hover:bg-red-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105
+          bg-ronin-primary hover:bg-red-600 text-white border-2 border-ronin-secondary/30 hover:border-ronin-secondary
           md:px-8 md:py-3 text-sm md:text-base
+          relative
         "
       >
-        {WALLET_TEXT.connect}
+        <span className="relative z-10">{WALLET_TEXT.connect}</span>
+        {/* Corner accents */}
+        <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-white/50"></div>
+        <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-white/50"></div>
+        <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-white/50"></div>
+        <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-white/50"></div>
       </button>
     );
   }
@@ -98,12 +104,12 @@ export function ConnectWallet() {
           px-4 py-2 md:px-6 md:py-3
           bg-ronin-dark hover:bg-ronin-light
           border-2 border-ronin-accent
-          rounded-lg font-semibold
+          font-semibold
           text-ronin-secondary
           transition-all duration-200
-          shadow-lg hover:shadow-xl
           flex items-center gap-2
           text-sm md:text-base
+          relative
         "
       >
         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
@@ -124,9 +130,7 @@ export function ConnectWallet() {
         <div className="
           absolute right-0 mt-2 w-48 md:w-56
           bg-ronin-dark border-2 border-ronin-accent
-          rounded-lg shadow-xl
           z-50
-          overflow-hidden
         ">
           <div className="py-1">
             {/* Profile Option */}

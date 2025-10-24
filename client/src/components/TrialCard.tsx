@@ -28,19 +28,29 @@ export function TrialCard({
 
   return (
     <div
-      className={`relative bg-gradient-to-br from-ronin-dark/50 to-ronin-light/30 rounded-lg shadow-lg border-2 transition-all duration-300 ${
+      className={`relative bg-gray-900 shadow-lg border-4 transition-all duration-300 ${
         isComplete
-          ? 'border-ronin-primary shadow-ronin-primary/20'
+          ? 'border-ronin-primary'
           : status === 'locked'
           ? 'border-ronin-secondary/20 opacity-60'
-          : 'border-ronin-secondary/40 hover:border-ronin-accent hover:shadow-xl'
+          : 'border-ronin-secondary/40 hover:border-ronin-accent'
       }`}
     >
+      {/* Outer corner decorations */}
+      {isComplete && (
+        <>
+          <div className="absolute -top-2 -left-2 w-6 h-6 border-t-4 border-l-4 border-ronin-primary"></div>
+          <div className="absolute -top-2 -right-2 w-6 h-6 border-t-4 border-r-4 border-ronin-primary"></div>
+          <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b-4 border-l-4 border-ronin-primary"></div>
+          <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-4 border-r-4 border-ronin-primary"></div>
+        </>
+      )}
+
       {/* Clickable Trial Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={`w-full text-left py-5 px-6 focus:outline-none transition-all hover:bg-ronin-light/5 ${
-          isExpanded ? 'rounded-t-lg border-b-0' : 'rounded-lg'
+          isExpanded ? 'border-b-2 border-ronin-secondary/20' : ''
         }`}
       >
         <div className="flex items-start justify-between">
@@ -75,7 +85,7 @@ export function TrialCard({
 
       {/* Collapsible Trial Content */}
       {isExpanded && (
-        <div className="px-6 pb-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="p-6 animate-in fade-in slide-in-from-top-2 duration-300">
           {status === 'locked' && (
             <div className="flex items-center justify-center py-8 text-ronin-secondary/50">
               <p className="text-sm">{TRIAL_CARD_TEXT.locked}</p>
@@ -85,7 +95,13 @@ export function TrialCard({
           {status !== 'locked' && !isComplete && children({ status, onComplete, tokenId })}
 
           {isComplete && (
-            <div className="bg-ronin-primary/10 border border-ronin-primary/30 rounded-lg p-4 text-center">
+            <div className="bg-ronin-primary/10 border-4 border-ronin-primary/30 p-6 text-center relative">
+              {/* Corner accents */}
+              <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-ronin-primary"></div>
+              <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-ronin-primary"></div>
+              <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-ronin-primary"></div>
+              <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-ronin-primary"></div>
+
               <div className="flex items-center justify-center space-x-2 text-ronin-primary">
                 <svg
                   className="w-6 h-6"
@@ -109,9 +125,6 @@ export function TrialCard({
           )}
         </div>
       )}
-
-      {/* Decorative Elements */}
-      <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-radial from-ronin-primary/5 to-transparent rounded-tl-full pointer-events-none" />
     </div>
   );
 }

@@ -14,15 +14,17 @@ function App() {
   const { progress, isLoading, hasNFT, tokenId, refetch } = useTrialProgress();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-ronin-dark to-gray-900 text-ronin-secondary">
+    <div className="min-h-screen bg-ronin-dark text-ronin-secondary">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-6 mb-12">
           <div className="flex-shrink-0">
-            <h1 className="font-heading text-3xl sm:text-4xl font-bold text-ronin-primary mb-2">
+            <h1 className="font-heading text-3xl sm:text-4xl font-bold text-ronin-primary mb-2 flex items-center gap-3">
+              <img src="/dojo-dot.svg" alt="" className="w-6 h-6 flex-shrink-0" />
               {APP_TEXT.header.title}
+              <img src="/dojo-dot.svg" alt="" className="w-6 h-6 flex-shrink-0" />
             </h1>
-            <p className="text-ronin-accent text-base sm:text-lg">
+            <p className="text-ronin-accent text-base sm:text-lg text-center">
               {APP_TEXT.header.subtitle}
             </p>
           </div>

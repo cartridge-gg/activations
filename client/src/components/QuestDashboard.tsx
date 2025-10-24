@@ -21,7 +21,7 @@ export function QuestDashboard({
   shinContent,
 }: QuestDashboardProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-ronin-dark via-ronin-dark/95 to-ronin-light/20 py-12 px-4 relative">
+    <div className="min-h-screen bg-ronin-dark py-12 px-4 relative">
       {/* Subtle Dojo watermark background */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 opacity-[0.02] pointer-events-none">
         <img src="/dojo-icon.svg" alt="" className="w-full h-full" />
@@ -30,21 +30,31 @@ export function QuestDashboard({
       <div className="max-w-[1600px] mx-auto space-y-12 relative">
         {/* Header */}
         <div className="text-center space-y-6">
-          {/* Heading */}
-          <div className="space-y-2">
-            <h1 className="font-heading text-3xl md:text-4xl font-bold text-ronin-secondary tracking-wide">
-              The Three Trials
-            </h1>
-            <p className="text-lg md:text-xl text-ronin-accent/90 max-w-3xl mx-auto leading-relaxed">
-              {DASHBOARD_TEXT.description}
-            </p>
+          {/* Heading with traditional frame */}
+          <div className="relative inline-block mx-auto">
+            {/* Corner decorations */}
+            <div className="absolute -top-3 -left-3 w-6 h-6 border-t-4 border-l-4 border-ronin-primary"></div>
+            <div className="absolute -top-3 -right-3 w-6 h-6 border-t-4 border-r-4 border-ronin-primary"></div>
+            <div className="absolute -bottom-3 -left-3 w-6 h-6 border-b-4 border-l-4 border-ronin-primary"></div>
+            <div className="absolute -bottom-3 -right-3 w-6 h-6 border-b-4 border-r-4 border-ronin-primary"></div>
+
+            <div className="px-12 py-6 border-4 border-ronin-primary/30">
+              <h1 className="font-heading text-3xl md:text-4xl font-bold text-ronin-secondary tracking-wide">
+                The Three Trials
+              </h1>
+              <p className="text-lg md:text-xl text-ronin-accent/90 max-w-3xl mx-auto leading-relaxed mt-2">
+                {DASHBOARD_TEXT.description}
+              </p>
+            </div>
           </div>
 
           {/* Decorative Line with Dojo icon */}
-          <div className="flex items-center justify-center gap-4">
-            <div className="h-px w-24 bg-gradient-to-r from-transparent to-ronin-primary"></div>
-            <img src="/dojo-icon.svg" alt="" className="w-6 h-6 opacity-30" />
-            <div className="h-px w-24 bg-gradient-to-l from-transparent to-ronin-primary"></div>
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <div className="h-1 w-24 bg-ronin-primary"></div>
+            <div className="p-2 border-2 border-ronin-primary">
+              <img src="/dojo-icon.svg" alt="" className="w-6 h-6 opacity-50" />
+            </div>
+            <div className="h-1 w-24 bg-ronin-primary"></div>
           </div>
         </div>
 

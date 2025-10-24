@@ -143,9 +143,9 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-br from-ronin-dark to-ronin-light rounded-lg p-8 shadow-xl">
+      <div className="bg-gray-900 border-4 border-ronin-primary/40 p-8 shadow-xl">
         <div className="flex flex-col items-center space-y-6">
-          <div className="relative w-96 h-96 rounded-lg overflow-hidden bg-ronin-dark/50 flex items-center justify-center">
+          <div className="relative w-96 h-96 bg-black border-4 border-ronin-secondary/20 flex items-center justify-center">
             <div className="text-ronin-secondary/50">{NFT_RENDER_TEXT.loading}</div>
           </div>
         </div>
@@ -155,9 +155,9 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
 
   if (!svgContent) {
     return (
-      <div className="bg-gradient-to-br from-ronin-dark to-ronin-light rounded-lg p-8 shadow-xl">
+      <div className="bg-gray-900 border-4 border-ronin-primary/40 p-8 shadow-xl">
         <div className="flex flex-col items-center space-y-6">
-          <div className="relative w-96 h-96 rounded-lg overflow-hidden bg-ronin-dark/50 flex items-center justify-center">
+          <div className="relative w-96 h-96 bg-black border-4 border-ronin-secondary/20 flex items-center justify-center">
             <div className="text-ronin-secondary/50">{NFT_RENDER_TEXT.error}</div>
           </div>
         </div>
@@ -166,9 +166,15 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
   }
 
   return (
-    <div className="bg-gradient-to-br from-ronin-dark via-ronin-dark/90 to-ronin-light/10 rounded-xl p-4 shadow-2xl border border-ronin-primary/20 relative overflow-hidden">
+    <div className="bg-gray-900 p-6 shadow-2xl border-4 border-ronin-primary/40 relative">
+      {/* Decorative corner brackets - outer */}
+      <div className="absolute -top-3 -left-3 w-8 h-8 border-t-4 border-l-4 border-ronin-primary"></div>
+      <div className="absolute -top-3 -right-3 w-8 h-8 border-t-4 border-r-4 border-ronin-primary"></div>
+      <div className="absolute -bottom-3 -left-3 w-8 h-8 border-b-4 border-l-4 border-ronin-primary"></div>
+      <div className="absolute -bottom-3 -right-3 w-8 h-8 border-b-4 border-r-4 border-ronin-primary"></div>
+
       {/* Dojo watermark in corner */}
-      <div className="absolute top-2 right-2 w-8 h-8 opacity-10 pointer-events-none">
+      <div className="absolute top-4 right-4 w-8 h-8 opacity-10 pointer-events-none">
         <img src="/dojo-icon.svg" alt="" className="w-full h-full" />
       </div>
 
@@ -177,16 +183,16 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
         <div className="relative w-full">
           <div
             ref={svgContainerRef}
-            className="relative w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-ronin-dark/50 to-ronin-light/5 shadow-inner ring-2 ring-ronin-primary/30"
+            className="relative w-full aspect-square bg-black border-4 border-ronin-secondary/20"
           >
             <div dangerouslySetInnerHTML={{ __html: svgContent }} />
           </div>
 
-          {/* Decorative corner accents */}
-          <div className="absolute -top-2 -left-2 w-4 h-4 border-t-2 border-l-2 border-ronin-primary"></div>
-          <div className="absolute -top-2 -right-2 w-4 h-4 border-t-2 border-r-2 border-ronin-primary"></div>
-          <div className="absolute -bottom-2 -left-2 w-4 h-4 border-b-2 border-l-2 border-ronin-primary"></div>
-          <div className="absolute -bottom-2 -right-2 w-4 h-4 border-b-2 border-r-2 border-ronin-primary"></div>
+          {/* Inner decorative corner accents */}
+          <div className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-ronin-primary/60"></div>
+          <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-ronin-primary/60"></div>
+          <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-ronin-primary/60"></div>
+          <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-ronin-primary/60"></div>
         </div>
 
         {/* Progress Indicators */}
@@ -196,14 +202,14 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
               <div key={name} className="flex flex-col items-center space-y-2 group">
                 <div className="relative">
                   <div
-                    className={`w-4 h-4 rounded-full transition-all duration-500 ${
+                    className={`w-4 h-4 transition-all duration-500 border-2 ${
                       progress[key]
-                        ? 'bg-ronin-primary shadow-lg shadow-ronin-primary/50 scale-110'
-                        : 'bg-ronin-secondary/20 group-hover:bg-ronin-secondary/30'
+                        ? 'bg-ronin-primary border-ronin-primary shadow-lg shadow-ronin-primary/50 scale-110'
+                        : 'bg-ronin-secondary/20 border-ronin-secondary/40 group-hover:bg-ronin-secondary/30 group-hover:border-ronin-secondary/60'
                     }`}
                   />
                   {progress[key] && (
-                    <div className="absolute inset-0 rounded-full bg-ronin-primary animate-ping opacity-30"></div>
+                    <div className="absolute inset-0 bg-ronin-primary animate-ping opacity-30 border-2 border-ronin-primary"></div>
                   )}
                 </div>
                 <span
@@ -220,18 +226,17 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
 
         {/* Completion Section */}
         {allComplete && (
-          <div className="w-full space-y-6 pt-6 border-t-2 border-ronin-primary/40 relative">
-            {/* Dojo icon as celebration element */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
-              <img src="/dojo-icon.svg" alt="" className="w-32 h-32" />
-            </div>
-
-            {/* Celebration header */}
-            <div className="text-center space-y-3 relative">
-              <h3 className="font-heading text-2xl font-bold text-ronin-secondary tracking-wide">
+          <div className="w-full space-y-6 pt-6 border-t-4 border-ronin-primary relative">
+            {/* Celebration header with frame */}
+            <div className="text-center space-y-3 relative border-4 border-ronin-primary/30 p-4 bg-ronin-primary/5">
+              {/* Dojo icon as celebration element - positioned within the frame */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+                <img src="/dojo-icon.svg" alt="" className="w-24 h-24" />
+              </div>
+              <h3 className="font-heading text-2xl font-bold text-ronin-primary tracking-wide">
                 {NFT_RENDER_TEXT.completion.title}
               </h3>
-              <p className="text-base text-ronin-accent/90 leading-relaxed">
+              <p className="text-base text-ronin-accent leading-relaxed">
                 {NFT_RENDER_TEXT.completion.message}
               </p>
               <p className="text-sm text-ronin-secondary/70 italic">
@@ -244,14 +249,12 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
               <ShareButton progress={progress} />
               <button
                 onClick={downloadAsPNG}
-                className="text-ronin-accent hover:text-ronin-secondary text-sm font-medium transition-colors flex items-center justify-center gap-2 mx-auto group"
+                className="text-ronin-accent hover:text-ronin-secondary text-sm font-medium transition-colors flex items-center justify-center gap-2 mx-auto group border-b-2 border-ronin-accent/30 hover:border-ronin-secondary pb-1"
               >
                 <svg className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                <span className="border-b border-ronin-accent/50 group-hover:border-ronin-secondary/50">
-                  Download as PNG
-                </span>
+                <span>Download as PNG</span>
               </button>
             </div>
           </div>
