@@ -47,7 +47,7 @@ function App() {
                 <p className="text-ronin-secondary mt-4">{APP_TEXT.loading.progress}</p>
               </div>
             ) : !hasNFT ? (
-              <div className="py-12 md:py-20">
+              <div className="py-8 md:py-12">
                 <MintButton />
               </div>
             ) : progress && tokenId ? (

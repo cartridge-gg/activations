@@ -54,17 +54,17 @@ export function MintButton() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-xl mx-auto">
       {/* Main Container with gradient border effect */}
       <div className="relative p-1 rounded-2xl bg-gradient-to-br from-ronin-primary via-ronin-accent to-ronin-light shadow-2xl">
-        <div className="bg-ronin-dark rounded-2xl p-8 md:p-10">
+        <div className="bg-ronin-dark rounded-2xl p-6 md:p-8">
 
           {/* Header Section */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             {/* Decorative Japanese-inspired icon */}
-            <div className="inline-flex items-center justify-center w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-ronin-primary to-red-700 shadow-lg">
+            <div className="inline-flex items-center justify-center w-16 h-16 mb-3 rounded-full bg-gradient-to-br from-ronin-primary to-red-700 shadow-lg">
               <svg
-                className="w-10 h-10 text-ronin-secondary"
+                className="w-8 h-8 text-ronin-secondary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -80,22 +80,22 @@ export function MintButton() {
               </svg>
             </div>
 
-            <h2 className="text-2xl md:text-3xl font-bold text-ronin-secondary mb-3">
+            <h2 className="text-xl md:text-2xl font-bold text-ronin-secondary mb-2">
               {MINT_TEXT.header.title}
             </h2>
-            <p className="text-ronin-accent text-base md:text-lg max-w-md mx-auto leading-relaxed">
+            <p className="text-ronin-accent text-sm md:text-base max-w-md mx-auto leading-relaxed">
               {MINT_TEXT.header.description}
             </p>
           </div>
 
           {/* Mint Button */}
-          <div className="flex flex-col items-center gap-4 mb-6">
+          <div className="flex flex-col items-center gap-3 mb-4">
             <button
               onClick={handleMint}
               disabled={isLoading || !address || success}
               className={`
                 w-full md:w-auto
-                px-10 py-4 rounded-xl font-bold text-lg
+                px-8 py-3 rounded-xl font-bold text-base
                 transition-all duration-300 ease-out
                 transform
                 ${
@@ -195,10 +195,10 @@ export function MintButton() {
           </div>
 
           {/* Status Messages */}
-          <div className="min-h-[100px]">
+          <div className="min-h-[60px]">
             {/* Error State */}
             {error && !isLoading && (
-              <div className="bg-red-900/30 border-2 border-ronin-primary rounded-xl p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="bg-red-900/30 border-2 border-ronin-primary rounded-xl p-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0 mt-1">
                     <div className="w-8 h-8 rounded-full bg-ronin-primary flex items-center justify-center">
@@ -237,8 +237,8 @@ export function MintButton() {
           </div>
 
           {/* Info Footer */}
-          <div className="mt-8 pt-6 border-t border-ronin-accent/20">
-            <p className="text-ronin-accent text-xs md:text-sm text-center">
+          <div className="mt-4 pt-4 border-t border-ronin-accent/20">
+            <p className="text-ronin-accent text-xs text-center">
               {MINT_TEXT.footer.info}
             </p>
           </div>
