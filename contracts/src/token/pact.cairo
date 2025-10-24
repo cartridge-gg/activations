@@ -169,6 +169,8 @@ pub mod RoninPact {
         }
 
         fn mint(ref self: ContractState, recipient: ContractAddress, username: felt252) -> u256 {
+            self.assert_minter();
+
             // Get next token ID
             let token_id = self.token_count.read();
             self.token_count.write(token_id + 1);

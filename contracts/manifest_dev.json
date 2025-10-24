@@ -1479,8 +1479,8 @@
   },
   "contracts": [
     {
-      "address": "0x59f68b4d5d35240ebd249a283e23822116d4707f90cdde30163cedddf4c3d9b",
-      "class_hash": "0x70a4a08e996cc933c08f6b1a68ba06c13150c30e5bf55e598a853a43be141a1",
+      "address": "0x5f1eee87a0d45c59db057708d733323bfda5d831836cf82300f8ad301c5377b",
+      "class_hash": "0x2b2c77d99d036992aac5fa17c42bffbc782c8fb9e8cdbe9eef65ca95123c5e",
       "abi": [
         {
           "type": "impl",
@@ -1892,10 +1892,10 @@
   ],
   "external_contracts": [
     {
-      "class_hash": "0x62f1e71c974feaf6dc8ae207ff74338f7758ed539215a601980d432f2a0782b",
+      "class_hash": "0x291cc8e46bff4eb4065db1749136f7b03bebf162683d1ad8d048b054d6caa13",
       "contract_name": "RoninPact",
       "tag": "ronin_quest-ronin_pact",
-      "address": "0x4bed69d61ac9b183ce7b7210d6c6d4a2f2225dff95be2a6bea280aee5a288b7",
+      "address": "0x36ad962dae96938870df22b18e7a7e46c31cd1568f3cab954639dcd6fb7e55e",
       "abi": [
         {
           "type": "impl",

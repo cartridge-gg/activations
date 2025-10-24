@@ -48,6 +48,7 @@ fn namespace_def() -> NamespaceDef {
             TestResource::Model("RoninPact"),
             TestResource::Model("RoninGame"),
             TestResource::Model("RoninAnswers"),
+            TestResource::Model("PlayerToken"),
             TestResource::Contract("actions"),
             TestResource::Event("WazaCompleted"),
             TestResource::Event("ChiCompleted"),
@@ -215,6 +216,11 @@ fn test_mint_nft_via_actions() {
     actions.set_pact(pact_address, 86400);
     stop_cheat_caller_address(actions_address);
 
+    // Set actions as the minter for pact
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
+    stop_cheat_caller_address(pact_address);
+
     // Mint first NFT from Player (Controller) via actions contract
     start_cheat_caller_address(actions_address, player_controller);
     actions.mint('testuser');
@@ -254,7 +260,7 @@ fn test_mint_duplicate_fails() {
 
     // Deploy pact contract
     let pact_address = deploy_pact(owner());
-    let _pact = IRoninPactDispatcher { contract_address: pact_address };
+    let pact = IRoninPactDispatcher { contract_address: pact_address };
 
     let player_controller = player();
 
@@ -263,12 +269,43 @@ fn test_mint_duplicate_fails() {
     actions.set_pact(pact_address, 86400);
     stop_cheat_caller_address(actions_address);
 
+    // Set actions as minter in pact
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
+    stop_cheat_caller_address(pact_address);
+
     // Mint first NFT - should succeed
     start_cheat_caller_address(actions_address, player_controller);
     actions.mint('testuser');
 
     // Try to mint second NFT - should fail with 'Already owns a pact NFT'
     actions.mint('testuser');
+}
+
+#[test]
+#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
+#[should_panic(expected: ('Only minter',))]
+fn test_mint_unauthorized_fails() {
+    let (_world, actions, actions_address) = setup_world();
+
+    // Deploy pact contract
+    let pact_address = deploy_pact(owner());
+    let pact = IRoninPactDispatcher { contract_address: pact_address };
+
+    let unauthorized_caller = player();
+
+    // Configure actions contract as the authorized minter
+    start_cheat_caller_address(actions_address, owner());
+    actions.set_pact(pact_address, 86400);
+    stop_cheat_caller_address(actions_address);
+
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
+    stop_cheat_caller_address(pact_address);
+
+    // Try to mint directly as unauthorized caller - should fail
+    start_cheat_caller_address(pact_address, unauthorized_caller);
+    pact.mint(unauthorized_caller, 'testuser');
 }
 
 // ============================================================================
@@ -295,14 +332,19 @@ fn test_complete_waza() {
     actions.set_game(game_address, true);
     stop_cheat_caller_address(actions_address);
 
-    // Set actions as minter in pact
+    // Set player as minter and actions as minter for completion functions
     start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
+    pact.set_minter(player_controller);
     stop_cheat_caller_address(pact_address);
 
     // Player (Controller) mints NFT and game NFT
     start_cheat_caller_address(pact_address, player_controller);
     pact.mint(player_controller, 'testuser');
+    stop_cheat_caller_address(pact_address);
+
+    // Now set actions as minter for trial completion
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
     start_cheat_caller_address(game_address, player_controller);
@@ -341,15 +383,20 @@ fn test_waza_no_nft_fails() {
     actions.set_game(game_address, true);
     stop_cheat_caller_address(actions_address);
 
-    start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
-    stop_cheat_caller_address(pact_address);
-
     let player_controller = player();
+
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(player_controller);
+    stop_cheat_caller_address(pact_address);
 
     // Player (Controller) mints NFT but NO game NFT
     start_cheat_caller_address(pact_address, player_controller);
     pact.mint(player_controller, 'testuser');
+    stop_cheat_caller_address(pact_address);
+
+    // Set actions as minter for trial completion
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
     // Try to complete waza without game NFT - should fail
@@ -384,15 +431,20 @@ fn test_complete_chi() {
     actions.set_quiz(answers.clone());
     stop_cheat_caller_address(actions_address);
 
-    start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
-    stop_cheat_caller_address(pact_address);
-
     let player_controller = player();
+
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(player_controller);
+    stop_cheat_caller_address(pact_address);
 
     // Player (Controller) mints NFT
     start_cheat_caller_address(pact_address, player_controller);
     pact.mint(player_controller, 'testuser');
+    stop_cheat_caller_address(pact_address);
+
+    // Set actions as minter for trial completion
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
     // Complete chi trial with correct answers (at least 3 correct)
@@ -433,15 +485,20 @@ fn test_chi_wrong_answers_fails() {
     actions.set_quiz(answers.clone());
     stop_cheat_caller_address(actions_address);
 
-    start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
-    stop_cheat_caller_address(pact_address);
-
     let player_controller = player();
+
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(player_controller);
+    stop_cheat_caller_address(pact_address);
 
     // Player (Controller) mints NFT
     start_cheat_caller_address(pact_address, player_controller);
     pact.mint(player_controller, 'testuser');
+    stop_cheat_caller_address(pact_address);
+
+    // Set actions as minter for trial completion
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
     // Try to complete chi trial with wrong answers (only 2 correct out of 3)
@@ -469,15 +526,20 @@ fn test_chi_mismatched_length_fails() {
     actions.set_quiz(answers);
     stop_cheat_caller_address(actions_address);
 
-    start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
-    stop_cheat_caller_address(pact_address);
-
     let player_controller = player();
+
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(player_controller);
+    stop_cheat_caller_address(pact_address);
 
     // Player (Controller) mints NFT
     start_cheat_caller_address(pact_address, player_controller);
     pact.mint(player_controller, 'testuser');
+    stop_cheat_caller_address(pact_address);
+
+    // Set actions as minter for trial completion
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
     // Try with mismatched lengths
@@ -508,12 +570,17 @@ fn test_complete_shin() {
     stop_cheat_caller_address(actions_address);
 
     start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
+    pact.set_minter(player_addr);
     stop_cheat_caller_address(pact_address);
 
     // Player mints NFT
     start_cheat_caller_address(pact_address, player_addr);
     pact.mint(player_addr, 'testuser');
+    stop_cheat_caller_address(pact_address);
+
+    // Set actions as minter for trial completion
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
     // Fast forward 24 hours (86400 seconds)
@@ -551,12 +618,17 @@ fn test_shin_timelock_fails() {
     stop_cheat_caller_address(actions_address);
 
     start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
+    pact.set_minter(player_addr);
     stop_cheat_caller_address(pact_address);
 
     // Player mints NFT
     start_cheat_caller_address(pact_address, player_addr);
     pact.mint(player_addr, 'testuser');
+    stop_cheat_caller_address(pact_address);
+
+    // Set actions as minter for trial completion
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
     // Try to complete immediately without waiting 24 hours - should fail
@@ -583,12 +655,17 @@ fn test_shin_empty_vow_fails() {
     stop_cheat_caller_address(actions_address);
 
     start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
+    pact.set_minter(player_addr);
     stop_cheat_caller_address(pact_address);
 
     // Player mints NFT
     start_cheat_caller_address(pact_address, player_addr);
     pact.mint(player_addr, 'testuser');
+    stop_cheat_caller_address(pact_address);
+
+    // Set actions as minter for trial completion
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
     // Fast forward 24 hours
@@ -623,17 +700,22 @@ fn test_waza_non_owner_fails() {
     actions.set_game(game_address, true);
     stop_cheat_caller_address(actions_address);
 
-    start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
-    stop_cheat_caller_address(pact_address);
-
     // player() and other() return different Controller instances
     let player_controller = player();
     let other_controller = other();
 
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(player_controller);
+    stop_cheat_caller_address(pact_address);
+
     // Player (Controller) mints pact NFT
     start_cheat_caller_address(pact_address, player_controller);
     pact.mint(player_controller, 'testuser');
+    stop_cheat_caller_address(pact_address);
+
+    // Set actions as minter for trial completion
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
     // Other (Controller) mints game NFT
@@ -664,17 +746,22 @@ fn test_chi_non_owner_fails() {
     actions.set_quiz(answers);
     stop_cheat_caller_address(actions_address);
 
-    start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
-    stop_cheat_caller_address(pact_address);
-
     // player() and other() return different Controller instances
     let player_controller = player();
     let other_controller = other();
 
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(player_controller);
+    stop_cheat_caller_address(pact_address);
+
     // Player (Controller) mints NFT
     start_cheat_caller_address(pact_address, player_controller);
     pact.mint(player_controller, 'testuser');
+    stop_cheat_caller_address(pact_address);
+
+    // Set actions as minter for trial completion
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
     // Other (Controller) tries to complete chi for player's token - should fail
@@ -703,12 +790,17 @@ fn test_shin_non_owner_fails() {
     stop_cheat_caller_address(actions_address);
 
     start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
+    pact.set_minter(player_addr);
     stop_cheat_caller_address(pact_address);
 
     // Player mints NFT
     start_cheat_caller_address(pact_address, player_addr);
     pact.mint(player_addr, 'testuser');
+    stop_cheat_caller_address(pact_address);
+
+    // Set actions as minter for trial completion
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
     // Fast forward 24 hours
@@ -754,12 +846,17 @@ fn test_full_lifecycle() {
     stop_cheat_caller_address(actions_address);
 
     start_cheat_caller_address(pact_address, owner());
-    pact.set_minter(actions_address);
+    pact.set_minter(player_controller);
     stop_cheat_caller_address(pact_address);
 
     // Player (Controller) setup: mint NFTs
     start_cheat_caller_address(pact_address, player_controller);
     pact.mint(player_controller, 'testuser');
+    stop_cheat_caller_address(pact_address);
+
+    // Set actions as minter for trial completion
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
     stop_cheat_caller_address(pact_address);
 
     start_cheat_caller_address(game_address, player_controller);

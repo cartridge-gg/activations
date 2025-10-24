@@ -35,6 +35,8 @@ pub mod actions {
     use ronin_quest::models::{RoninPact, RoninGame, RoninAnswers, PlayerToken};
     use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 
+    const CONFIG_KEY: u32 = 0;
+
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
     pub struct PactMinted {
@@ -74,7 +76,7 @@ pub mod actions {
             let caller = get_caller_address();
             let mut world = self.world_default();
 
-            let pact_config: RoninPact = world.read_model(0);
+            let pact_config: RoninPact = world.read_model(CONFIG_KEY);
             let pact_erc721 = IERC721Dispatcher { contract_address: pact_config.pact };
 
             // Check if caller already has a pact NFT
@@ -97,7 +99,7 @@ pub mod actions {
             let caller = get_caller_address();
             let mut world = self.world_default();
 
-            let pact_config: RoninPact = world.read_model(0);
+            let pact_config: RoninPact = world.read_model(CONFIG_KEY);
             let game_config: RoninGame = world.read_model(game_address);
             assert(game_config.active, 'Game not whitelisted');
 
@@ -123,8 +125,8 @@ pub mod actions {
             // Verify answer count matches question count
             assert(questions.len() == answers.len(), 'Question/answer mismatch');
 
-            let pact_config: RoninPact = world.read_model(0);
-            let answers_config: RoninAnswers = world.read_model(0);
+            let pact_config: RoninPact = world.read_model(CONFIG_KEY);
+            let answers_config: RoninAnswers = world.read_model(CONFIG_KEY);
 
             let pact_erc721 = IERC721Dispatcher { contract_address: pact_config.pact };
             let owner = pact_erc721.owner_of(token_id);
@@ -156,7 +158,7 @@ pub mod actions {
             // Verify vow hash is not empty
             assert(vow_hash != 0, 'Vow cannot be empty');
 
-            let pact_config: RoninPact = world.read_model(0);
+            let pact_config: RoninPact = world.read_model(CONFIG_KEY);
 
             // Verify caller owns the token
             let pact_erc721 = IERC721Dispatcher { contract_address: pact_config.pact };
@@ -186,7 +188,7 @@ pub mod actions {
 
         fn get_time_lock(self: @ContractState) -> u64 {
             let world = self.world_default();
-            let pact_config: RoninPact = world.read_model(0);
+            let pact_config: RoninPact = world.read_model(CONFIG_KEY);
             pact_config.time_lock
         }
 
