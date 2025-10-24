@@ -1,25 +1,28 @@
-# The Rōnin’s Pact — Serverless Quest Feature Spec
+# The Rōnin's Pact — Feature Specification
 
-> **Scope:** Static frontend + Starknet contracts only. No servers, no indexers, no bots. Twitter/X and Discord role assignment are out of scope for v1.
+> **Status:** FINAL IMPLEMENTATION
+> **Architecture:** Vite + React frontend + Starknet contracts (Dojo + standalone ERC721)
+> **Network:** Local Katana development → Starknet mainnet deployment
 
 ---
 
 ## 1) Goals
 
-* Drive pre-jam engagement through a single, evolving participation NFT (“The Rōnin’s Pact”).
-* Let participants complete three thematic trials (Technique, Wisdom, Spirit) with **self-serve, automatic verification**.
-* Keep the system **fully serverless** while providing a smooth, low-friction UX for new and existing Starknet users.
+* Drive pre-jam engagement through a single, evolving participation NFT ("The Rōnin's Pact").
+* Let participants complete three thematic trials (Technique, Wisdom, Spirit) with **self-serve, automatic onchain verification**.
+* Provide a smooth, low-friction UX for new and existing Starknet users using Cartridge Controller.
 
 ---
 
 ## 2) User Experience
 
 * Users connect with **Cartridge Controller**.
-* Users mint **one** Rōnin’s Pact NFT to their wallet.
-* A **Quest Dashboard** shows three trials with real-time status (Locked / In Progress / Completed).
-* As each trial is completed, the NFT artwork updates to light one of three slashes.
-* When all trials are complete, the NFT displays the **“Fully Forged Pact”** state.
-* The UI includes a **“Share on X”** button (optional amplification; not verified).
+* Users mint **one** Rōnin's Pact NFT to their wallet (includes username).
+* A **Quest Dashboard** shows three trials with real-time status and progress.
+* As each trial is completed, the NFT artwork updates to light one of three slashes (dynamically generated SVG).
+* When all trials are complete, the NFT displays the **"Fully Forged Pact"** state with golden glow.
+* The UI includes a **"Share on X"** button (opens compose window; not verified).
+* Trial 3 (Shin) requires waiting for a time lock period after minting.
 
 ---
 
@@ -46,55 +49,77 @@
 ### 3.3 Trial 1 — **Waza** (Technique)
 
 * **Objective:** Prove play in a supported Dojo-powered game.
-* **Serverless verification rule (v1):** A wallet **owns ≥1 token** from **any allowlisted “round” ERC-721 collection** (e.g., Pistols, Loot Survivor, Blob Arena).
+* **Verification:** User selects a specific allowlisted game collection and proves they own ≥1 token from it.
+* **Implementation:**
+  * User clicks "Claim via \[Game]" button for a specific collection.
+  * Frontend calls `complete_waza(token_id, game_address)` on the Quest Manager contract.
+  * Contract verifies:
+    1. Game collection is allowlisted and active
+    2. Caller owns the Pact token
+    3. Caller owns ≥1 token from the specified game collection
+  * On success, Waza is marked **Complete** in the NFT contract.
 * **UI:**
-
-  * “Claim via \[Game]” buttons (one per allowlisted collection).
-  * “Try All” button that checks all allowlisted collections at once.
-* **Acceptance Criteria:**
-
-  * If the wallet holds a token from an allowlisted collection, claiming **succeeds** and Waza is marked **Complete**.
-  * If not, claiming **fails** with a clear, user-readable reason.
-  * Re-claim after completion is blocked with a clear status (“Already complete”).
-
-> Note: Time windows, non-transferability, and per-game session checks are **not required** in v1.
+  * Individual "Claim via \[Game]" buttons for each allowlisted collection.
+  * Clear success/failure feedback.
+  * Re-claim blocked once complete.
+* **Allowlisted Collections:**
+  * Loot Survivor 2 Adventurers
+  * Loot Survivor 2 Beasts
+  * Pistols at Dawn Duels
+  * Bloberts
+  * Ronin Pact (self-reference for testing)
 
 ### 3.4 Trial 2 — **Chi** (Wisdom)
 
 * **Objective:** Demonstrate knowledge about Dojo 1.7 via a short quiz.
-* **Behavior:**
-
-  * The quiz is answered **in-app** and the result is **recorded onchain**.
-  * Passing the quiz marks **Chi** as **Complete**.
+* **Quiz Format:**
+  * 8 total questions about Dojo concepts (models, World contract, ECS, Torii, etc.)
+  * Questions stored in `spec/chi.json` with pre-computed answer hashes
+  * Frontend selects 3 questions to display
+  * User must answer at least 3 correctly to pass
+* **Implementation:**
+  * User answers questions in the UI
+  * Frontend hashes answers and submits to contract
+  * Contract calls `complete_chi(token_id, questions, answers)` on Quest Manager
+  * Contract verifies at least 3 answers match stored hashes
+  * On success, Chi is marked **Complete** in NFT contract
 * **UI:**
-
-  * Inline questions with validation and a single “Submit” action.
-  * Clear success/failure feedback; allow retakes if desired (product choice).
-* **Acceptance Criteria:**
-
-  * Correct answers result in a single successful onchain submission and Chi becomes **Complete**.
-  * Incorrect answers provide immediate feedback and do **not** complete the trial.
+  * Inline questions with multiple choice answers
+  * Single "Submit Quiz" button
+  * Clear success/failure feedback
+  * Unlimited retakes allowed
+* **Sample Questions:**
+  * "What is the primary role of the World contract in Dojo?"
+  * "In Dojo 1.7, which traits must models derive?"
+  * "What does the #\[key] attribute do in a Dojo model?"
 
 ### 3.5 Trial 3 — **Shin** (Spirit)
 
-* **Objective:** Make a public-spirited vow tied to a specific wallet signer GUID.
-* **Behavior (v1):**
-
-  * The user **chooses a signer GUID** through Controller (Discord or any other signer type is acceptable).
-  * The user **signs a vow message** with that GUID and confirms onchain.
-  * Successful confirmation marks **Shin** as **Complete** and emits a public record of the vow text.
+* **Objective:** Make a public vow and demonstrate commitment through a time lock.
+* **Implementation:**
+  * User must wait for a time lock period to elapse after minting their Pact NFT
+  * Time lock duration is configurable (default: set at deployment)
+  * User writes a vow message in the UI
+  * Frontend hashes the vow text using Starknet's selector hash
+  * Contract calls `complete_shin(token_id, vow_hash)` on Quest Manager
+  * Contract verifies:
+    1. Caller owns the Pact token
+    2. Time lock period has elapsed since mint timestamp
+    3. Vow hash is not empty
+  * On success, Shin is marked **Complete** and vow hash is emitted as an event
 * **UI:**
-
-  * Text input for the vow message.
-  * “Choose signer” interaction via Controller.
-  * “Complete Vow” confirmation with success/failure feedback.
-* **Acceptance Criteria:**
-
-  * The claimed GUID corresponds to a signer the account recognizes.
-  * A valid signature tied to that GUID is provided; otherwise, the action is rejected.
-  * Nonces prevent replay; reused nonces are rejected with clear feedback.
-
-> Note: Enforcing “Discord-only” is **not required** in v1; any signer GUID is acceptable.
+  * Text input for the vow message
+  * Timer display showing remaining time until time lock expires
+  * "Complete Vow" button (disabled until time lock expires)
+  * Clear success/failure feedback
+* **Time Lock:**
+  * Calculated as: `current_time - mint_timestamp >= time_lock`
+  * Prevents instant completion of all three trials
+  * Encourages sustained engagement over time
+* **Vow Storage:**
+  * Vow hash is stored onchain in the `ShinCompleted` event
+  * Full vow text is not stored (privacy + gas efficiency)
+  * Vow hash serves as public commitment without revealing content
 
 ---
 
@@ -155,12 +180,16 @@
 
 ---
 
-## 9) Non-Goals (v1)
+## 9) Non-Goals (Implemented Simplifications)
 
-* No Twitter/X verification of posts.
+* No Twitter/X verification of posts (share button opens compose window only).
 * No Discord role assignment or bots.
-* No offchain indexers or servers.
-* No anti-farm controls for transferable round NFTs beyond the simple ownership rule.
+* No offchain indexers (Torii not used in v1).
+* No signer GUID verification or Controller integration (simplified to time lock).
+* No "Try All" button for Waza trial (per-game verification only).
+* No pseudo-random quiz question selection (frontend selects questions).
+* No enforced one-per-wallet minting (application-level check only).
+* No vow content stored onchain (only hash for commitment).
 
 ---
 
