@@ -1,10 +1,8 @@
 import { useMemo } from 'react';
 import { useAccount, useReadContract } from '@starknet-react/core';
-import { useEventQuery, useModel, useEntityId } from '@dojoengine/sdk/react';
-import { KeysClause, ToriiQueryBuilder } from '@dojoengine/sdk';
-import { RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
+import { RONIN_PACT_ADDRESS, RONIN_PACT_ABI, QUEST_MANAGER_ADDRESS, QUEST_MANAGER_ABI } from '@/lib/config';
 import { TrialProgress } from '@/lib/types';
-import { Abi, addAddressPadding } from 'starknet';
+import { Abi } from 'starknet';
 
 interface UseTrialProgressReturn {
   progress: TrialProgress | null;
@@ -18,86 +16,59 @@ interface UseTrialProgressReturn {
 export function useTrialProgress(): UseTrialProgressReturn {
   const { address } = useAccount();
 
-  // Query for PactMinted event for this player
-  // Using KeysClause with the player address as key
-  useEventQuery(
-    new ToriiQueryBuilder()
-      .withClause(
-        KeysClause(
-          ['ronin_quest-PactMinted'],
-          [address ? addAddressPadding(address) : undefined],
-          'VariableLen'
-        ).build()
-      )
-      .includeHashedKeys()
-  );
-
-  // Retrieve PactMinted event from store
-  const entityId = useEntityId(address ?? '0x0');
-  const mintedPact = useModel(entityId, 'ronin_quest-PactMinted');
-
-  // Extract token_id from event
-  const tokenId = useMemo(() => {
-    if (!mintedPact) {
-      return null;
-    }
-
-    // Extract token_id from the PactMinted event
-    const tokenIdValue = (mintedPact as any)?.token_id;
-    return tokenIdValue ? BigInt(tokenIdValue).toString() : null;
-  }, [mintedPact]);
-
-  // Check actual NFT balance to confirm ownership
+  // Get token_id from Quest Manager (reads PlayerToken model)
   const {
-    data: balanceData,
-    isLoading: balanceIsLoading,
+    data: tokenIdData,
+    isPending: tokenIdIsPending,
+    error: tokenIdError,
+    status: tokenIdStatus,
   } = useReadContract({
-    address: RONIN_PACT_ADDRESS as `0x${string}`,
-    abi: RONIN_PACT_ABI as Abi,
-    functionName: 'balance_of',
-    args: address ? [address] : undefined,
-    watch: true,
-    enabled: !!address,
+    abi: QUEST_MANAGER_ABI as Abi,
+    address: QUEST_MANAGER_ADDRESS as `0x${string}`,
+    functionName: 'get_player_token_id',
+    args: [address || '0x0'],
+    enabled: !!address && !!QUEST_MANAGER_ADDRESS,
   });
 
-  const hasNFT = useMemo(() => {
-    if (!balanceData || !address) return false;
-    const balance = balanceData as bigint;
-    return balance > 0n;
-  }, [balanceData, address]);
+  // Extract token_id
+  const tokenId = useMemo(() => {
+    if (!tokenIdData || !address) {
+      return null;
+    }
+    const tokenIdValue = tokenIdData as bigint;
+    return tokenIdValue > 0n ? tokenIdValue.toString() : null;
+  }, [tokenIdData, address]);
 
-  // Fetch progress from contract using token_id from event
+  // Derive hasNFT from tokenId (if we have a token_id, we have an NFT)
+  const hasNFT = !!tokenId;
+
+  // Fetch progress from contract using token_id
   const {
     data: progressData,
-    isLoading: progressIsLoading,
+    isPending: progressIsPending,
     error: progressError,
     refetch,
   } = useReadContract({
-    address: RONIN_PACT_ADDRESS as `0x${string}`,
     abi: RONIN_PACT_ABI as Abi,
+    address: RONIN_PACT_ADDRESS as `0x${string}`,
     functionName: 'get_progress',
-    args: tokenId ? [BigInt(tokenId)] : undefined,
-    enabled: hasNFT && !!tokenId,
+    args: [tokenId ? BigInt(tokenId) : 0n],
+    enabled: hasNFT && !!tokenId && !!RONIN_PACT_ADDRESS,
   });
 
   // Parse progress data
   const progress = useMemo(() => {
     if (!address || !hasNFT || !progressData) return null;
     const data = progressData as any;
-    const parsed = {
+    return {
       waza_complete: Boolean(data.waza_complete),
       chi_complete: Boolean(data.chi_complete),
       shin_complete: Boolean(data.shin_complete),
     };
-
-    console.log('=== get_progress ===');
-    console.log('token_id:', tokenId);
-    console.log('progress:', parsed);
-
-    return parsed;
   }, [progressData, address, hasNFT, tokenId]);
 
-  const isLoading = address ? (balanceIsLoading || progressIsLoading) : false;
+  // Only check progressIsPending if we're actually querying for progress (i.e., hasNFT is true)
+  const isLoading = address ? (tokenIdIsPending || (hasNFT && progressIsPending)) : false;
 
   return {
     progress,

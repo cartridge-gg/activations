@@ -1,10 +1,8 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useReadContract } from '@starknet-react/core';
 import { hash, Abi } from 'starknet';
-import { useModel, useEntityId, useEntityQuery } from '@dojoengine/sdk/react';
-import { KeysClause, ToriiQueryBuilder } from '@dojoengine/sdk';
 
-import { RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
+import { RONIN_PACT_ADDRESS, RONIN_PACT_ABI, QUEST_MANAGER_ADDRESS, QUEST_MANAGER_ABI } from '@/lib/config';
 import { splitTokenIdToU256, parseContractError } from '@/lib/utils';
 import { useTrialTransaction } from './useTrialTransaction';
 
@@ -23,41 +21,31 @@ export function useShinTrial(tokenId: string, onSuccess?: () => void): UseShinTr
   const [vowText, setVowText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  // Query the RoninPact model to get time_lock configuration (singleton with game_id = 0)
-  useEntityQuery(
-    new ToriiQueryBuilder()
-      .withClause(
-        KeysClause(
-          ['ronin_quest-RoninPact'],
-          ['0x0'], // game_id = 0 as hex
-          'FixedLen'
-        ).build()
-      )
-      .includeHashedKeys()
-  );
+  // Fetch time lock from Quest Manager contract
+  const {
+    data: timeLockData,
+    isPending: timeLockIsPending,
+    error: timeLockError,
+  } = useReadContract({
+    abi: QUEST_MANAGER_ABI as Abi,
+    address: QUEST_MANAGER_ADDRESS,
+    functionName: 'get_time_lock',
+    args: [],
+    enabled: !!QUEST_MANAGER_ADDRESS,
+  });
 
-  const roninPactEntityId = useEntityId('0x0');
-  const roninPactModel = useModel(roninPactEntityId, 'ronin_quest-RoninPact');
-
-  // Extract time_lock from the model (memoized since it rarely changes)
   const timeLockDuration = useMemo(() => {
-    const DEFAULT_TIME_LOCK = 24 * 60 * 60;
-    if (!roninPactModel) {
-      return DEFAULT_TIME_LOCK;
-    }
-
-    const timeLock = (roninPactModel as any)?.time_lock;
-    return timeLock ? Number(timeLock) : DEFAULT_TIME_LOCK;
-  }, [roninPactModel]);
+    if (!timeLockData) return null;
+    return Number(timeLockData);
+  }, [timeLockData]);
 
   // Fetch mint timestamp from NFT contract
   const { data: mintTimestampData } = useReadContract({
-    address: RONIN_PACT_ADDRESS as `0x${string}`,
     abi: RONIN_PACT_ABI as Abi,
+    address: RONIN_PACT_ADDRESS,
     functionName: 'get_timestamp',
-    args: tokenId ? [BigInt(tokenId)] : undefined,
-    watch: true,
-    enabled: !!tokenId,
+    args: [tokenId ? BigInt(tokenId) : 0n],
+    enabled: !!tokenId && !!RONIN_PACT_ADDRESS,
   });
 
   // Calculate time remaining and whether trial can be completed
