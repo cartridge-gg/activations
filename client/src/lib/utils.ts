@@ -208,12 +208,15 @@ export function parseContractError(err: any, timeLockDuration?: number): string 
  * - Executing the transaction call(s)
  * - Logging the transaction hash
  * - Waiting for transaction confirmation
+ * - Checking transaction execution status (success vs reverted)
+ * - Throwing an error if the transaction reverted
  * - Providing optional labeled logging for different transaction types
  *
  * @param account - The Starknet account interface to execute the transaction from
  * @param calls - The transaction call(s) to execute (single Call or array of Calls)
  * @param label - Optional label for logging (e.g., "Waza Trial Transaction", "Chi Trial Transaction")
  * @returns The transaction result from account.execute()
+ * @throws Error if the transaction execution reverted
  *
  * @example
  * ```typescript
@@ -253,8 +256,16 @@ export async function executeTx(
   const tx = await account.execute(calls);
   console.log(`Tx hash: ${tx.transaction_hash}`);
 
-  await account.waitForTransaction(tx.transaction_hash);
+  const receipt = await account.waitForTransaction(tx.transaction_hash);
   console.log('Tx confirmed!');
+
+  // Check if the transaction execution was successful
+  // In Starknet, a transaction can be "confirmed" (included in a block) even if it reverted
+  if (receipt.isReverted()) {
+    const revertReason = (receipt as any).revert_reason || 'Transaction execution failed';
+    console.error('Transaction reverted:', revertReason);
+    throw new Error(revertReason);
+  }
 
   return tx;
 }
