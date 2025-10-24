@@ -130,7 +130,7 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
         const pngUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = pngUrl;
-        link.download = 'ronin-pact-complete.png';
+        link.download = 'ronin-pact.png';
         link.click();
         URL.revokeObjectURL(pngUrl);
       }, 'image/png');

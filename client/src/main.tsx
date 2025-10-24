@@ -11,7 +11,6 @@ import {
   manifest,
   setupWorld,
   WORLD_ADDRESS,
-  TORII_URL,
   RELAY_URL,
   KATANA_URL,
   KATANA_CHAIN_ID,
@@ -27,7 +26,6 @@ async function main() {
       client: {
         worldAddress: WORLD_ADDRESS,
         rpcUrl: KATANA_URL,
-        toriiUrl: TORII_URL,
         relayUrl: RELAY_URL,
       },
       domain: {
@@ -42,7 +40,6 @@ async function main() {
   const dojoConfig = createDojoConfig({
     manifest,
     rpcUrl: KATANA_URL,
-    toriiUrl: TORII_URL,
   });
 
   createRoot(document.getElementById('root')!).render(

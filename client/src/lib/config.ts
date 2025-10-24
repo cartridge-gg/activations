@@ -14,7 +14,6 @@ import { AllowlistedCollection } from "./types";
 
 export const KATANA_CHAIN_ID = "0x4b4154414e41"; // "KATANA" hex-encoded
 export const KATANA_URL = "http://localhost:5050";
-export const TORII_URL = "http://localhost:8080";
 export const RELAY_URL = "/ip4/127.0.0.1/tcp/9090";
 
 // ============================================================================
@@ -33,21 +32,22 @@ export type { SchemaType };
 
 export const WORLD_ADDRESS = manifest.world.address;
 
+// Find the Quest Manager (actions) contract from contracts in the manifest
+const questManagerContract = manifest.contracts?.find((c: any) => c.tag === "ronin_quest-actions");
+export const QUEST_MANAGER_ADDRESS = questManagerContract?.address || '0x0';
+export const QUEST_MANAGER_ABI = questManagerContract?.abi;
+
 // Find the Ronin Pact NFT contract from external_contracts in the manifest
 // Used for reading state (balance_of, owner_of, get_progress, token_uri)
 const roninPactContract = manifest.external_contracts?.find((c: any) => c.tag === "ronin_quest-ronin_pact");
 export const RONIN_PACT_ADDRESS = roninPactContract?.address || '0x0';
 export const RONIN_PACT_ABI = roninPactContract?.abi;
 
-// Find the Quest Manager (actions) contract from contracts in the manifest
-const questManagerContract = manifest.contracts?.find((c: any) => c.tag === "ronin_quest-actions");
-export const QUEST_MANAGER_ADDRESS = questManagerContract?.address || '0x0';
-
 // Log contract addresses for debugging
 console.log('Contract addresses loaded from manifest:');
 console.log('  World:', WORLD_ADDRESS);
-console.log('  Ronin Pact NFT:', RONIN_PACT_ADDRESS);
 console.log('  Quest Manager:', QUEST_MANAGER_ADDRESS);
+console.log('  Ronin Pact:', RONIN_PACT_ADDRESS);
 
 // ============================================================================
 // APP CONSTANTS
@@ -57,13 +57,23 @@ console.log('  Quest Manager:', QUEST_MANAGER_ADDRESS);
 export const ALLOWLISTED_COLLECTIONS: AllowlistedCollection[] = [
   {
     address: '0x036017e69d21d6d8c13e266eabb73ef1f1d02722d86bdcabe5f168f8e549d3cd',
-    name: 'loot-survivor',
-    displayName: 'Loot Survivor',
+    name: 'ls-adventurer',
+    displayName: 'Loot Survivor 2 Adventurers',
+  },
+  {
+    address: '0x036017e69d21d6d8c13e266eabb73ef1f1d02722d86bdcabe5f168f8e549d3cd',
+    name: 'ls-beast',
+    displayName: 'Loot Survivor 2 Beasts',
   },
   {
     address: '0x0',
-    name: 'pistols',
-    displayName: 'Pistols at Dawn',
+    name: 'pistols-duel',
+    displayName: 'Pistols at Dawn Duels',
+  },
+  {
+    address: '0x0',
+    name: 'bloberts',
+    displayName: 'Bloberts',
   },
   {
     address: RONIN_PACT_ADDRESS,
