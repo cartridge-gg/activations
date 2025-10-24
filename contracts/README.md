@@ -234,68 +234,270 @@ Tests use:
 
 ## Deployment
 
-### Step 1: Build Contracts
+This project supports deployment to three environments:
+- **Katana** (local development) - Automated with hot-reload
+- **Sepolia** (testnet) - Automated with 1-hour time locks
+- **Mainnet** (production) - Automated with 24-hour time locks and safety confirmations
+
+### Prerequisites
+
+Before deploying to Sepolia or Mainnet, you need:
+
+1. **Sozo CLI** - Part of Dojo toolkit
+2. **Starkli** - For account management
+3. **Funded Starknet Account** - With ETH on target network
+4. **jq** - For JSON parsing in scripts
+
+### Account Setup (Sepolia/Mainnet)
+
+Set up encrypted Starkli keystores for secure authentication:
+
+#### Step 1: Install Starkli
 
 ```bash
-sozo build
+curl https://get.starkli.sh | sh
+starkliup
 ```
 
-### Step 2: Deploy World & Contracts
+#### Step 2: Create Keystores
+
+Create encrypted keystores for each network:
 
 ```bash
-sozo migrate --name ronin_pact
+# For Sepolia
+starkli signer keystore new ~/.starkli-wallets/deployer-sepolia.json
+
+# For Mainnet (use a different, strong password!)
+starkli signer keystore new ~/.starkli-wallets/deployer-mainnet.json
+```
+
+You'll be prompted to set a password for each keystore. **Store these passwords securely!**
+
+#### Step 3: Initialize Account Descriptors
+
+Create account descriptor files:
+
+```bash
+# For Sepolia
+starkli account oz init \
+  --keystore ~/.starkli-wallets/deployer-sepolia.json \
+  --rpc https://api.cartridge.gg/x/starknet/sepolia \
+  ~/.starkli-wallets/deployer-sepolia-account.json
+
+# For Mainnet
+starkli account oz init \
+  --keystore ~/.starkli-wallets/deployer-mainnet.json \
+  --rpc https://api.cartridge.gg/x/starknet/mainnet \
+  ~/.starkli-wallets/deployer-mainnet-account.json
+```
+
+#### Step 4: Get Account Addresses
+
+Extract your account addresses:
+
+```bash
+# Sepolia
+cat ~/.starkli-wallets/deployer-sepolia-account.json | jq -r '.deployment.address'
+
+# Mainnet
+cat ~/.starkli-wallets/deployer-mainnet-account.json | jq -r '.deployment.address'
+```
+
+#### Step 5: Fund Your Accounts
+
+Fund these addresses:
+- **Sepolia**: Use the [Starknet Sepolia Faucet](https://starknet-faucet.vercel.app/) (~0.01 ETH)
+- **Mainnet**: Bridge ETH from L1 using [Starkgate](https://starkgate.starknet.io/) (~0.1-0.5 ETH)
+
+#### Step 6: Deploy Account Contracts
+
+Deploy your account contracts on-chain:
+
+```bash
+# Sepolia
+starkli account deploy \
+  --keystore ~/.starkli-wallets/deployer-sepolia.json \
+  --rpc https://api.cartridge.gg/x/starknet/sepolia \
+  ~/.starkli-wallets/deployer-sepolia-account.json
+
+# Mainnet
+starkli account deploy \
+  --keystore ~/.starkli-wallets/deployer-mainnet.json \
+  --rpc https://api.cartridge.gg/x/starknet/mainnet \
+  ~/.starkli-wallets/deployer-mainnet-account.json
+```
+
+**Security Note**: Your private keys are encrypted in keystores, never exposed in plaintext!
+
+### Local Development (Katana)
+
+For local testing, use the automated deployment script:
+
+```bash
+# Starts Katana and deploys everything
+scarb run deploy_katana
+```
+
+This script handles:
+- Starting Katana testnet
+- Building and migrating contracts
+- Configuring permissions and settings
+- Running continuously with hot-reload
+
+### Network Deployment (Sepolia/Mainnet)
+
+#### Deploying to Sepolia
+
+Set your keystore path and run the automated deployment:
+
+```bash
+# Set the account keystore to use
+export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-sepolia-account.json
+
+# Deploy (you'll be prompted for your keystore password)
+scarb run deploy_sepolia
+```
+
+The script will:
+1. Build contracts for Sepolia
+2. Migrate the world and deploy all contracts (including RoninPact NFT as external contract)
+3. Extract contract addresses from the manifest
+4. Update `dojo_sepolia.toml` with the world address
+5. Grant owner permissions to deployer account on the `ronin_quest` namespace
+6. Set the NFT minter to the actions contract
+7. Configure actions contract with NFT address and 1-hour time lock
+8. Whitelist game collections for Waza trial (from `spec/waza.json`)
+9. Set Chi trial quiz answers (from `spec/chi.json`)
+10. Mint an initial NFT from deployer account
+
+**Time Lock**: 3600 seconds (1 hour) between trials
+
+#### Deploying to Mainnet
+
+Set your mainnet keystore path and run the deployment:
+
+```bash
+# Set the account keystore to use
+export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-mainnet-account.json
+
+# Deploy (requires explicit confirmation)
+scarb run deploy_mainnet
+```
+
+You'll be prompted to:
+1. Enter your keystore password
+2. Type "yes" to confirm mainnet deployment
+
+The script performs the same steps as Sepolia but with:
+- **Time Lock**: 86400 seconds (24 hours) between trials
+- **Safety confirmation**: Must type "yes" to proceed
+- **Production configuration**: Uses mainnet game collections from `spec/waza.json`
+
+#### Deployment Output
+
+After successful deployment, you'll see:
+
+```
+=== Starknet Sepolia/Mainnet Deployment Complete ===
+Network:
+  Starknet Sepolia/Mainnet
+  RPC: https://api.cartridge.gg/x/starknet/{network}
+
+Deployed Contracts:
+  World Address:    0x...
+  RoninPact NFT:    0x...
+  Actions Contract: 0x...
+
+Configuration:
+  ✓ Owner permissions granted to deployer
+  ✓ NFT minter set to Actions contract
+  ✓ Actions contract configured with NFT address
+  ✓ Games whitelisted for Waza trial
+  ✓ Chi trial quiz configured
+  ✓ Initial NFT minted from deployer account
+```
+
+**Output Files**:
+- `manifests/{network}/manifest.json` - Full deployment manifest with all addresses
+- `dojo_{network}.toml` - Updated with world address
+
+#### Post-Deployment Steps
+
+After deploying, you should:
+
+1. **Verify Contracts on Starkscan**:
+   - Sepolia: `https://sepolia.starkscan.co/contract/{world_address}`
+   - Mainnet: `https://starkscan.co/contract/{world_address}`
+
+2. **Configure Client Application**:
+   - Update client environment with contract addresses
+   - Deploy client to Vercel with `VITE_ENV=sepolia` or `VITE_ENV=mainnet`
+
+3. **Set Up Torii Indexer**:
+   - Configure Torii to index the deployed world
+   - Point to the RPC endpoint for the network
+
+4. **Test Integration**:
+   - Mint a test NFT
+   - Complete each trial to verify functionality
+   - Check SVG rendering and progress tracking
+
+5. **Monitor Deployment**:
+   - Watch for events on block explorer
+   - Verify quiz answers are working correctly
+   - Test game collection whitelisting
+
+### Manual Step-by-Step Deployment
+
+If you need to deploy manually:
+
+#### Step 1: Build Contracts
+
+```bash
+sozo -P sepolia build
+```
+
+#### Step 2: Deploy World & Contracts
+
+```bash
+sozo -P sepolia migrate
 ```
 
 This deploys:
 - Dojo World contract
 - Actions contract
+- RoninPact NFT (as external contract)
 - All Dojo models
-- Initializes owner via `dojo_init()`
 
-### Step 3: Deploy NFT Contract
-
-The RoninPact NFT is a standard contract (not deployed via Sozo):
+#### Step 3: Configure System
 
 ```bash
-# Get the contract class hash
-sozo build
+# Extract addresses from manifest
+MANIFEST="manifests/sepolia/manifest.json"
+TOKEN_ADDRESS=$(jq -r '.contracts[] | select(.tag == "ronin_quest-ronin_pact") | .address' $MANIFEST)
+ACTIONS_ADDRESS=$(jq -r '.contracts[] | select(.tag == "ronin_quest-actions") | .address' $MANIFEST)
 
-# Deploy using starkli or your preferred tool
-starkli declare target/dev/ronin_quest_RoninPact.contract_class.json
-starkli deploy <class_hash> <owner_address>
+# Set NFT minter to actions contract
+sozo -P sepolia execute $TOKEN_ADDRESS set_minter $ACTIONS_ADDRESS
+
+# Configure actions with NFT address and time lock (1 hour = 3600 seconds)
+sozo -P sepolia execute ronin_quest-actions set_pact $TOKEN_ADDRESS 3600
+
+# Whitelist game collections for Waza trial
+sozo -P sepolia execute ronin_quest-actions set_game <collection_address> 1
+
+# Set quiz answer hashes for Chi trial
+sozo -P sepolia execute ronin_quest-actions set_quiz <count> <hash1> <hash2> ...
 ```
 
-Save the NFT contract address for configuration.
-
-### Step 4: Configure System
+#### Step 4: Verify Deployment
 
 ```bash
-# Set NFT contract address in actions
-sozo execute ronin_quest-actions set_pact --calldata <nft_address>
+# Check NFT minter is set correctly
+sozo -P sepolia call $TOKEN_ADDRESS get_minter
 
-# Set allowlisted game collections
-sozo execute ronin_quest-actions set_games --calldata <game1>,<game2>,...
-
-# Set quiz answer hashes
-sozo execute ronin_quest-actions set_quiz --calldata <hash1>,<hash2>,...
-```
-
-### Step 5: Configure NFT Contract
-
-```bash
-# Authorize actions contract as minter
-# (Call directly on NFT contract, not via sozo)
-<call_nft_contract> set_minter --calldata <actions_address>
-```
-
-### Step 6: Verify Deployment
-
-```bash
-# Check NFT minter is set
-<call_nft_contract> get_minter
-
-# Check actions configuration
-sozo call ronin_quest-actions --help
+# Mint test NFT
+sozo -P sepolia execute ronin_quest-actions mint sstr:testuser
 ```
 
 ## Scripts
@@ -399,27 +601,125 @@ sozo execute ronin_quest-actions set_quiz --calldata <hash1>,<hash2>,<hash3>
 sozo execute ronin_quest-actions set_games --calldata <game1>,<game2>,<new_game>
 ```
 
+## Troubleshooting
+
+### "STARKNET_ACCOUNT environment variable not set"
+
+Set your keystore path before deploying:
+
+```bash
+export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-sepolia-account.json
+```
+
+### "Account file not found"
+
+Verify the keystore file exists:
+
+```bash
+ls -la ~/.starkli-wallets/deployer-sepolia-account.json
+```
+
+If missing, re-run the account initialization steps.
+
+### "Could not extract account address from keystore"
+
+Verify your file is a Starkli account descriptor (not just a signer keystore). You need the `-account.json` file, not just the keystore file.
+
+### "Account not funded"
+
+Check your account balance:
+
+```bash
+# Sepolia
+starkli balance ~/.starkli-wallets/deployer-sepolia-account.json \
+  --rpc https://api.cartridge.gg/x/starknet/sepolia
+
+# Mainnet
+starkli balance ~/.starkli-wallets/deployer-mainnet-account.json \
+  --rpc https://api.cartridge.gg/x/starknet/mainnet
+```
+
+Get testnet ETH from the [Sepolia Faucet](https://starknet-faucet.vercel.app/) or bridge mainnet ETH via [Starkgate](https://starkgate.starknet.io/).
+
+### "Migration failed" or "Build failed"
+
+- Check RPC endpoint is accessible:
+  ```bash
+  curl -X POST https://api.cartridge.gg/x/starknet/sepolia \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","method":"starknet_chainId","params":[],"id":1}'
+  ```
+- Verify keystore password is correct
+- Ensure account is deployed on the target network
+- Check account has sufficient ETH for gas
+
+### "Profile not found"
+
+Ensure you're using the correct profile flag:
+```bash
+sozo -P sepolia build
+sozo -P mainnet build
+```
+
+Or use the Scarb aliases:
+```bash
+scarb run deploy_sepolia
+scarb run deploy_mainnet
+```
+
+### Tests failing locally
+
+Ensure you have the correct versions:
+```bash
+# Check Dojo version
+dojoup -v
+
+# Check Starknet Foundry version
+snforge --version
+```
+
+Expected versions:
+- Dojo: 1.7.1
+- Starknet Foundry: 0.48.1
+
 ## Security Considerations
 
-1. **Access Control**:
-   - Actions contract: Only owner can modify configuration
-   - NFT contract: Only minter (actions) can update progress
-   - NFT contract: Only owner can set minter
+### Access Control
 
-2. **Progress Integrity**:
-   - Bit flags prevent tampering
-   - Double-completion prevented (bit already set check)
-   - Only authorized minter can update
+1. **Actions contract**: Only owner can modify configuration
+2. **NFT contract**: Only minter (actions) can update progress
+3. **NFT contract**: Only owner can set minter
 
-3. **Validation**:
-   - Waza: Real-time balance checks via ERC721
-   - Chi: Answer hashes stored (not plaintext)
-   - Shin: TODO - Controller integration required
+### Progress Integrity
 
-4. **Quiz Privacy**:
-   - Answer hashes stored on-chain
-   - Actual answers never revealed
-   - Use Poseidon hash (collision-resistant)
+1. **Bit flags** prevent tampering
+2. **Double-completion** prevented (bit already set check)
+3. **Only authorized minter** can update progress
+
+### Validation
+
+1. **Waza**: Real-time balance checks via ERC721
+2. **Chi**: Answer hashes stored (not plaintext)
+3. **Shin**: TODO - Controller integration required
+
+### Quiz Privacy
+
+1. **Answer hashes** stored on-chain (not plaintext answers)
+2. **Actual answers** never revealed
+3. **Poseidon hash** used (collision-resistant)
+
+### Deployment Security
+
+1. **Encrypted keystores**: Private keys never stored in plaintext
+2. **Separate accounts**: Use different keystores for testnet and mainnet
+3. **Strong passwords**: Use unique, strong passwords for each keystore
+4. **Backup securely**: Keep encrypted backups of keystores off-machine
+5. **Test on Sepolia first**: Always verify deployment scripts on testnet
+6. **Hardware wallet**: Consider hardware wallet integration for mainnet production
+7. **Minimal funding**: Only keep enough ETH for deployments, withdraw excess
+8. **Keystore location**: Store keystores outside project directory (e.g., `~/.starkli-wallets/`)
+9. **Never commit**: Keystores and passwords should never be committed to version control
+10. **Time locks**: Production uses 24-hour time locks to prevent rushing through trials
 
 ## TODOs
 

@@ -2,6 +2,8 @@
 
 This directory contains automated deployment scripts for the Ronin Quest Dojo project.
 
+**For complete deployment documentation**, see the [Deployment section in the main README](../README.md#deployment).
+
 ## Script Architecture
 
 The deployment system uses a **unified approach** for maintainability:
@@ -43,6 +45,9 @@ scarb run deploy_katana
 Deploys to Starknet Sepolia testnet.
 
 ```bash
+# Set your keystore path
+export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-sepolia-account.json
+
 # Using Scarb alias (recommended)
 scarb run deploy_sepolia
 
@@ -51,18 +56,22 @@ scarb run deploy_sepolia
 ```
 
 **Prerequisites:**
-- Create `.env.sepolia` with your credentials
+- Create Starkli keystore and account (see DEPLOYMENT.md)
 - Fund your account with Sepolia ETH
 
 **Configuration:**
 - Uses `dojo_sepolia.toml`
 - Time lock: 3600 seconds (1 hour)
 - RPC: Cartridge Sepolia endpoint
+- Authenticates via Starkli keystore
 
 ### `deploy_network.sh mainnet` - Production Deployment
 Deploys to Starknet Mainnet with safety confirmations.
 
 ```bash
+# Set your keystore path
+export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-mainnet-account.json
+
 # Using Scarb alias (recommended)
 scarb run deploy_mainnet
 
@@ -71,7 +80,7 @@ scarb run deploy_mainnet
 ```
 
 **Prerequisites:**
-- Create `.env.mainnet` with your credentials
+- Create Starkli keystore and account (see DEPLOYMENT.md)
 - Fund your account with Mainnet ETH
 - Test thoroughly on Sepolia first!
 
@@ -79,6 +88,7 @@ scarb run deploy_mainnet
 - Uses `dojo_mainnet.toml`
 - Time lock: 86400 seconds (24 hours)
 - RPC: Cartridge Mainnet endpoint
+- Authenticates via Starkli keystore
 - Requires explicit "yes" confirmation
 
 ## What Each Script Does
@@ -96,23 +106,37 @@ All deployment scripts perform these steps:
 9. **Setup Quiz**: Configure Chi trial with quiz answer hashes
 10. **Mint Initial NFT**: Create deployer's NFT to verify setup
 
-## Environment Files
+## Authentication Setup
 
-Create these files from the examples:
+This project uses **Starkli keystores** for secure authentication. No plaintext private keys needed!
+
+### Create Keystores
 
 ```bash
 # For Sepolia
-cp ../.env.sepolia.example ../.env.sepolia
-# Edit and add your credentials
+starkli signer keystore new ~/.starkli-wallets/deployer-sepolia.json
 
 # For Mainnet
-cp ../.env.mainnet.example ../.env.mainnet
-# Edit and add your credentials
+starkli signer keystore new ~/.starkli-wallets/deployer-mainnet.json
 ```
 
-Required variables:
-- `DOJO_ACCOUNT_ADDRESS`: Your deployed Starknet account address
-- `DOJO_PRIVATE_KEY`: Your account's private key
+### Initialize Accounts
+
+```bash
+# For Sepolia
+starkli account oz init \
+  --keystore ~/.starkli-wallets/deployer-sepolia.json \
+  --rpc https://api.cartridge.gg/x/starknet/sepolia \
+  ~/.starkli-wallets/deployer-sepolia-account.json
+
+# For Mainnet
+starkli account oz init \
+  --keystore ~/.starkli-wallets/deployer-mainnet.json \
+  --rpc https://api.cartridge.gg/x/starknet/mainnet \
+  ~/.starkli-wallets/deployer-mainnet-account.json
+```
+
+See the [Account Setup section in README.md](../README.md#account-setup-sepoliamainnet) for complete setup instructions including funding and account deployment.
 
 ## Time Lock Values
 
@@ -145,13 +169,20 @@ scarb run deploy_mainnet
 ```
 
 ### "Tool not found"
-Install Dojo toolchain: `curl -L https://install.dojoengine.org | bash`
-
-### "Environment file not found"
-Copy the example file and fill in your credentials:
+Install required tools:
 ```bash
-cp ../.env.sepolia.example ../.env.sepolia
-# Edit and add your credentials
+# Dojo toolchain
+curl -L https://install.dojoengine.org | bash
+
+# Starkli
+curl https://get.starkli.sh | sh
+starkliup
+```
+
+### "STARKNET_ACCOUNT environment variable not set"
+Set your keystore path before deploying:
+```bash
+export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-sepolia-account.json
 ```
 
 ### "Account not funded"
@@ -159,18 +190,25 @@ Get testnet ETH from a faucet or ensure mainnet account has ETH.
 
 ### "Migration failed"
 - Check RPC endpoint is accessible
-- Verify account address and private key are correct
+- Verify keystore file exists and password is correct
 - Ensure account is deployed on the target network
+- Check account has sufficient ETH for gas
+
+### "Could not extract account address from keystore"
+Verify your keystore file is a valid Starkli account descriptor (not just a signer keystore). You need the `-account.json` file, not just the keystore file.
 
 ### Updating Deployment Logic
 Since all deployment logic lives in `deploy_network.sh`, you only need to update one file. The Scarb aliases automatically use the updated script.
 
 ## Security Notes
 
-- **Never commit** `.env.sepolia` or `.env.mainnet` files
-- Use different accounts for testnet and mainnet
-- Test thoroughly on Sepolia before mainnet deployment
-- Keep private keys secure (consider hardware wallets for mainnet)
+- **Never commit** keystore files or passwords
+- **Encrypted keystores**: Private keys never stored in plaintext
+- **Separate accounts**: Use different keystores for testnet and mainnet
+- **Strong passwords**: Use unique, strong passwords for each keystore
+- **Backup securely**: Keep encrypted backups of keystores off-machine
+- **Test thoroughly**: Always test on Sepolia before mainnet deployment
+- **Hardware wallets**: Consider hardware wallet integration for production
 
 ## Next Steps After Deployment
 
@@ -183,6 +221,7 @@ Since all deployment logic lives in `deploy_network.sh`, you only need to update
 ## Support
 
 For issues or questions:
-- Check `../DEPLOYMENT.md` for detailed deployment guide
+- Check [README.md Troubleshooting](../README.md#troubleshooting) for common deployment issues
+- Review [README.md Deployment](../README.md#deployment) for detailed deployment guide
 - Review Dojo docs: https://book.dojoengine.org
 - Check contract configuration in `../dojo_*.toml` files
