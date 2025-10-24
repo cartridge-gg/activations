@@ -97,24 +97,22 @@ export function ConnectWallet() {
 
   // If connected, show address and dropdown
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative w-full" ref={dropdownRef}>
       <button
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         className="
-          px-4 py-2 md:px-6 md:py-3
+          w-full py-4 px-6
           bg-ronin-dark hover:bg-ronin-light
           border-2 border-ronin-accent
           font-semibold
           text-ronin-secondary
-          transition-all duration-200
-          flex items-center gap-2
-          text-sm md:text-base
+          transition-all duration-300
+          flex items-center justify-center gap-2
           relative
         "
       >
         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-        <span className="hidden sm:inline">{formatAddress(address)}</span>
-        <span className="sm:hidden">{address.slice(0, 4)}...{address.slice(-2)}</span>
+        <span>{formatAddress(address)}</span>
         <svg
           className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
           fill="none"
