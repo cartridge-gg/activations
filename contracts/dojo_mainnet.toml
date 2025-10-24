@@ -8,9 +8,8 @@ default = "ronin_quest"
 
 [env]
 rpc_url = "https://api.cartridge.gg/x/starknet/mainnet"
-# Authentication via Starkli keystore
-# Set STARKNET_ACCOUNT environment variable to your keystore path:
-#   export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-mainnet-account.json
+account_address = "0x0"
+keystore_path = "~/.starkli-wallets/deployer-mainnet-account.json"
 # world_address = "0x..."  # Uncomment after first deployment
 
 [writers]
@@ -21,5 +20,5 @@ contract_name = "RoninPact"
 instance_name = "ronin_pact"
 salt = "1"
 constructor_data = [
-    "$DOJO_ACCOUNT_ADDRESS"
+    "0x0"
 ]

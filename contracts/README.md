@@ -245,7 +245,7 @@ Before deploying to Sepolia or Mainnet, you need:
 
 1. **Sozo CLI** - Part of Dojo toolkit
 2. **Starkli** - For account management
-3. **Funded Starknet Account** - With ETH on target network
+3. **Funded Starknet Account** - With STRK on target network
 4. **jq** - For JSON parsing in scripts
 
 ### Account Setup (Sepolia/Mainnet)
@@ -281,13 +281,11 @@ Create account descriptor files:
 # For Sepolia
 starkli account oz init \
   --keystore ~/.starkli-wallets/deployer-sepolia.json \
-  --rpc https://api.cartridge.gg/x/starknet/sepolia \
   ~/.starkli-wallets/deployer-sepolia-account.json
 
 # For Mainnet
 starkli account oz init \
   --keystore ~/.starkli-wallets/deployer-mainnet.json \
-  --rpc https://api.cartridge.gg/x/starknet/mainnet \
   ~/.starkli-wallets/deployer-mainnet-account.json
 ```
 
@@ -307,7 +305,7 @@ cat ~/.starkli-wallets/deployer-mainnet-account.json | jq -r '.deployment.addres
 
 Fund these addresses:
 - **Sepolia**: Use the [Starknet Sepolia Faucet](https://starknet-faucet.vercel.app/) (~0.01 ETH)
-- **Mainnet**: Bridge ETH from L1 using [Starkgate](https://starkgate.starknet.io/) (~0.1-0.5 ETH)
+- **Mainnet**: Bridge STRK from L1 using [Starkgate](https://starkgate.starknet.io/) (~0.1-0.5 ETH)
 
 #### Step 6: Deploy Account Contracts
 
@@ -316,15 +314,57 @@ Deploy your account contracts on-chain:
 ```bash
 # Sepolia
 starkli account deploy \
+  --network sepolia \
   --keystore ~/.starkli-wallets/deployer-sepolia.json \
-  --rpc https://api.cartridge.gg/x/starknet/sepolia \
   ~/.starkli-wallets/deployer-sepolia-account.json
 
 # Mainnet
 starkli account deploy \
+  --network mainnet
   --keystore ~/.starkli-wallets/deployer-mainnet.json \
-  --rpc https://api.cartridge.gg/x/starknet/mainnet \
   ~/.starkli-wallets/deployer-mainnet-account.json
+```
+
+#### Step 7: Configure TOML Files
+
+Update both the keystore path and account address in your network configuration files.
+
+**For Sepolia**, edit `dojo_sepolia.toml`:
+
+```toml
+[env]
+rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
+account_address = "0x1234..." # Your account address
+keystore_path = "~/.starkli-wallets/deployer-sepolia-account.json"
+
+# ... later in the file ...
+
+[[external_contracts]]
+contract_name = "RoninPact"
+instance_name = "ronin_pact"
+salt = "1"
+constructor_data = [
+    "0x1234..."  # Same account address
+]
+```
+
+**For Mainnet**, edit `dojo_mainnet.toml`:
+
+```toml
+[env]
+rpc_url = "https://api.cartridge.gg/x/starknet/mainnet"
+account_address = "0x5678..." # Your account address
+keystore_path = "~/.starkli-wallets/deployer-mainnet-account.json"
+
+# ... later in the file ...
+
+[[external_contracts]]
+contract_name = "RoninPact"
+instance_name = "ronin_pact"
+salt = "1"
+constructor_data = [
+    "0x5678..."  # Same account address
+]
 ```
 
 **Security Note**: Your private keys are encrypted in keystores, never exposed in plaintext!
@@ -348,12 +388,9 @@ This script handles:
 
 #### Deploying to Sepolia
 
-Set your keystore path and run the automated deployment:
+Simply run the automated deployment (keystore path is configured in `dojo_sepolia.toml`):
 
 ```bash
-# Set the account keystore to use
-export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-sepolia-account.json
-
 # Deploy (you'll be prompted for your keystore password)
 scarb run deploy_sepolia
 ```
@@ -374,12 +411,9 @@ The script will:
 
 #### Deploying to Mainnet
 
-Set your mainnet keystore path and run the deployment:
+Simply run the automated deployment (keystore path is configured in `dojo_mainnet.toml`):
 
 ```bash
-# Set the account keystore to use
-export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-mainnet-account.json
-
 # Deploy (requires explicit confirmation)
 scarb run deploy_mainnet
 ```
@@ -603,23 +637,39 @@ sozo execute ronin_quest-actions set_games --calldata <game1>,<game2>,<new_game>
 
 ## Troubleshooting
 
-### "STARKNET_ACCOUNT environment variable not set"
+### "keystore_path not found in config"
 
-Set your keystore path before deploying:
+Ensure you've set the keystore path in your `dojo_{network}.toml` file:
 
-```bash
-export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-sepolia-account.json
+```toml
+[env]
+keystore_path = "~/.starkli-wallets/deployer-sepolia-account.json"
 ```
 
-### "Account file not found"
+### "Account address not configured"
 
-Verify the keystore file exists:
+Set your deployer account address in the `constructor_data` field of your `dojo_{network}.toml`:
+
+```bash
+# Get your account address
+cat ~/.starkli-wallets/deployer-sepolia-account.json | jq -r '.deployment.address'
+
+# Then update dojo_sepolia.toml:
+# [[external_contracts]]
+# constructor_data = [
+#     "0xYOUR_ADDRESS_HERE"
+# ]
+```
+
+### "Keystore file not found"
+
+Verify the keystore file exists at the path specified in your TOML:
 
 ```bash
 ls -la ~/.starkli-wallets/deployer-sepolia-account.json
 ```
 
-If missing, re-run the account initialization steps.
+If missing, re-run the account initialization steps from [Account Setup](#account-setup-sepoliamainnet).
 
 ### "Could not extract account address from keystore"
 
@@ -639,7 +689,7 @@ starkli balance ~/.starkli-wallets/deployer-mainnet-account.json \
   --rpc https://api.cartridge.gg/x/starknet/mainnet
 ```
 
-Get testnet ETH from the [Sepolia Faucet](https://starknet-faucet.vercel.app/) or bridge mainnet ETH via [Starkgate](https://starkgate.starknet.io/).
+Get testnet STRK from the [Sepolia Faucet](https://starknet-faucet.vercel.app/) or bridge mainnet STRK via [Starkgate](https://starkgate.starknet.io/).
 
 ### "Migration failed" or "Build failed"
 
@@ -651,7 +701,7 @@ Get testnet ETH from the [Sepolia Faucet](https://starknet-faucet.vercel.app/) o
   ```
 - Verify keystore password is correct
 - Ensure account is deployed on the target network
-- Check account has sufficient ETH for gas
+- Check account has sufficient STRK for gas
 
 ### "Profile not found"
 
@@ -716,7 +766,7 @@ Expected versions:
 4. **Backup securely**: Keep encrypted backups of keystores off-machine
 5. **Test on Sepolia first**: Always verify deployment scripts on testnet
 6. **Hardware wallet**: Consider hardware wallet integration for mainnet production
-7. **Minimal funding**: Only keep enough ETH for deployments, withdraw excess
+7. **Minimal funding**: Only keep enough STRK for deployments, withdraw excess
 8. **Keystore location**: Store keystores outside project directory (e.g., `~/.starkli-wallets/`)
 9. **Never commit**: Keystores and passwords should never be committed to version control
 10. **Time locks**: Production uses 24-hour time locks to prevent rushing through trials

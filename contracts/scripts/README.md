@@ -45,50 +45,46 @@ scarb run deploy_katana
 Deploys to Starknet Sepolia testnet.
 
 ```bash
-# Set your keystore path
-export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-sepolia-account.json
-
-# Using Scarb alias (recommended)
+# Ensure keystore_path is set in dojo_sepolia.toml, then:
 scarb run deploy_sepolia
 
-# Direct call
+# Or direct call
 ./scripts/deploy_network.sh sepolia
 ```
 
 **Prerequisites:**
-- Create Starkli keystore and account (see DEPLOYMENT.md)
+- Create Starkli keystore and account (see [README.md](../README.md#account-setup-sepoliamainnet))
 - Fund your account with Sepolia ETH
+- Configure `keystore_path` in `dojo_sepolia.toml`
 
 **Configuration:**
 - Uses `dojo_sepolia.toml`
+- Keystore path: Read from `dojo_sepolia.toml`
 - Time lock: 3600 seconds (1 hour)
 - RPC: Cartridge Sepolia endpoint
-- Authenticates via Starkli keystore
 
 ### `deploy_network.sh mainnet` - Production Deployment
 Deploys to Starknet Mainnet with safety confirmations.
 
 ```bash
-# Set your keystore path
-export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-mainnet-account.json
-
-# Using Scarb alias (recommended)
+# Ensure keystore_path is set in dojo_mainnet.toml, then:
 scarb run deploy_mainnet
 
-# Direct call
+# Or direct call
 ./scripts/deploy_network.sh mainnet
 ```
 
 **Prerequisites:**
-- Create Starkli keystore and account (see DEPLOYMENT.md)
+- Create Starkli keystore and account (see [README.md](../README.md#account-setup-sepoliamainnet))
 - Fund your account with Mainnet ETH
+- Configure `keystore_path` in `dojo_mainnet.toml`
 - Test thoroughly on Sepolia first!
 
 **Configuration:**
 - Uses `dojo_mainnet.toml`
+- Keystore path: Read from `dojo_mainnet.toml`
 - Time lock: 86400 seconds (24 hours)
 - RPC: Cartridge Mainnet endpoint
-- Authenticates via Starkli keystore
 - Requires explicit "yes" confirmation
 
 ## What Each Script Does
@@ -179,10 +175,12 @@ curl https://get.starkli.sh | sh
 starkliup
 ```
 
-### "STARKNET_ACCOUNT environment variable not set"
-Set your keystore path before deploying:
-```bash
-export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-sepolia-account.json
+### "keystore_path not found in config"
+Set your keystore path in the appropriate TOML file:
+```toml
+# In dojo_sepolia.toml or dojo_mainnet.toml
+[env]
+keystore_path = "~/.starkli-wallets/deployer-sepolia-account.json"
 ```
 
 ### "Account not funded"

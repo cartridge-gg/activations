@@ -1,16 +1,15 @@
 [world]
 name = "Ronin Quest"
 description = "A serverless quest system with dynamic NFT for the Dojo ecosystem"
-seed = "ronin_quest"
+seed = "ronin_quest-v3"
 
 [namespace]
 default = "ronin_quest"
 
 [env]
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
-# Authentication via Starkli keystore
-# Set STARKNET_ACCOUNT environment variable to your keystore path:
-#   export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-sepolia-account.json
+account_address = "0x05cb4ea8cc45dd51505a7e585b4a73d87d2f9448ed6a380155006229170e4819"
+keystore_path = "~/.starkli-wallets/deployer-sepolia.json"
 # world_address = "0x..."  # Uncomment after first deployment
 
 [writers]
@@ -19,7 +18,7 @@ rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
 [[external_contracts]]
 contract_name = "RoninPact"
 instance_name = "ronin_pact"
-salt = "1"
+salt = "3"
 constructor_data = [
-    "$DOJO_ACCOUNT_ADDRESS"
+    "0x05cb4ea8cc45dd51505a7e585b4a73d87d2f9448ed6a380155006229170e4819"
 ]

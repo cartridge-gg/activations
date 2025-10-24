@@ -57,33 +57,21 @@ for tool in sozo jq; do
 done
 echo -e "${GREEN}✓ Required tools found${NC}"
 
-# Check for Starkli account keystore
-if [ -z "${STARKNET_ACCOUNT:-}" ]; then
-    echo -e "${RED}Error: STARKNET_ACCOUNT environment variable not set${NC}"
-    echo -e "${YELLOW}Please set your Starkli account keystore path:${NC}"
-    echo -e "  export STARKNET_ACCOUNT=~/.starkli-wallets/deployer-$NETWORK-account.json"
-    echo -e "\n${YELLOW}If you haven't created a keystore yet, see the deployment guide:${NC}"
-    echo -e "  https://book.dojoengine.org/toolchain/sozo/world-commands/auth.html"
+# Read configuration from dojo config file
+CONFIG_FILE="$CONTRACTS_DIR/dojo_$NETWORK.toml"
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo -e "${RED}Error: Config file not found at $CONFIG_FILE${NC}"
     exit 1
 fi
 
-# Verify account file exists
-if [ ! -f "$STARKNET_ACCOUNT" ]; then
-    echo -e "${RED}Error: Account file not found at $STARKNET_ACCOUNT${NC}"
+# Extract account address from TOML constructor_data
+DOJO_ACCOUNT_ADDRESS=$(grep "^account_address" "$CONFIG_FILE" | grep -o "0x[0-9a-fA-F]\{1,\}")
+if [ -z "$DOJO_ACCOUNT_ADDRESS" ]; then
+    echo -e "${RED}Error: Account address not configured in $CONFIG_FILE${NC}"
+    echo -e "${YELLOW}Please set your account address in the constructor_data field:${NC}"
     exit 1
 fi
 
-# Extract account address from keystore file
-DOJO_ACCOUNT_ADDRESS=$(jq -r '.deployment.address' "$STARKNET_ACCOUNT")
-if [ -z "$DOJO_ACCOUNT_ADDRESS" ] || [ "$DOJO_ACCOUNT_ADDRESS" == "null" ]; then
-    echo -e "${RED}Error: Could not extract account address from $STARKNET_ACCOUNT${NC}"
-    exit 1
-fi
-
-# Export for use in dojo config files (constructor_data)
-export DOJO_ACCOUNT_ADDRESS
-
-echo -e "${GREEN}✓ Using Starkli keystore: $STARKNET_ACCOUNT${NC}"
 echo -e "${BLUE}Deploying with account: $DOJO_ACCOUNT_ADDRESS${NC}\n"
 
 # Mainnet-specific safety confirmation
