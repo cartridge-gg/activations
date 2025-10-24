@@ -258,17 +258,48 @@ VITE_RONIN_PACT_ADDRESS=0x...
 
 ### Allowlisted Collections
 
-Edit `src/lib/constants.ts`:
-```typescript
-export const ALLOWLISTED_COLLECTIONS: AllowlistedCollection[] = [
-  {
-    address: '0x...', // Contract address
-    name: 'pistols',
-    displayName: 'Pistols at 10 Blocks',
-  },
-  // Add more...
-];
+Collections are now managed in `spec/waza.json` for consistency across deployment scripts and client:
+
+```json
+{
+  "collections": [
+    {
+      "name": "ls-adventurer",
+      "displayName": "Adventurers (Loot Survivor 2)",
+      "address": "0x036017...",
+      "environments": ["mainnet"],
+      "note": "Loot Survivor 2 Adventurer NFTs"
+    }
+  ]
+}
 ```
+
+The client automatically filters collections based on the environment specified in your npm script:
+- `dev`: Shows collections for local Katana testing (Ronin Pact)
+- `sepolia`: Shows collections for Sepolia testnet (Ronin Pact)
+- `mainnet`: Shows production collections (Loot Survivor, Pistols, Blobert, etc.)
+
+Run the appropriate script for your target environment:
+```bash
+# Local development (default)
+pnpm run dev
+
+# Test against Sepolia deployment
+pnpm run dev:sepolia
+
+# Test against Mainnet deployment
+pnpm run dev:mainnet
+
+# Build for production (used by Vercel)
+pnpm run build
+```
+
+Or set the environment manually:
+```bash
+VITE_ENV=sepolia pnpm run dev
+```
+
+For Vercel deployment, set `VITE_ENV` as an environment variable in your Vercel project settings (sepolia or mainnet).
 
 ### Quiz Questions
 

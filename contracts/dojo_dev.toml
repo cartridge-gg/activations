@@ -1,6 +1,6 @@
 [world]
-name = "Ronin Pact"
-description = "A serverless quest system with dynamic NFT for the Cartridge Game Jam. Complete three trials and forge your pact."
+name = "Ronin Quest"
+description = "A serverless quest system with dynamic NFT for the Dojo ecosystem"
 seed = "ronin_quest"
 
 [namespace]

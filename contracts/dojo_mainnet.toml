@@ -7,7 +7,7 @@ seed = "ronin_quest"
 default = "ronin_quest"
 
 [env]
-rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
+rpc_url = "https://api.cartridge.gg/x/starknet/mainnet"
 # Credentials loaded from .env file
 # Set DOJO_ACCOUNT_ADDRESS and DOJO_PRIVATE_KEY in .env
 account_address = "$DOJO_ACCOUNT_ADDRESS"

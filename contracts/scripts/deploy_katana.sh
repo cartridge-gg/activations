@@ -127,23 +127,40 @@ else
     echo -e "${RED}✗ Failed to set minter on NFT contract${NC}"
 fi
 
-# Configure the actions contract with the NFT address and time lock (60 seconds for testing)
-echo -e "${BLUE}Setting Pact NFT address and time lock in actions contract...${NC}"
-sozo execute --profile dev --wait ronin_quest-actions set_pact "$TOKEN_ADDRESS" 60
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓ Pact NFT address configured with 60-second time lock (for testing)${NC}"
-else
-    echo -e "${RED}✗ Failed to set Pact address${NC}"
-fi
+# Configure Waza trial with whitelisted games from waza.json
+echo -e "${BLUE}Whitelisting game collections for Waza trial...${NC}"
+WAZA_JSON="$CONTRACTS_DIR/../spec/waza.json"
+if [ -f "$WAZA_JSON" ]; then
+    # Get collections enabled for 'dev' environment
+    COLLECTIONS=$(jq -c '.collections[] | select(.environments | contains(["dev"]))' "$WAZA_JSON")
 
-# Configure Waza trial with whitelisted game (including Pact NFT for testing)
-echo -e "${BLUE}Whitelisting Pact NFT for Waza trial...${NC}"
-echo -e "${YELLOW}Note: Whitelisting Pact NFT itself for testing${NC}"
-sozo execute --profile dev --wait ronin_quest-actions set_game "$TOKEN_ADDRESS" 1
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓ Pact NFT whitelisted for Waza trial${NC}"
+    if [ ! -z "$COLLECTIONS" ]; then
+        WHITELIST_COUNT=0
+        while IFS= read -r collection; do
+            COLLECTION_NAME=$(echo "$collection" | jq -r '.name')
+            COLLECTION_ADDR=$(echo "$collection" | jq -r '.address')
+
+            # Replace 'self' with the deployed Pact NFT address
+            if [ "$COLLECTION_ADDR" == "self" ]; then
+                COLLECTION_ADDR="$TOKEN_ADDRESS"
+            fi
+
+            echo -e "${YELLOW}Whitelisting: $COLLECTION_NAME${NC}"
+            sozo execute --profile dev --wait ronin_quest-actions set_game "$COLLECTION_ADDR" 1
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}✓ $COLLECTION_NAME whitelisted${NC}"
+                WHITELIST_COUNT=$((WHITELIST_COUNT + 1))
+            else
+                echo -e "${RED}✗ Failed to whitelist $COLLECTION_NAME${NC}"
+            fi
+        done <<< "$COLLECTIONS"
+
+        echo -e "${GREEN}✓ Waza trial configured with $WHITELIST_COUNT collection(s)${NC}"
+    else
+        echo -e "${YELLOW}Warning: No collections found for 'dev' environment in waza.json${NC}"
+    fi
 else
-    echo -e "${RED}✗ Failed to whitelist game${NC}"
+    echo -e "${YELLOW}Warning: waza.json not found at $WAZA_JSON${NC}"
 fi
 
 # Configure Chi trial quiz answers
@@ -173,6 +190,15 @@ else
 fi
 
 echo -e "${GREEN}Contract configuration complete!${NC}"
+
+# Configure the actions contract with the NFT address and time lock (60 seconds for testing)
+echo -e "${BLUE}Setting Pact NFT address and time lock in actions contract...${NC}"
+sozo execute --profile dev --wait ronin_quest-actions set_pact "$TOKEN_ADDRESS" 60
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Pact NFT address configured with 60-second time lock (for testing)${NC}"
+else
+    echo -e "${RED}✗ Failed to set Pact address${NC}"
+fi
 
 # Step 5: Mint initial NFT from deployer account
 echo -e "\n${YELLOW}Step 5: Minting initial NFT from deployer account...${NC}"

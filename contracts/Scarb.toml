@@ -9,7 +9,9 @@ sierra-replace-ids = true
 
 [scripts]
 test = "snforge test"
-deploy = "./scripts/deploy_world.sh"
+deploy_katana = "./scripts/deploy_katana.sh"
+deploy_sepolia = "./scripts/deploy_network.sh sepolia"
+deploy_mainnet = "./scripts/deploy_network.sh mainnet"
 
 [dependencies]
 dojo = "1.7.1"
@@ -29,3 +31,7 @@ allow-prebuilt-plugins = ["dojo_cairo_macros"]
 cairo_test = "2.12.2"
 dojo_snf_test = "1.7.1"
 snforge_std = "0.48.1"
+
+[profile.sepolia]
+
+[profile.mainnet]

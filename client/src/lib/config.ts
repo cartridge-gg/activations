@@ -3,7 +3,12 @@
 // Simplified for local development on Katana (localhost:5050)
 
 import manifest from "../../../contracts/manifest_dev.json";
+import wazaConfig from "../../../spec/waza.json";
 import { AllowlistedCollection } from "./types";
+
+// Environment is set via ENV variable at runtime (e.g., ENV=dev pnpm run dev)
+const ENVIRONMENT = import.meta.env.VITE_ENV || 'dev';
+console.log('Current environment:', ENVIRONMENT);
 
 // ============================================================================
 // LOCAL KATANA CONFIGURATION
@@ -44,33 +49,16 @@ console.log('  Ronin Pact:', RONIN_PACT_ADDRESS);
 // ============================================================================
 
 // Allowlisted game collections for Waza trial
-export const ALLOWLISTED_COLLECTIONS: AllowlistedCollection[] = [
-  {
-    address: '0x036017e69d21d6d8c13e266eabb73ef1f1d02722d86bdcabe5f168f8e549d3cd',
-    name: 'ls-adventurer',
-    displayName: 'Loot Survivor 2 Adventurers',
-  },
-  {
-    address: '0x036017e69d21d6d8c13e266eabb73ef1f1d02722d86bdcabe5f168f8e549d3cd',
-    name: 'ls-beast',
-    displayName: 'Loot Survivor 2 Beasts',
-  },
-  {
-    address: '0x0',
-    name: 'pistols-duel',
-    displayName: 'Pistols at Dawn Duels',
-  },
-  {
-    address: '0x0',
-    name: 'bloberts',
-    displayName: 'Bloberts',
-  },
-  {
-    address: RONIN_PACT_ADDRESS,
-    name: 'ronin-pact',
-    displayName: 'Ronin Pact',
-  },
-];
+// Loaded from waza.json and filtered by environment
+
+export const ALLOWLISTED_COLLECTIONS: AllowlistedCollection[] = wazaConfig.collections
+  .filter((collection: any) => collection.environments.includes(ENVIRONMENT))
+  .map((collection: any) => ({
+    name: collection.name,
+    displayName: collection.displayName,
+    // Replace 'self' with the actual Ronin Pact address
+    address: collection.address === 'self' ? RONIN_PACT_ADDRESS : collection.address,
+  }));
 
 // Trial metadata - imported from centralized UI text configuration
 export { TRIAL_METADATA as TRIALS } from './uiText';

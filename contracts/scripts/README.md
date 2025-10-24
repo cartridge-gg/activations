@@ -1,148 +1,188 @@
 # Deployment Scripts
 
-## Quick Start
+This directory contains automated deployment scripts for the Ronin Quest Dojo project.
 
-### Setup (One-time)
+## Script Architecture
+
+The deployment system uses a **unified approach** for maintainability:
+
+- **`deploy_network.sh`** - Unified deployment logic for Sepolia and Mainnet (single source of truth)
+- **`deploy_katana.sh`** - Standalone local development script with Katana
+
+Scarb.toml provides convenient aliases:
+- `scarb run deploy_katana` → `./scripts/deploy_katana.sh`
+- `scarb run deploy_sepolia` → `./scripts/deploy_network.sh sepolia`
+- `scarb run deploy_mainnet` → `./scripts/deploy_network.sh mainnet`
+
+This architecture provides:
+- ✓ **DRY**: Shared logic maintained in one place
+- ✓ **Simple**: Fewer files to maintain
+- ✓ **Clear**: Explicit Scarb commands show intent
+- ✓ **Flexible**: Easy to add new networks
+
+## Available Scripts
+
+### `deploy_katana.sh` - Local Development
+Deploys to local Katana testnet with hot-reload for development.
 
 ```bash
-# Copy the environment template
-cp .env.example .env
+# Using Scarb alias (recommended)
+scarb run deploy_katana
 
-# Edit .env and add your credentials
-# DOJO_ACCOUNT_ADDRESS=0x...
-# DOJO_PRIVATE_KEY=0x...
+# Direct call
+./scripts/deploy_katana.sh
 ```
 
-### Deploy
+**Configuration:**
+- Uses `dojo_dev.toml` and `katana.toml`
+- Time lock: 60 seconds (for quick testing)
+- Starts Katana automatically
+- Stays running until Ctrl+C
+
+### `deploy_network.sh sepolia` - Testnet Deployment
+Deploys to Starknet Sepolia testnet.
 
 ```bash
-# Local Katana (no .env needed)
-katana --disable-fee  # In another terminal
-./scripts/deploy.sh dev
+# Using Scarb alias (recommended)
+scarb run deploy_sepolia
 
-# Sepolia testnet
-./scripts/deploy.sh sepolia
-
-# Mainnet
-./scripts/deploy.sh mainnet
+# Direct call
+./scripts/deploy_network.sh sepolia
 ```
 
-## How It Works
+**Prerequisites:**
+- Create `.env.sepolia` with your credentials
+- Fund your account with Sepolia ETH
 
-The deployment script uses **Dojo profiles** (configuration files) for each network:
+**Configuration:**
+- Uses `dojo_sepolia.toml`
+- Time lock: 3600 seconds (1 hour)
+- RPC: Cartridge Sepolia endpoint
 
-- **`dojo_dev.toml`** - Local Katana (uses default Katana account)
-- **`dojo_sepolia.toml`** - Sepolia testnet (reads from `.env`)
-- **`dojo_mainnet.toml`** - Mainnet (reads from `.env`)
+### `deploy_network.sh mainnet` - Production Deployment
+Deploys to Starknet Mainnet with safety confirmations.
 
-The network is determined by the `rpc_url` in each profile file, not the profile name.
-
-## Deployment Phases
-
-The script orchestrates the following phases:
-
-1. **Build** - Compiles all contracts with `scarb build`
-2. **Deploy Dojo Contracts** - Deploys World and Actions using `sozo migrate --profile <profile>`
-3. **Deploy RoninPact NFT** - Deploys the ERC721 contract using `sncast`
-4. **Configure Actions** - Sets Pact, Controller, Games, and Quiz via `sozo execute`
-5. **Set Minter** - Authorizes Actions contract as minter in RoninPact
-6. **Save Addresses** - Writes deployment info to `deployments/<profile>.json`
-
-## Configuration
-
-Before deploying to production, update these placeholder values in `scripts/deploy.sh`:
-
-**Game Allowlist** (Line ~124):
 ```bash
-GAME1="0x..."  # e.g., Pistols at 10 Blocks
-GAME2="0x..."  # e.g., Loot Survivor Season Pass
+# Using Scarb alias (recommended)
+scarb run deploy_mainnet
+
+# Direct call
+./scripts/deploy_network.sh mainnet
 ```
 
-**Quiz Answers** (Line ~130):
+**Prerequisites:**
+- Create `.env.mainnet` with your credentials
+- Fund your account with Mainnet ETH
+- Test thoroughly on Sepolia first!
+
+**Configuration:**
+- Uses `dojo_mainnet.toml`
+- Time lock: 86400 seconds (24 hours)
+- RPC: Cartridge Mainnet endpoint
+- Requires explicit "yes" confirmation
+
+## What Each Script Does
+
+All deployment scripts perform these steps:
+
+1. **Build**: Compile Cairo contracts with appropriate profile
+2. **Migrate**: Deploy World and all contracts to the network
+3. **Extract Addresses**: Parse manifest for contract addresses
+4. **Update Config**: Write world address to appropriate `.toml` file
+5. **Configure Permissions**: Grant owner role to deployer account
+6. **Setup NFT Minter**: Set Actions contract as NFT minter
+7. **Configure Actions**: Set NFT address and time lock in Actions contract
+8. **Whitelist Games**: Configure Waza trial with whitelisted contracts
+9. **Setup Quiz**: Configure Chi trial with quiz answer hashes
+10. **Mint Initial NFT**: Create deployer's NFT to verify setup
+
+## Environment Files
+
+Create these files from the examples:
+
 ```bash
-ANSWER1="0x..."  # Hashed answer to question 1
-ANSWER2="0x..."  # Hashed answer to question 2
-# ... etc (5 total)
+# For Sepolia
+cp ../.env.sepolia.example ../.env.sepolia
+# Edit and add your credentials
+
+# For Mainnet
+cp ../.env.mainnet.example ../.env.mainnet
+# Edit and add your credentials
 ```
 
-**Controller Address** (Line ~139):
-```bash
-CONTROLLER_ADDRESS="0x..."  # Global Controller contract for signer verification
-```
+Required variables:
+- `DOJO_ACCOUNT_ADDRESS`: Your deployed Starknet account address
+- `DOJO_PRIVATE_KEY`: Your account's private key
 
-The script will warn you about these placeholders during deployment.
+## Time Lock Values
 
-## Deployment Output
+Different networks use different time locks between trials:
 
-After deployment, addresses are saved to `deployments/<profile>.json`:
+- **Local (Katana)**: 60 seconds - Fast iteration for development
+- **Sepolia**: 3600 seconds (1 hour) - Reasonable for testing
+- **Mainnet**: 86400 seconds (24 hours) - Production rate limiting
 
-```json
-{
-  "profile": "sepolia",
-  "rpc_url": "https://api.cartridge.gg/x/starknet/sepolia",
-  "timestamp": "2025-10-16T...",
-  "contracts": {
-    "world": "0x...",
-    "actions": "0x...",
-    "pact": "0x..."
-  },
-  "config": {
-    "controller": "0x...",
-    "minter": "0x..."
-  }
-}
-```
+## Script Output
 
-Use these addresses for frontend integration.
+Each script outputs:
+- Contract addresses (World, NFT, Actions)
+- Configuration status (permissions, minter, quiz, etc.)
+- Links to block explorers
+- Manifest file locations
 
 ## Troubleshooting
 
-### Account Credentials Not Set
-```
-ERROR: Account credentials not set!
-```
-**Solution**: Create a `.env` file with your credentials:
+### "Network argument required" or "Invalid network"
+Make sure you're calling the script correctly:
 ```bash
-cp .env.example .env
-# Edit .env and fill in DOJO_ACCOUNT_ADDRESS and DOJO_PRIVATE_KEY
+# Using Scarb aliases (recommended)
+scarb run deploy_sepolia
+scarb run deploy_mainnet
+
+# Direct calls
+./scripts/deploy_network.sh sepolia
+./scripts/deploy_network.sh mainnet
 ```
 
-### Failed to Declare RoninPact
-- Ensure contracts are built: `scarb build`
-- Check RPC connection is working
-- Verify account has funds (for testnet/mainnet)
+### "Tool not found"
+Install Dojo toolchain: `curl -L https://install.dojoengine.org | bash`
 
-### Could Not Auto-Detect World Address
-- Check `sozo inspect --json` output manually
-- Look for world address in deployment output
-- Script will prompt you to enter it manually
-
-### Failed to Set Minter
-- Verify Actions contract address is correct
-- Check that deployer owns the Pact contract
-- Ensure transaction succeeded (check block explorer)
-
-### Re-deploying
-
-To redeploy from scratch:
+### "Environment file not found"
+Copy the example file and fill in your credentials:
 ```bash
-# Clean build artifacts
-scarb clean
-
-# Restart Katana (for local dev)
-# Kill existing Katana and restart
-katana --disable-fee
-
-# Run deployment again
-./scripts/deploy.sh dev
+cp ../.env.sepolia.example ../.env.sepolia
+# Edit and add your credentials
 ```
 
-## Dependencies
+### "Account not funded"
+Get testnet ETH from a faucet or ensure mainnet account has ETH.
 
-- `scarb` - Cairo build tool
-- `sozo` - Dojo CLI
-- `sncast` - Starknet Foundry CLI
-- `jq` - JSON parsing (optional)
+### "Migration failed"
+- Check RPC endpoint is accessible
+- Verify account address and private key are correct
+- Ensure account is deployed on the target network
 
-Install Dojo: https://book.dojoengine.org/getting-started/quick-start.html
-Install Starknet Foundry: https://foundry-rs.github.io/starknet-foundry/
+### Updating Deployment Logic
+Since all deployment logic lives in `deploy_network.sh`, you only need to update one file. The Scarb aliases automatically use the updated script.
+
+## Security Notes
+
+- **Never commit** `.env.sepolia` or `.env.mainnet` files
+- Use different accounts for testnet and mainnet
+- Test thoroughly on Sepolia before mainnet deployment
+- Keep private keys secure (consider hardware wallets for mainnet)
+
+## Next Steps After Deployment
+
+1. **Verify Contracts**: Check on Starkscan
+2. **Configure Client**: Update client with contract addresses
+3. **Setup Indexer**: Configure Torii for the deployed world
+4. **Test Integration**: Verify all functionality works end-to-end
+5. **Announce**: Let your users know about the deployment
+
+## Support
+
+For issues or questions:
+- Check `../DEPLOYMENT.md` for detailed deployment guide
+- Review Dojo docs: https://book.dojoengine.org
+- Check contract configuration in `../dojo_*.toml` files
