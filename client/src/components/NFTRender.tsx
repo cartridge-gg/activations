@@ -166,54 +166,82 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
   }
 
   return (
-    <div className="bg-gradient-to-br from-ronin-dark to-ronin-light rounded-lg p-8 shadow-xl">
-      <div className="flex flex-col items-center space-y-6">
-        <div ref={svgContainerRef} className="relative w-96 h-96 rounded-lg overflow-hidden">
-          <div dangerouslySetInnerHTML={{ __html: svgContent }} />
+    <div className="bg-gradient-to-br from-ronin-dark via-ronin-dark/90 to-ronin-light/10 rounded-xl p-4 shadow-2xl border border-ronin-primary/20">
+      <div className="flex flex-col items-center space-y-5">
+        {/* NFT Visual */}
+        <div className="relative w-full">
+          <div
+            ref={svgContainerRef}
+            className="relative w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-ronin-dark/50 to-ronin-light/5 shadow-inner ring-2 ring-ronin-primary/30"
+          >
+            <div dangerouslySetInnerHTML={{ __html: svgContent }} />
+          </div>
+
+          {/* Decorative corner accents */}
+          <div className="absolute -top-2 -left-2 w-4 h-4 border-t-2 border-l-2 border-ronin-primary"></div>
+          <div className="absolute -top-2 -right-2 w-4 h-4 border-t-2 border-r-2 border-ronin-primary"></div>
+          <div className="absolute -bottom-2 -left-2 w-4 h-4 border-b-2 border-l-2 border-ronin-primary"></div>
+          <div className="absolute -bottom-2 -right-2 w-4 h-4 border-b-2 border-r-2 border-ronin-primary"></div>
         </div>
 
-        <div className="flex items-center space-x-4">
-          {TRIALS.map(({ name, key }) => (
-            <div key={name} className="flex flex-col items-center space-y-1">
-              <div
-                className={`w-3 h-3 rounded-full transition-colors duration-300 ${
-                  progress[key] ? 'bg-ronin-primary' : 'bg-ronin-secondary/30'
-                }`}
-              />
-              <span
-                className={`text-xs font-medium ${
-                  progress[key] ? 'text-ronin-secondary' : 'text-ronin-secondary/50'
-                }`}
-              >
-                {name}
-              </span>
-            </div>
-          ))}
+        {/* Progress Indicators */}
+        <div className="w-full">
+          <div className="flex items-center justify-center gap-8 py-4">
+            {TRIALS.map(({ name, key }) => (
+              <div key={name} className="flex flex-col items-center space-y-2 group">
+                <div className="relative">
+                  <div
+                    className={`w-4 h-4 rounded-full transition-all duration-500 ${
+                      progress[key]
+                        ? 'bg-ronin-primary shadow-lg shadow-ronin-primary/50 scale-110'
+                        : 'bg-ronin-secondary/20 group-hover:bg-ronin-secondary/30'
+                    }`}
+                  />
+                  {progress[key] && (
+                    <div className="absolute inset-0 rounded-full bg-ronin-primary animate-ping opacity-30"></div>
+                  )}
+                </div>
+                <span
+                  className={`text-sm font-medium transition-colors duration-300 ${
+                    progress[key] ? 'text-ronin-secondary' : 'text-ronin-secondary/40'
+                  }`}
+                >
+                  {name}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
+        {/* Completion Section */}
         {allComplete && (
-          <div className="w-full space-y-4 pt-4 border-t border-ronin-primary/30">
-            <div className="text-center space-y-2">
-              <h3 className="text-xl font-bold text-ronin-secondary">
+          <div className="w-full space-y-6 pt-6 border-t-2 border-ronin-primary/40">
+            {/* Celebration header */}
+            <div className="text-center space-y-3">
+              <h3 className="font-heading text-2xl font-bold text-ronin-secondary tracking-wide">
                 {NFT_RENDER_TEXT.completion.title}
               </h3>
-              <p className="text-sm text-ronin-secondary/80">
+              <p className="text-base text-ronin-accent/90 leading-relaxed">
                 {NFT_RENDER_TEXT.completion.message}
               </p>
-              <p className="text-xs text-ronin-accent">
+              <p className="text-sm text-ronin-secondary/70 italic">
                 {NFT_RENDER_TEXT.completion.callToAction}
               </p>
             </div>
+
+            {/* Action buttons */}
             <div className="space-y-3">
               <ShareButton progress={progress} />
               <button
                 onClick={downloadAsPNG}
-                className="text-ronin-accent hover:text-ronin-secondary text-sm underline transition-colors flex items-center justify-center gap-1 mx-auto"
+                className="text-ronin-accent hover:text-ronin-secondary text-sm font-medium transition-colors flex items-center justify-center gap-2 mx-auto group"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                <span>Download as PNG</span>
+                <span className="border-b border-ronin-accent/50 group-hover:border-ronin-secondary/50">
+                  Download as PNG
+                </span>
               </button>
             </div>
           </div>

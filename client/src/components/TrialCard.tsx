@@ -45,7 +45,7 @@ export function TrialCard({
       >
         <div className="flex items-start justify-between">
           <div className="flex-1 pr-4">
-            <h3 className="text-2xl font-bold text-ronin-secondary mb-1">
+            <h3 className="font-heading text-2xl font-bold text-ronin-secondary mb-1">
               {title}
             </h3>
             <p className="text-sm text-ronin-accent italic mb-2">{subtitle}</p>

@@ -19,7 +19,7 @@ function App() {
         {/* Header */}
         <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-6 mb-12">
           <div className="flex-shrink-0">
-            <h1 className="text-3xl sm:text-4xl font-bold text-ronin-primary mb-2">
+            <h1 className="font-heading text-3xl sm:text-4xl font-bold text-ronin-primary mb-2">
               {APP_TEXT.header.title}
             </h1>
             <p className="text-ronin-accent text-base sm:text-lg">
@@ -61,7 +61,7 @@ function App() {
               />
             ) : (
               <div className="text-center py-20">
-                <h2 className="text-2xl text-ronin-secondary mb-4">
+                <h2 className="font-heading text-2xl text-ronin-secondary mb-4">
                   {APP_TEXT.errors.unableToLoad}
                 </h2>
                 <p className="text-ronin-accent">
@@ -71,7 +71,7 @@ function App() {
             )
           ) : (
             <div className="text-center py-20">
-              <h2 className="text-2xl text-ronin-secondary mb-4">
+              <h2 className="font-heading text-2xl text-ronin-secondary mb-4">
                 {APP_TEXT.noWallet.title}
               </h2>
               <p className="text-ronin-accent">

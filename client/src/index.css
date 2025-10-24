@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --font-sans: "Crimson Pro", Georgia, serif;
+  --font-heading: "Cinzel", serif;
 
   --color-ronin-primary: #E63946;
   --color-ronin-secondary: #F1FAEE;
@@ -21,6 +22,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  font-family: "Crimson Pro", Georgia, serif;
 }
 
 #root {

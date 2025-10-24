@@ -80,7 +80,7 @@ export function MintButton() {
               </svg>
             </div>
 
-            <h2 className="text-xl md:text-2xl font-bold text-ronin-secondary mb-2">
+            <h2 className="font-heading text-xl md:text-2xl font-bold text-ronin-secondary mb-2">
               {MINT_TEXT.header.title}
             </h2>
             <p className="text-ronin-accent text-sm md:text-base max-w-md mx-auto leading-relaxed">
