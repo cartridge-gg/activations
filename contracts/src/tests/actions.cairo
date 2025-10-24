@@ -15,7 +15,7 @@ use snforge_std::{
 use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
 
 use ronin_quest::systems::actions::{IActionsDispatcher, IActionsDispatcherTrait};
-use ronin_quest::models::{RoninPact, RoninGame, RoninAnswers};
+use ronin_quest::models::{RoninPact, RoninGame, RoninAnswers, PlayerToken};
 use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 use super::mocks::{IMockERC721Dispatcher, IMockERC721DispatcherTrait};
 
@@ -109,7 +109,7 @@ fn test_set_pact() {
     actions.set_pact(pact_address, 86400);
     stop_cheat_caller_address(actions_address);
 
-    // Verify pact was set
+    // Verify pact was set with correct time lock
     let pact_config: RoninPact = world.read_model(0);
     assert(pact_config.pact == pact_address, 'Pact not set');
     assert(pact_config.time_lock == 86400, 'Time lock not set');
@@ -157,6 +157,43 @@ fn test_set_quiz() {
     assert(answers_config.answers.len() == 5, 'Answers not set');
 }
 
+#[test]
+#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
+fn test_view_functions() {
+    let (_world, actions, actions_address) = setup_world();
+
+    // Deploy pact contract
+    let pact_address = deploy_pact(owner());
+    let pact = IRoninPactDispatcher { contract_address: pact_address };
+
+    let player_addr = player();
+
+    // Configure actions contract
+    start_cheat_caller_address(actions_address, owner());
+    actions.set_pact(pact_address, 86400);
+    stop_cheat_caller_address(actions_address);
+
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
+    stop_cheat_caller_address(pact_address);
+
+    // Test get_time_lock view function
+    let time_lock = actions.get_time_lock();
+    assert(time_lock == 86400, 'Wrong time lock');
+
+    // Mint NFT via actions
+    start_cheat_caller_address(actions_address, player_addr);
+    actions.mint('testuser');
+    stop_cheat_caller_address(actions_address);
+
+    // Test get_player_token_id view function
+    let token_id = actions.get_player_token_id(player_addr);
+    assert(token_id == 0, 'Wrong token id');
+
+    // Verify the token actually exists
+    assert(pact.owner_of(token_id) == player_addr, 'Token not owned');
+}
+
 // ============================================================================
 // NFT Minting Tests
 // ============================================================================
@@ -164,27 +201,49 @@ fn test_set_quiz() {
 #[test]
 #[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
 fn test_mint_nft_via_actions() {
-    let (_world, actions, actions_address) = setup_world();
+    let (world, actions, actions_address) = setup_world();
 
     // Deploy pact contract
     let pact_address = deploy_pact(owner());
     let pact = IRoninPactDispatcher { contract_address: pact_address };
 
     let player_controller = player();
+    let other_player = other();
 
     // Configure actions contract
     start_cheat_caller_address(actions_address, owner());
     actions.set_pact(pact_address, 86400);
     stop_cheat_caller_address(actions_address);
 
-    // Mint NFT from Player (Controller) via actions contract
+    // Mint first NFT from Player (Controller) via actions contract
     start_cheat_caller_address(actions_address, player_controller);
     actions.mint('testuser');
     stop_cheat_caller_address(actions_address);
 
-    // Verify NFT was minted to the Controller
+    // Verify first NFT was minted to the Controller
     assert(pact.balance_of(player_controller) == 1, 'NFT not minted');
     assert(pact.owner_of(0) == player_controller, 'Wrong owner');
+
+    // Verify PlayerToken model was written with token_id = 0
+    let player_token: PlayerToken = world.read_model(player_controller);
+    assert(player_token.token_id == 0, 'PlayerToken not written');
+
+    // Mint second NFT from other player to verify token_id increments
+    start_cheat_caller_address(actions_address, other_player);
+    actions.mint('otheruser');
+    stop_cheat_caller_address(actions_address);
+
+    // Verify second NFT was minted with token_id = 1
+    assert(pact.balance_of(other_player) == 1, 'Second NFT not minted');
+    assert(pact.owner_of(1) == other_player, 'Wrong owner for token 1');
+
+    // Verify PlayerToken model for second player has token_id = 1
+    let other_token: PlayerToken = world.read_model(other_player);
+    assert(other_token.token_id == 1, 'Second PlayerToken wrong');
+
+    // Verify first player's token_id is still 0
+    let player_token_after: PlayerToken = world.read_model(player_controller);
+    assert(player_token_after.token_id == 0, 'First token id changed');
 }
 
 #[test]

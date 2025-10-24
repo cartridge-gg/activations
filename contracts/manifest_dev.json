@@ -1479,8 +1479,8 @@
   },
   "contracts": [
     {
-      "address": "0x2a3a2cb917ba40b4b453cc7040e080f7c9ace6f784d56a563ee0a27d295b85e",
-      "class_hash": "0x64ac6831e3d8aaef325fcecaf00fd25b1bfaf8b511d5fe6db92173ba95ae2fb",
+      "address": "0x59f68b4d5d35240ebd249a283e23822116d4707f90cdde30163cedddf4c3d9b",
+      "class_hash": "0x70a4a08e996cc933c08f6b1a68ba06c13150c30e5bf55e598a853a43be141a1",
       "abi": [
         {
           "type": "impl",
@@ -1632,6 +1632,33 @@
               ],
               "outputs": [],
               "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "get_player_token_id",
+              "inputs": [
+                {
+                  "name": "player",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u256"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "get_time_lock",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u64"
+                }
+              ],
+              "state_mutability": "view"
             },
             {
               "type": "function",
@@ -1812,6 +1839,12 @@
   ],
   "libraries": [],
   "models": [
+    {
+      "members": [],
+      "class_hash": "0x712502fd281000ff61f465e624b373da02ec199d11d160f0a3587cba6976623",
+      "tag": "ronin_quest-PlayerToken",
+      "selector": "0x5d2802b688823043f28508527bca27d0c298ce63130fce33055d2a7bba68d13"
+    },
     {
       "members": [],
       "class_hash": "0x6713cce3e7f20919e9b6004cc3dc5d01e52cd55f8bf21b6c997d80ed1b3d861",

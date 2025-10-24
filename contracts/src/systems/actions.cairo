@@ -13,6 +13,10 @@ pub trait IActions<T> {
     fn complete_chi(ref self: T, token_id: u256, questions: Array<u32>, answers: Array<felt252>);
     fn complete_shin(ref self: T, token_id: u256, vow_hash: felt252);
 
+    // View functions (for querying models without Torii)
+    fn get_player_token_id(self: @T, player: ContractAddress) -> u256;
+    fn get_time_lock(self: @T) -> u64;
+
     // Admin functions
     fn set_pact(ref self: T, pact: ContractAddress, time_lock: u64);
     fn set_game(ref self: T, contract_address: ContractAddress, active: bool);
@@ -28,7 +32,7 @@ pub mod actions {
     use dojo::event::EventStorage;
 
     use super::IActions;
-    use ronin_quest::models::{RoninPact, RoninGame, RoninAnswers};
+    use ronin_quest::models::{RoninPact, RoninGame, RoninAnswers, PlayerToken};
     use ronin_quest::token::pact::{IRoninPactDispatcher, IRoninPactDispatcherTrait};
 
     #[derive(Copy, Drop, Serde)]
@@ -80,6 +84,10 @@ pub mod actions {
             // Mint the pact NFT to the caller and get token_id
             let pact_nft = IRoninPactDispatcher { contract_address: pact_config.pact };
             let token_id = pact_nft.mint(caller, username);
+
+            // Store player token mapping in Dojo model
+            let player_token = PlayerToken { player: caller, token_id };
+            world.write_model(@player_token);
 
             // Emit Dojo event
             world.emit_event(@PactMinted { player: caller, token_id });
@@ -155,7 +163,7 @@ pub mod actions {
             let owner = pact_erc721.owner_of(token_id);
             assert(owner == caller, 'Not token owner');
 
-            // Get mint timestamp and check time lock
+            // Get mint timestamp from NFT contract and time lock from config model
             let nft = IRoninPactDispatcher { contract_address: pact_config.pact };
             let mint_timestamp = nft.get_timestamp(token_id);
             let current_time = starknet::get_block_timestamp();
@@ -167,6 +175,19 @@ pub mod actions {
 
             // Emit completion event
             world.emit_event(@ShinCompleted { token_id, player: caller, vow_hash });
+        }
+
+        // View functions
+        fn get_player_token_id(self: @ContractState, player: ContractAddress) -> u256 {
+            let world = self.world_default();
+            let player_token: PlayerToken = world.read_model(player);
+            player_token.token_id
+        }
+
+        fn get_time_lock(self: @ContractState) -> u64 {
+            let world = self.world_default();
+            let pact_config: RoninPact = world.read_model(0);
+            pact_config.time_lock
         }
 
         // Admin functions

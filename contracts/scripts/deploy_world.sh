@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to deploy Dojo contracts locally
-# Starts Katana, migrates the ronin_pact world, and runs Torii indexer
+# Starts Katana and migrates the ronin_pact world
 # All services shut down on script exit
 
 set -euo pipefail
@@ -15,17 +15,10 @@ NC='\033[0m' # No Color
 
 # Store PIDs for cleanup
 KATANA_PID=""
-TORII_PID=""
 
 # Cleanup function to kill all services
 cleanup() {
     echo -e "\n${YELLOW}Shutting down services...${NC}"
-
-    if [ ! -z "$TORII_PID" ] && kill -0 $TORII_PID 2>/dev/null; then
-        echo -e "${BLUE}Stopping Torii (PID: $TORII_PID)...${NC}"
-        kill $TORII_PID 2>/dev/null || true
-        wait $TORII_PID 2>/dev/null || true
-    fi
 
     if [ ! -z "$KATANA_PID" ] && kill -0 $KATANA_PID 2>/dev/null; then
         echo -e "${BLUE}Stopping Katana (PID: $KATANA_PID)...${NC}"
@@ -49,7 +42,7 @@ echo -e "${BLUE}Contracts dir: $CONTRACTS_DIR${NC}\n"
 
 # Check required tools
 echo -e "${YELLOW}Checking required tools...${NC}"
-for tool in katana sozo torii; do
+for tool in katana sozo; do
     if ! command -v $tool &> /dev/null; then
         echo -e "${RED}Error: $tool not found. Please install Dojo toolchain.${NC}"
         exit 1
@@ -135,10 +128,10 @@ else
 fi
 
 # Configure the actions contract with the NFT address and time lock (60 seconds for testing)
-echo -e "${BLUE}Setting Pact NFT address in actions contract...${NC}"
+echo -e "${BLUE}Setting Pact NFT address and time lock in actions contract...${NC}"
 sozo execute --profile dev --wait ronin_quest-actions set_pact "$TOKEN_ADDRESS" 60
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓ Pact NFT address configured in actions contract with 3-minute time lock (for testing)${NC}"
+    echo -e "${GREEN}✓ Pact NFT address configured with 60-second time lock (for testing)${NC}"
 else
     echo -e "${RED}✗ Failed to set Pact address${NC}"
 fi
@@ -181,33 +174,8 @@ fi
 
 echo -e "${GREEN}Contract configuration complete!${NC}"
 
-# Step 5: Start Torii
-echo -e "\n${YELLOW}Step 5: Starting Torii indexer...${NC}"
-
-torii \
-    --world "$WORLD_ADDRESS" \
-    --rpc http://localhost:5050 \
-    --http.cors_origins "*" \
-    > /tmp/torii.log 2>&1 &
-TORII_PID=$!
-echo -e "${GREEN}Torii started (PID: $TORII_PID)${NC}"
-
-# Wait for Torii to be ready
-echo -e "${YELLOW}Waiting for Torii to be ready...${NC}"
-for i in {1..30}; do
-    if curl -s http://localhost:8080/health > /dev/null 2>&1; then
-        echo -e "${GREEN}Torii is ready!${NC}"
-        break
-    fi
-    if [ $i -eq 30 ]; then
-        echo -e "${YELLOW}Warning: Torii health check timeout (may still be starting)${NC}"
-    fi
-    sleep 1
-done
-
-# Step 6: Mint initial NFT from deployer account
-echo -e "\n${YELLOW}Step 6: Minting initial NFT from deployer account...${NC}"
-echo -e "${BLUE}This helps test if Torii properly indexes the first mint event${NC}"
+# Step 5: Mint initial NFT from deployer account
+echo -e "\n${YELLOW}Step 5: Minting initial NFT from deployer account...${NC}"
 sozo execute --profile dev --wait ronin_quest-actions mint sstr:deployer
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Initial NFT minted from deployer account${NC}"
@@ -219,8 +187,6 @@ fi
 echo -e "\n${GREEN}=== Deployment Complete ===${NC}"
 echo -e "${BLUE}Services running:${NC}"
 echo -e "  Katana RPC:     http://localhost:5050"
-echo -e "  Torii GraphQL:  http://localhost:8080/graphql"
-echo -e "  Torii gRPC:     http://localhost:8080"
 echo -e "\n${BLUE}Deployed Contracts:${NC}"
 echo -e "  World Address:    $WORLD_ADDRESS"
 echo -e "  RoninPact NFT:    $TOKEN_ADDRESS"
@@ -232,7 +198,6 @@ echo -e "  ✓ Actions contract configured with NFT address"
 echo -e "  ✓ Initial NFT minted from deployer account"
 echo -e "\n${BLUE}Logs:${NC}"
 echo -e "  Katana: /tmp/katana.log"
-echo -e "  Torii:  /tmp/torii.log"
 echo -e "\n${YELLOW}Press Ctrl+C to stop all services${NC}\n"
 
 # Keep script running and monitor services
@@ -240,12 +205,6 @@ while true; do
     # Check if Katana is still running
     if ! kill -0 $KATANA_PID 2>/dev/null; then
         echo -e "${RED}Error: Katana process died${NC}"
-        exit 1
-    fi
-
-    # Check if Torii is still running
-    if ! kill -0 $TORII_PID 2>/dev/null; then
-        echo -e "${RED}Error: Torii process died${NC}"
         exit 1
     fi
 
