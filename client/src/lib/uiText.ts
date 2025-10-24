@@ -81,7 +81,7 @@ export const WAZA_TEXT = {
     title: "Trial Complete",
     message: "Your technique has been proven",
   },
-  claimPrompt: "Claim via supported games:",
+  claimPrompt: "Verify ownership of one of these tokens:",
   error: "Ensure you own a token from one of the supported game collections",
 } as const;
 

@@ -260,7 +260,7 @@ export function MintButton() {
               {MINT_TEXT.footer.info}
             </p>
             <div className="flex items-center justify-center gap-2 opacity-50">
-              <span className="text-ronin-accent text-xs">Built on</span>
+              <span className="text-ronin-accent text-xs">Built with</span>
               <img src="/dojo-word.svg" alt="Dojo" className="h-3" />
             </div>
           </div>

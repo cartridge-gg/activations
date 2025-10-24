@@ -24,7 +24,7 @@ function App() {
               {APP_TEXT.header.title}
               <img src="/dojo-dot.svg" alt="" className="w-6 h-6 flex-shrink-0" />
             </h1>
-            <p className="text-ronin-accent text-base sm:text-lg">
+            <p className="text-ronin-accent text-base sm:text-lg text-center">
               {APP_TEXT.header.subtitle}
             </p>
           </div>

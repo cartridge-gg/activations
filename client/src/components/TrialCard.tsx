@@ -97,10 +97,10 @@ export function TrialCard({
           {isComplete && (
             <div className="bg-ronin-primary/10 border-4 border-ronin-primary/30 p-6 text-center relative">
               {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-ronin-primary"></div>
-              <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-ronin-primary"></div>
-              <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-ronin-primary"></div>
-              <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-ronin-primary"></div>
+              <div className="absolute -top-2 -left-2 w-4 h-4 border-t-2 border-l-2 border-ronin-primary"></div>
+              <div className="absolute -top-2 -right-2 w-4 h-4 border-t-2 border-r-2 border-ronin-primary"></div>
+              <div className="absolute -bottom-2 -left-2 w-4 h-4 border-b-2 border-l-2 border-ronin-primary"></div>
+              <div className="absolute -bottom-2 -right-2 w-4 h-4 border-b-2 border-r-2 border-ronin-primary"></div>
 
               <div className="flex items-center justify-center space-x-2 text-ronin-primary">
                 <svg

@@ -3,7 +3,7 @@
     "class_hash": "0x57994b6a75fad550ca18b41ee82e2110e158c59028c4478109a67965a0e5b1e",
     "address": "0x5d7df3f6e6e44c78b7bd7716f942745aefd2f1aad006aaf8bd03c64ada96d0",
     "seed": "ronin_quest",
-    "name": "Ronin Pact",
+    "name": "Ronin Quest",
     "entrypoints": [
       "uuid",
       "set_metadata",
