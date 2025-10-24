@@ -238,9 +238,13 @@ export function MintButton() {
 
           {/* Info Footer */}
           <div className="mt-4 pt-4 border-t border-ronin-accent/20">
-            <p className="text-ronin-accent text-xs text-center">
+            <p className="text-ronin-accent text-xs text-center mb-3">
               {MINT_TEXT.footer.info}
             </p>
+            <div className="flex items-center justify-center gap-2 opacity-50">
+              <span className="text-ronin-accent text-xs">Built on</span>
+              <img src="/dojo-word.svg" alt="Dojo" className="h-3" />
+            </div>
           </div>
         </div>
       </div>

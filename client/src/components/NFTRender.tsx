@@ -166,7 +166,12 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
   }
 
   return (
-    <div className="bg-gradient-to-br from-ronin-dark via-ronin-dark/90 to-ronin-light/10 rounded-xl p-4 shadow-2xl border border-ronin-primary/20">
+    <div className="bg-gradient-to-br from-ronin-dark via-ronin-dark/90 to-ronin-light/10 rounded-xl p-4 shadow-2xl border border-ronin-primary/20 relative overflow-hidden">
+      {/* Dojo watermark in corner */}
+      <div className="absolute top-2 right-2 w-8 h-8 opacity-10 pointer-events-none">
+        <img src="/dojo-icon.svg" alt="" className="w-full h-full" />
+      </div>
+
       <div className="flex flex-col items-center space-y-5">
         {/* NFT Visual */}
         <div className="relative w-full">
@@ -215,9 +220,14 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
 
         {/* Completion Section */}
         {allComplete && (
-          <div className="w-full space-y-6 pt-6 border-t-2 border-ronin-primary/40">
+          <div className="w-full space-y-6 pt-6 border-t-2 border-ronin-primary/40 relative">
+            {/* Dojo icon as celebration element */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+              <img src="/dojo-icon.svg" alt="" className="w-32 h-32" />
+            </div>
+
             {/* Celebration header */}
-            <div className="text-center space-y-3">
+            <div className="text-center space-y-3 relative">
               <h3 className="font-heading text-2xl font-bold text-ronin-secondary tracking-wide">
                 {NFT_RENDER_TEXT.completion.title}
               </h3>

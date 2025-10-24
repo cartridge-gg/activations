@@ -21,8 +21,13 @@ export function QuestDashboard({
   shinContent,
 }: QuestDashboardProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-ronin-dark via-ronin-dark/95 to-ronin-light/20 py-12 px-4">
-      <div className="max-w-[1600px] mx-auto space-y-12">
+    <div className="min-h-screen bg-gradient-to-b from-ronin-dark via-ronin-dark/95 to-ronin-light/20 py-12 px-4 relative">
+      {/* Subtle Dojo watermark background */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 opacity-[0.02] pointer-events-none">
+        <img src="/dojo-icon.svg" alt="" className="w-full h-full" />
+      </div>
+
+      <div className="max-w-[1600px] mx-auto space-y-12 relative">
         {/* Header */}
         <div className="text-center space-y-6">
           {/* Heading */}
@@ -35,12 +40,10 @@ export function QuestDashboard({
             </p>
           </div>
 
-          {/* Decorative Line */}
+          {/* Decorative Line with Dojo icon */}
           <div className="flex items-center justify-center gap-4">
             <div className="h-px w-24 bg-gradient-to-r from-transparent to-ronin-primary"></div>
-            <svg className="w-6 h-6 text-ronin-primary" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-            </svg>
+            <img src="/dojo-icon.svg" alt="" className="w-6 h-6 opacity-30" />
             <div className="h-px w-24 bg-gradient-to-l from-transparent to-ronin-primary"></div>
           </div>
         </div>
