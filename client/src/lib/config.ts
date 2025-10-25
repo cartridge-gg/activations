@@ -2,7 +2,10 @@
 // This file combines manifest loading, contract addresses, and app constants
 // Simplified for local development on Katana (localhost:5050)
 
+import { constants } from "starknet";
+
 import manifest from "../../../contracts/manifest_dev.json";
+
 import wazaConfig from "../../../spec/waza.json";
 import { AllowlistedCollection } from "./types";
 
@@ -11,12 +14,21 @@ const ENVIRONMENT = import.meta.env.VITE_ENV || 'dev';
 console.log('Current environment:', ENVIRONMENT);
 
 // ============================================================================
-// LOCAL KATANA CONFIGURATION
+// CHAIN CONFIGURATION
 // ============================================================================
-// Hardcoded for local development - environment switching removed for simplicity
+// Support for local Katana, Sepolia testnet, and Mainnet
+// Using starknet.js constants for standard chain IDs
 
 export const KATANA_CHAIN_ID = "0x4b4154414e41"; // "KATANA" hex-encoded
 export const KATANA_URL = "http://localhost:5050";
+
+export const SEPOLIA_CHAIN_ID = constants.StarknetChainId.SN_SEPOLIA;
+export const SEPOLIA_URL = "https://api.cartridge.gg/x/starknet/sepolia";
+
+export const MAINNET_CHAIN_ID = constants.StarknetChainId.SN_MAIN;
+export const MAINNET_URL = "https://api.cartridge.gg/x/starknet/mainnet";
+
+export const DEFAULT_CHAIN_ID = KATANA_CHAIN_ID;
 
 // ============================================================================
 // CONTRACT ADDRESSES AND ABIS FROM MANIFEST

@@ -3,7 +3,12 @@ import { PropsWithChildren } from "react";
 import { Chain, sepolia, mainnet } from "@starknet-react/chains";
 import { StarknetConfig, jsonRpcProvider, cartridge } from "@starknet-react/core";
 
-import { KATANA_URL, KATANA_CHAIN_ID } from "@/lib/config";
+import {
+  KATANA_URL,
+  KATANA_CHAIN_ID,
+  SEPOLIA_URL,
+  MAINNET_URL
+} from "@/lib/config";
 import controller from "@/lib/ControllerConnector";
 
 // Starknet provider and connector configuration
@@ -30,27 +35,27 @@ export function StarknetProvider({ children }: PropsWithChildren) {
     },
   };
 
-  // Configure RPC provider
+  // Configure RPC provider with runtime chain switching
   const provider = jsonRpcProvider({
     rpc: (chain: Chain) => {
       switch (chain) {
         case katana:
           return { nodeUrl: KATANA_URL };
         case mainnet:
-          return { nodeUrl: 'https://api.cartridge.gg/x/starknet/mainnet' };
+          return { nodeUrl: MAINNET_URL };
         case sepolia:
-          return { nodeUrl: 'https://api.cartridge.gg/x/starknet/sepolia' }
+          return { nodeUrl: SEPOLIA_URL };
         default:
           return { nodeUrl: KATANA_URL };
       }
     },
-  })
+  });
 
   return (
     <StarknetConfig
       autoConnect
       defaultChainId={katana.id}
-      chains={[katana]}
+      chains={[katana, sepolia, mainnet]}
       connectors={[controller]}
       explorer={cartridge}
       provider={provider}
