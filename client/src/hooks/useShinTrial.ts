@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useReadContract } from '@starknet-react/core';
 import { hash, Abi } from 'starknet';
 
-import { RONIN_PACT_ADDRESS, RONIN_PACT_ABI, QUEST_MANAGER_ADDRESS, QUEST_MANAGER_ABI } from '@/lib/config';
+import { QUEST_MANAGER_ADDRESS, QUEST_MANAGER_ABI, RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
 import { splitTokenIdToU256, parseContractError } from '@/lib/utils';
 import { useTrialTransaction } from './useTrialTransaction';
 

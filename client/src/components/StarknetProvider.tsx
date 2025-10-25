@@ -60,7 +60,7 @@ export function StarknetProvider({ children }: PropsWithChildren) {
       explorer={cartridge}
       provider={provider}
     >
-        {children}
+      {children}
     </StarknetConfig>
   );
 }
