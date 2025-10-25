@@ -4,9 +4,7 @@ import { SessionPolicies } from "@cartridge/controller";
 import {
   QUEST_MANAGER_ADDRESS,
   DEFAULT_CHAIN_ID,
-  KATANA_URL,
-  SEPOLIA_URL,
-  MAINNET_URL,
+  DEFAULT_RPC_URL,
 } from "./config";
 
 // Define session policies for gasless transactions
@@ -39,15 +37,11 @@ const policies: SessionPolicies = {
   },
 };
 
-// Create controller connector instance with multi-chain support
-// Chain IDs are automatically derived from the RPC URLs by the Controller
+// Create controller connector instance for the environment-specific chain
+// Chain ID is automatically derived from the RPC URL by the Controller
 const controller = new ControllerConnector({
   policies,
-  chains: [
-    { rpcUrl: KATANA_URL },
-    { rpcUrl: SEPOLIA_URL },
-    { rpcUrl: MAINNET_URL }
-  ],
+  chains: [{ rpcUrl: DEFAULT_RPC_URL }],
   defaultChainId: DEFAULT_CHAIN_ID,
 });
 

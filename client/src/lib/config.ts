@@ -58,8 +58,21 @@ function getChainIdForEnv(env: string) {
   }
 }
 
+function getRpcUrlForEnv(env: string) {
+  switch (env) {
+    case 'sepolia':
+      return SEPOLIA_URL;
+    case 'mainnet':
+      return MAINNET_URL;
+    case 'dev':
+    default:
+      return KATANA_URL;
+  }
+}
+
 const manifest = getManifestForEnv(CHAIN_ENV);
 export const DEFAULT_CHAIN_ID = getChainIdForEnv(CHAIN_ENV);
+export const DEFAULT_RPC_URL = getRpcUrlForEnv(CHAIN_ENV);
 
 // ============================================================================
 // CONTRACT ADDRESSES AND ABIS FROM MANIFEST

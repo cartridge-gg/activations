@@ -4,10 +4,12 @@ import { Chain, sepolia, mainnet } from "@starknet-react/chains";
 import { StarknetConfig, jsonRpcProvider, cartridge } from "@starknet-react/core";
 
 import {
-  KATANA_URL,
+  DEFAULT_CHAIN_ID,
+  DEFAULT_RPC_URL,
   KATANA_CHAIN_ID,
-  SEPOLIA_URL,
-  MAINNET_URL
+  SEPOLIA_CHAIN_ID,
+  MAINNET_CHAIN_ID,
+  KATANA_URL,
 } from "@/lib/config";
 import controller from "@/lib/ControllerConnector";
 
@@ -35,30 +37,34 @@ export function StarknetProvider({ children }: PropsWithChildren) {
     },
   };
 
-  // Configure RPC provider with runtime chain switching
+  function getChainForEnv(chainId: string): Chain {
+    switch (chainId) {
+      case KATANA_CHAIN_ID:
+        return katana;
+      case SEPOLIA_CHAIN_ID:
+        return sepolia;
+      case MAINNET_CHAIN_ID:
+        return mainnet;
+      default:
+        return katana;
+    }
+  }
+
+  const chain = getChainForEnv(DEFAULT_CHAIN_ID);
+
+  // Configure RPC provider for the environment-specific chain
   const provider = jsonRpcProvider({
-    rpc: (chain: Chain) => {
-      switch (chain) {
-        case katana:
-          return { nodeUrl: KATANA_URL };
-        case mainnet:
-          return { nodeUrl: MAINNET_URL };
-        case sepolia:
-          return { nodeUrl: SEPOLIA_URL };
-        default:
-          return { nodeUrl: KATANA_URL };
-      }
-    },
+    rpc: () => ({ nodeUrl: DEFAULT_RPC_URL }),
   });
 
   return (
     <StarknetConfig
       autoConnect
-      defaultChainId={katana.id}
-      chains={[katana, sepolia, mainnet]}
+      defaultChainId={chain.id}
+      chains={[chain]}
       connectors={[controller]}
-      explorer={cartridge}
       provider={provider}
+      explorer={cartridge}
     >
       {children}
     </StarknetConfig>
