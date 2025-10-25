@@ -97,7 +97,7 @@ echo -e "${GREEN}✓ Build successful${NC}"
 # Step 2: Migrate world
 echo -e "\n${YELLOW}Step 2: Migrating world to $NETWORK_NAME...${NC}"
 echo -e "${BLUE}This may take several minutes...${NC}"
-sozo -P "$NETWORK" migrate
+sozo -P "$NETWORK" migrate -vvv
 if [ $? -ne 0 ]; then
     echo -e "${RED}Error: Migration failed${NC}"
     exit 1
@@ -107,7 +107,7 @@ echo -e "${GREEN}✓ Migration successful${NC}"
 # Step 3: Extract contract addresses from manifest
 echo -e "\n${YELLOW}Step 3: Extracting contract addresses...${NC}"
 
-MANIFEST_FILE="$CONTRACTS_DIR/manifests/$NETWORK/manifest.json"
+MANIFEST_FILE="$CONTRACTS_DIR/manifest_$NETWORK.json"
 if [ ! -f "$MANIFEST_FILE" ]; then
     echo -e "${RED}Error: Manifest file not found at $MANIFEST_FILE${NC}"
     exit 1
@@ -121,8 +121,8 @@ if [ -z "$WORLD_ADDRESS" ] || [ "$WORLD_ADDRESS" == "null" ]; then
 fi
 echo -e "${GREEN}World deployed at: $WORLD_ADDRESS${NC}"
 
-# Get the RoninPact token contract address from the manifest
-TOKEN_ADDRESS=$(jq -r '.contracts[] | select(.tag == "ronin_quest-ronin_pact") | .address' "$MANIFEST_FILE")
+# Get the RoninPact token contract address from the manifest (it's an external contract)
+TOKEN_ADDRESS=$(jq -r '.external_contracts[] | select(.tag == "ronin_quest-ronin_pact") | .address' "$MANIFEST_FILE")
 if [ -z "$TOKEN_ADDRESS" ] || [ "$TOKEN_ADDRESS" == "null" ]; then
     echo -e "${RED}Error: RoninPact NFT not found in manifest${NC}"
     exit 1
@@ -272,7 +272,6 @@ echo -e "\n${BLUE}Next Steps:${NC}"
 echo -e "  1. Verify contracts on Starkscan:"
 echo -e "     $EXPLORER_URL/contract/$WORLD_ADDRESS"
 echo -e "  2. Configure your client with these addresses"
-echo -e "  3. Set up Torii indexer for $NETWORK"
 if [ "$NETWORK" == "sepolia" ]; then
     echo -e "  4. Test the deployment thoroughly before mainnet"
 else

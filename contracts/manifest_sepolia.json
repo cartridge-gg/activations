@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x57994b6a75fad550ca18b41ee82e2110e158c59028c4478109a67965a0e5b1e",
-    "address": "0x5d7df3f6e6e44c78b7bd7716f942745aefd2f1aad006aaf8bd03c64ada96d0",
-    "seed": "ronin_quest",
+    "address": "0x2dabc490f08e8a02cd8911eb943f70bc9c3f5b808798cc6fd131a6fd74a48e0",
+    "seed": "ronin_quest-v4",
     "name": "Ronin Quest",
     "entrypoints": [
       "uuid",
@@ -1479,7 +1479,7 @@
   },
   "contracts": [
     {
-      "address": "0x5f1eee87a0d45c59db057708d733323bfda5d831836cf82300f8ad301c5377b",
+      "address": "0x6c0d19bad7a20a8714a0cfb5b82353ea9cc6f8d0e3c69c987d69b9dbd3d89d0",
       "class_hash": "0x2b2c77d99d036992aac5fa17c42bffbc782c8fb9e8cdbe9eef65ca95123c5e",
       "abi": [
         {
@@ -1895,7 +1895,7 @@
       "class_hash": "0x291cc8e46bff4eb4065db1749136f7b03bebf162683d1ad8d048b054d6caa13",
       "contract_name": "RoninPact",
       "tag": "ronin_quest-ronin_pact",
-      "address": "0x36ad962dae96938870df22b18e7a7e46c31cd1568f3cab954639dcd6fb7e55e",
+      "address": "0x35ef6ec2c2ae1fd2f571511aac62ad81810038405fa3a351d3ade15c6ad42f4",
       "abi": [
         {
           "type": "impl",
@@ -2414,10 +2414,10 @@
         }
       ],
       "constructor_calldata": [
-        "0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7"
+        "0x05cb4ea8cc45dd51505a7e585b4a73d87d2f9448ed6a380155006229170e4819"
       ],
       "encoded_constructor_calldata": [
-        "0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7"
+        "0x5cb4ea8cc45dd51505a7e585b4a73d87d2f9448ed6a380155006229170e4819"
       ],
       "entrypoints": [
         "transfer_from",

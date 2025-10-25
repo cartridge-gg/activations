@@ -31,7 +31,6 @@ export function ConnectWallet() {
 
   // Handle connect
   const handleConnect = () => {
-    console.log('Connecting to controller...', controller.controller);
     connect({ connector: controller });
   };
 
