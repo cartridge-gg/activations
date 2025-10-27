@@ -50,9 +50,8 @@ export function ChiTrial({ status, onComplete, tokenId }: BaseTrialProps) {
   const { isDisabled, isCompleted } = getTrialStatusFlags(status);
   const { setLocalError, displayError, showError } = useTrialError(error, isCompleted);
 
-  // Randomly select 3 questions and shuffle both questions and options
-  // Using useState with function initializer ensures fresh shuffle on every mount
-  const [shuffledQuestions] = useState<ShuffledQuestion[]>(() => {
+  // Function to generate shuffled questions
+  const generateShuffledQuestions = (): ShuffledQuestion[] => {
     const allQuestions = chiData.questions as ChiQuestion[];
 
     // Select 3 random questions
@@ -74,7 +73,11 @@ export function ChiTrial({ status, onComplete, tokenId }: BaseTrialProps) {
         optionMapping: shuffledOptions.map(o => o.idx)
       };
     });
-  });
+  };
+
+  // Randomly select 3 questions and shuffle both questions and options
+  // Using useState with function initializer ensures fresh shuffle on every mount
+  const [shuffledQuestions, setShuffledQuestions] = useState<ShuffledQuestion[]>(generateShuffledQuestions);
 
   const allAnswered = shuffledQuestions.every((q) => answers[q.displayId] !== undefined);
 
@@ -94,15 +97,33 @@ export function ChiTrial({ status, onComplete, tokenId }: BaseTrialProps) {
     // Contract expects: arrays of question indices and answer hashes
     const questionIndices: number[] = [];
     const answerHashes: string[] = [];
+    let correctCount = 0;
 
     shuffledQuestions.forEach((q) => {
       const displayOptionIndex = answers[q.displayId];
       const originalOptionIndex = q.optionMapping[displayOptionIndex];
       const answerText = chiData.questions[q.originalId].options[originalOptionIndex];
+      const userAnswerHash = hashAnswer(q.originalId, answerText);
 
       questionIndices.push(q.originalId);
-      answerHashes.push(hashAnswer(q.originalId, answerText));
+      answerHashes.push(userAnswerHash);
+
+      // Check if answer is correct by comparing with stored answer hash
+      const correctAnswerHash = chiData.questions[q.originalId].answer_hash;
+      if (userAnswerHash === correctAnswerHash) {
+        correctCount++;
+      }
     });
+
+    // Validate that user has at least 3 correct answers before submitting
+    if (correctCount < 3) {
+      setLocalError(CHI_TEXT.errors.needCorrect);
+      // Re-shuffle questions to prevent trivial cheating
+      setShuffledQuestions(generateShuffledQuestions());
+      // Clear answers for new questions
+      setAnswers({});
+      return;
+    }
 
     await submitQuiz(questionIndices, answerHashes);
   };
@@ -176,7 +197,6 @@ export function ChiTrial({ status, onComplete, tokenId }: BaseTrialProps) {
         <StatusMessage
           type="error"
           message={displayError}
-          detail={CHI_TEXT.errors.needCorrect}
         />
       )}
     </div>
