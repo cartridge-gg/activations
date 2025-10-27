@@ -18,14 +18,14 @@
     {
       "name": "pistols-duel",
       "displayName": "Duels (Pistols at Dawn)",
-      "address": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "address": "0x02e9c711b1a7e2784570b1bda5082a92606044e836ba392d2b977d280fb74b3c",
       "environments": ["mainnet"],
       "note": "TODO: Replace with actual Pistols at Dawn Duel collection address"
     },
     {
       "name": "pistols-duelists",
       "displayName": "Duelists (Pistols at Dawn)",
-      "address": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "address": "0x07aaa9866750a0db82a54ba8674c38620fa2f967d2fbb31133def48e0527c87f",
       "environments": ["mainnet"],
       "note": "TODO: Replace with actual Pistols at Dawn Duelist collection address"
     },
