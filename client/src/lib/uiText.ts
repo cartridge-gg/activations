@@ -173,7 +173,16 @@ export const MINT_TEXT = {
 } as const;
 
 // ============================================================================
-// SHARE BUTTON & MESSAGES
+// GAME JAM CTA
+// ============================================================================
+
+export const GAME_JAM_TEXT = {
+  button: "Join Dojo Game Jam VII",
+  url: "https://luma.com/ug5owx3y",
+} as const;
+
+// ============================================================================
+// SHARE BUTTON & MESSAGES (Used in NFT completion)
 // ============================================================================
 
 export const SHARE_TEXT = {

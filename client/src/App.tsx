@@ -5,7 +5,7 @@ import { QuestDashboard } from './components/QuestDashboard';
 import { WazaTrial } from './components/WazaTrial';
 import { ChiTrial } from './components/ChiTrial';
 import { ShinTrial } from './components/ShinTrial';
-import { ShareButton } from './components/ShareButton';
+import { GameJamCTA } from './components/GameJamCTA';
 import { useTrialProgress } from './hooks/useTrialProgress';
 import { APP_TEXT } from './lib/uiText';
 
@@ -29,9 +29,9 @@ function App() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-end gap-3 w-full lg:w-auto">
-            {progress && (
+            {address && (
               <div className="w-64 flex-shrink-0">
-                <ShareButton progress={progress} />
+                <GameJamCTA />
               </div>
             )}
             <div className="w-64 flex-shrink-0">
