@@ -179,14 +179,14 @@ export const MINT_TEXT = {
 export const SHARE_TEXT = {
   button: "Share on X",
   messages: {
-    started: "I've just started my journey towards The Ronin's Pact! 🗡️\n\nJoin me in proving mastery across three trials.",
-    oneTrial: "First trial complete on The Ronin's Pact! ⚔️\n\n1/3 slashes forged. The journey continues...",
-    twoTrials: "Two trials down, one to go on The Ronin's Pact! 🔥\n\n2/3 slashes forged. Victory is near...",
-    complete: "The Ronin's Pact is Fully Forged! 🎌\n\nAll three trials have been completed.",
+    started: "I've begun forging The Ronin's Pact! 🗡️\n\nJoin me in proving mastery across three trials.",
+    oneTrial: "First blade forged on The Ronin's Pact! ⚔️\n\nThe journey continues...",
+    twoTrials: "Two blades forged on The Ronin's Pact! 🔥\n\nVictory is near...",
+    complete: "My Ronin's Pact is forged! 🥋\n\nI have proven myself a true warrior.",
   },
-  tags: ['@ohayo_dojo'],
-  hashtags: ['Starknet', 'FOCG'],
-  url: 'https://ronin-pact.xyz', // TODO: Update with actual URL
+  tags: [],
+  hashtags: ['Starknet', 'FOCG', 'Dojo'],
+  url: 'ronin.cartridge.gg',
 } as const;
 
 // ============================================================================
