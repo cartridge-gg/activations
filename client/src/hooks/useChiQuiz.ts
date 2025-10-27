@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 
 import { parseContractError, splitTokenIdToU256 } from '@/lib/utils';
+import { ERROR_TEXT } from '@/lib/uiText';
 import { useTrialTransaction } from './useTrialTransaction';
 
 interface UseChiQuizReturn {
@@ -23,12 +24,12 @@ export function useChiQuiz(tokenId: string, onSuccess?: () => void): UseChiQuizR
   const submitQuiz = useCallback(
     async (questionIndices: number[], answerHashes: string[]) => {
       if (!tokenId) {
-        setError('Token ID not found');
+        setError(ERROR_TEXT.tokenIdNotFound);
         return;
       }
 
       if (!questionIndices || questionIndices.length === 0 || !answerHashes || answerHashes.length === 0) {
-        setError('Please provide answers');
+        setError(ERROR_TEXT.provideAnswers);
         return;
       }
 

@@ -5,7 +5,7 @@ import { Abi, byteArray } from 'starknet';
 import { QUEST_MANAGER_ADDRESS, QUEST_MANAGER_ABI, RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
 import { splitTokenIdToU256, parseContractError } from '@/lib/utils';
 import { useTrialTransaction } from './useTrialTransaction';
-import { SHIN_TEXT } from '@/lib/uiText';
+import { ERROR_TEXT, SHIN_TEXT } from '@/lib/uiText';
 
 interface UseShinTrialReturn {
   vowText: string;
@@ -76,7 +76,7 @@ export function useShinTrial(tokenId: string, onSuccess?: () => void): UseShinTr
   const completeVow = useCallback(
     async (): Promise<void> => {
       if (!tokenId) {
-        setError('Token ID not found');
+        setError(ERROR_TEXT.tokenIdNotFound);
         return;
       }
 

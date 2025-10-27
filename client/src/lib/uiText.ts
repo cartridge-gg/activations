@@ -215,3 +215,13 @@ export const NFT_RENDER_TEXT = {
 export const BUTTON_TEXT = {
   defaultLoading: "Submitting...",
 } as const;
+
+// ============================================================================
+// GENERAL ERROR MESSAGES (used across multiple hooks/components)
+// ============================================================================
+
+export const ERROR_TEXT = {
+  tokenIdNotFound: "Token ID not found",
+  provideAnswers: "Please provide answers",
+  walletNotConnected: "Please connect your wallet",
+} as const;

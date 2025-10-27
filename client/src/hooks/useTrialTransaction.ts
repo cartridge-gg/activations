@@ -4,6 +4,7 @@ import { Call } from 'starknet';
 
 import { QUEST_MANAGER_ADDRESS } from '@/lib/config';
 import { executeTx } from '@/lib/utils';
+import { ERROR_TEXT } from '@/lib/uiText';
 
 interface UseTrialTransactionOptions {
   /**
@@ -85,7 +86,7 @@ export function useTrialTransaction(
   const execute = useCallback(
     async (calldata: string[]): Promise<void> => {
       if (!account || !address) {
-        setError('Please connect your wallet');
+        setError(ERROR_TEXT.walletNotConnected);
         return;
       }
 
