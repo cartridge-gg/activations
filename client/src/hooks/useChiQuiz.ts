@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-import { parseContractError } from '@/lib/utils';
+import { parseContractError, splitTokenIdToU256 } from '@/lib/utils';
 import { useTrialTransaction } from './useTrialTransaction';
 
 interface UseChiQuizReturn {
@@ -35,12 +35,13 @@ export function useChiQuiz(tokenId: string, onSuccess?: () => void): UseChiQuizR
       setError(null);
 
       // Contract signature: complete_chi(token_id: u256, questions: Array<u32>, answers: Array<felt252>)
+      const { low, high } = splitTokenIdToU256(tokenId);
       await execute([
-        tokenId, // u256 low
-        '0',     // u256 high
-        questionIndices.length.toString(), // questions array length
+        low,
+        high,
+        questionIndices.length.toString(),
         ...questionIndices.map(String),
-        answerHashes.length.toString(),   // answers array length
+        answerHashes.length.toString(),
         ...answerHashes,
       ]);
     },

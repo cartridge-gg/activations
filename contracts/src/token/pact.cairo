@@ -41,11 +41,12 @@ pub trait IRoninPact<TContractState> {
     fn get_progress(self: @TContractState, token_id: u256) -> TrialProgress;
     fn get_timestamp(self: @TContractState, token_id: u256) -> u64;
     fn get_username(self: @TContractState, token_id: u256) -> felt252;
+    fn get_vow_hash(self: @TContractState, token_id: u256) -> u256;
 
-    // Minting functions (only callable by authorized minter contract)
+    // Trial completion functions (only callable by authorized minter contract)
     fn complete_waza(ref self: TContractState, token_id: u256);
     fn complete_chi(ref self: TContractState, token_id: u256);
-    fn complete_shin(ref self: TContractState, token_id: u256);
+    fn complete_shin(ref self: TContractState, token_id: u256, vow_hash: u256);
 
     // Admin functions
     fn set_minter(ref self: TContractState, minter: ContractAddress);
@@ -86,9 +87,10 @@ pub mod RoninPact {
         owner: ContractAddress,
         minter: ContractAddress,
         token_count: u256,
-        token_progress: Map<u256, u8>,
         mint_timestamps: Map<u256, u64>,
         minter_usernames: Map<u256, felt252>,
+        token_progress: Map<u256, u8>,
+        vow_hashes: Map<u256, u256>,
     }
 
     #[event]
@@ -205,6 +207,10 @@ pub mod RoninPact {
             self.minter_usernames.read(token_id)
         }
 
+        fn get_vow_hash(self: @ContractState, token_id: u256) -> u256 {
+            self.vow_hashes.read(token_id)
+        }
+
         fn complete_waza(ref self: ContractState, token_id: u256) {
             self.complete_challenge(token_id, WAZA_BIT);
         }
@@ -213,7 +219,8 @@ pub mod RoninPact {
             self.complete_challenge(token_id, CHI_BIT);
         }
 
-        fn complete_shin(ref self: ContractState, token_id: u256) {
+        fn complete_shin(ref self: ContractState, token_id: u256, vow_hash: u256) {
+            self.vow_hashes.write(token_id, vow_hash);
             self.complete_challenge(token_id, SHIN_BIT);
         }
 

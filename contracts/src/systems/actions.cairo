@@ -11,7 +11,7 @@ pub trait IActions<T> {
     fn mint(ref self: T, username: felt252);
     fn complete_waza(ref self: T, token_id: u256, game_address: ContractAddress);
     fn complete_chi(ref self: T, token_id: u256, questions: Array<u32>, answers: Array<felt252>);
-    fn complete_shin(ref self: T, token_id: u256, vow_hash: felt252);
+    fn complete_shin(ref self: T, token_id: u256, vow: ByteArray);
 
     // View functions (for querying models without Torii)
     fn get_player_token_id(self: @T, player: ContractAddress) -> u256;
@@ -25,6 +25,7 @@ pub trait IActions<T> {
 
 #[dojo::contract]
 pub mod actions {
+    use core::keccak::compute_keccak_byte_array;
     use starknet::{ContractAddress, get_caller_address};
     use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
     use dojo::world::WorldStorage;
@@ -61,13 +62,13 @@ pub mod actions {
         pub player: ContractAddress,
     }
 
-    #[derive(Copy, Drop, Serde)]
+    #[derive(Drop, Serde)]
     #[dojo::event]
     pub struct ShinCompleted {
         #[key]
         pub token_id: u256,
         pub player: ContractAddress,
-        pub vow_hash: felt252,
+        pub vow: ByteArray,
     }
 
     #[abi(embed_v0)]
@@ -151,12 +152,12 @@ pub mod actions {
             world.emit_event(@ChiCompleted { token_id, player: caller });
         }
 
-        fn complete_shin(ref self: ContractState, token_id: u256, vow_hash: felt252) {
+        fn complete_shin(ref self: ContractState, token_id: u256, vow: ByteArray) {
             let caller = get_caller_address();
             let mut world = self.world_default();
 
-            // Verify vow hash is not empty
-            assert(vow_hash != 0, 'Vow cannot be empty');
+            // Verify vow is not empty
+            assert(vow.len() > 0, 'Vow cannot be empty');
 
             let pact_config: RoninPact = world.read_model(CONFIG_KEY);
 
@@ -172,11 +173,12 @@ pub mod actions {
 
             assert(current_time - mint_timestamp >= pact_config.time_lock, 'Time lock not elapsed!');
 
-            // Complete the trial
-            nft.complete_shin(token_id);
+            // Complete the trial and store the hash
+            let mut vow_hash: u256 = compute_keccak_byte_array(@vow);
+            nft.complete_shin(token_id, vow_hash);
 
             // Emit completion event
-            world.emit_event(@ShinCompleted { token_id, player: caller, vow_hash });
+            world.emit_event(@ShinCompleted { token_id, player: caller, vow });
         }
 
         // View functions

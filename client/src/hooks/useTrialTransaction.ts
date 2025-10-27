@@ -34,7 +34,7 @@ interface UseTrialTransactionReturn {
    * Executes a trial transaction with the provided calldata
    * @param calldata - The calldata array to pass to the contract entrypoint
    */
-  execute: (calldata: string[]) => Promise<void>;
+  execute: (calldata: any[]) => Promise<void>;
 
   /**
    * Whether a transaction is currently in progress

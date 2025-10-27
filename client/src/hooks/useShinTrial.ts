@@ -1,10 +1,11 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useReadContract } from '@starknet-react/core';
-import { hash, Abi } from 'starknet';
+import { Abi, byteArray } from 'starknet';
 
 import { QUEST_MANAGER_ADDRESS, QUEST_MANAGER_ABI, RONIN_PACT_ADDRESS, RONIN_PACT_ABI } from '@/lib/config';
 import { splitTokenIdToU256, parseContractError } from '@/lib/utils';
 import { useTrialTransaction } from './useTrialTransaction';
+import { SHIN_TEXT } from '@/lib/uiText';
 
 interface UseShinTrialReturn {
   vowText: string;
@@ -80,20 +81,16 @@ export function useShinTrial(tokenId: string, onSuccess?: () => void): UseShinTr
       }
 
       if (!vowText.trim()) {
-        setError('Please write your vow');
+        setError(SHIN_TEXT.errors.writeVow);
         return;
       }
 
       setError(null);
 
-      // Hash the vow text using Starknet's selector hash
-      const vowHash = hash.getSelectorFromName(vowText.trim());
-
-      // Convert tokenId to u256 (low, high)
-      const { low: tokenIdLow, high: tokenIdHigh } = splitTokenIdToU256(tokenId);
-
       // Call complete_shin on Quest Manager contract
-      await execute([tokenIdLow, tokenIdHigh, vowHash]);
+      const { low, high } = splitTokenIdToU256(tokenId);
+      const vowByteArray = byteArray.byteArrayFromString(vowText.trim())
+      await execute([low, high, vowByteArray]);
     },
     [tokenId, vowText, execute]
   );

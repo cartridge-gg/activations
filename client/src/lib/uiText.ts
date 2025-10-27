@@ -119,7 +119,7 @@ export const SHIN_TEXT = {
   form: {
     label: "Write Your Vow",
     placeholder: "I pledge to bravely explore the new horizons of onchain gaming, fearlessly engage with strange mechanisms, and courageously experiment with fresh ideas...",
-    info: "Your vow will be recorded onchain as an eternal commitment",
+    info: "A hash of your vow will be recorded onchain as an eternal commitment",
   },
   buttons: {
     wait: "Wait", // Followed by duration

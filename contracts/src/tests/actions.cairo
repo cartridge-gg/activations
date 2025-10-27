@@ -587,10 +587,10 @@ fn test_complete_shin() {
     start_cheat_block_timestamp(pact_address, 86401);
     start_cheat_block_timestamp(actions_address, 86401);
 
-    // Complete shin trial with vow hash
-    let vow_hash: felt252 = 0x123456789abcdef;
+    // Complete shin trial with vow text
+    let vow: ByteArray = "I pledge to explore onchain gaming with courage and curiosity";
     start_cheat_caller_address(actions_address, player_addr);
-    actions.complete_shin(0, vow_hash);
+    actions.complete_shin(0, vow);
     stop_cheat_caller_address(actions_address);
 
     // Verify shin trial is complete
@@ -598,6 +598,38 @@ fn test_complete_shin() {
     assert(progress.waza_complete == false, 'Waza should not be complete');
     assert(progress.chi_complete == false, 'Chi should not be complete');
     assert(progress.shin_complete == true, 'Shin not complete');
+}
+
+#[test]
+#[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 20000000)]
+fn test_get_vow_hash() {
+    let (_world, actions, actions_address) = setup_world();
+
+    // Setup: Deploy pact
+    let pact_address = deploy_pact(owner());
+    let pact = IRoninPactDispatcher { contract_address: pact_address };
+
+    let player_addr = player();
+
+    // Configure actions contract and set it as minter
+    start_cheat_caller_address(actions_address, owner());
+    actions.set_pact(pact_address, 0);
+    stop_cheat_caller_address(actions_address);
+
+    start_cheat_caller_address(pact_address, owner());
+    pact.set_minter(actions_address);
+    stop_cheat_caller_address(pact_address);
+
+    // Player mints NFT through actions contract and completes shin trial
+    let vow: ByteArray = "I pledge to explore onchain gaming with courage and curiosity";
+    start_cheat_caller_address(actions_address, player_addr);
+    actions.mint('testuser');
+    actions.complete_shin(0, vow.clone());
+    stop_cheat_caller_address(actions_address);
+
+    // Verify vow hash was stored and can be retrieved
+    let stored_hash = pact.get_vow_hash(0);
+    assert(stored_hash != 0, 'Vow hash should not be zero');
 }
 
 #[test]
@@ -632,9 +664,9 @@ fn test_shin_timelock_fails() {
     stop_cheat_caller_address(pact_address);
 
     // Try to complete immediately without waiting 24 hours - should fail
-    let vow_hash: felt252 = 0x123456789abcdef;
+    let vow: ByteArray = "I pledge to be patient and wait for the time lock";
     start_cheat_caller_address(actions_address, player_addr);
-    actions.complete_shin(0, vow_hash);
+    actions.complete_shin(0, vow);
 }
 
 #[test]
@@ -672,10 +704,10 @@ fn test_shin_empty_vow_fails() {
     start_cheat_block_timestamp(pact_address, 86401);
     start_cheat_block_timestamp(actions_address, 86401);
 
-    // Try to complete with empty vow hash - should fail
-    let vow_hash: felt252 = 0;
+    // Try to complete with empty vow - should fail
+    let vow: ByteArray = "";
     start_cheat_caller_address(actions_address, player_addr);
-    actions.complete_shin(0, vow_hash);
+    actions.complete_shin(0, vow);
 }
 
 // ============================================================================
@@ -808,9 +840,9 @@ fn test_shin_non_owner_fails() {
     start_cheat_block_timestamp(actions_address, 86401);
 
     // Other tries to complete shin for player's token - should fail
-    let vow_hash: felt252 = 0x123456789abcdef;
+    let vow: ByteArray = "Trying to complete someone else's trial";
     start_cheat_caller_address(actions_address, other_addr);
-    actions.complete_shin(0, vow_hash);
+    actions.complete_shin(0, vow);
 }
 
 // ============================================================================
@@ -891,9 +923,9 @@ fn test_full_lifecycle() {
     start_cheat_block_timestamp(pact_address, 86401);
     start_cheat_block_timestamp(actions_address, 86401);
 
-    let vow_hash: felt252 = 0x123456789abcdef;
+    let vow: ByteArray = "I vow to honor the path of the ronin and master all trials";
     start_cheat_caller_address(actions_address, player_controller);
-    actions.complete_shin(0, vow_hash);
+    actions.complete_shin(0, vow);
     stop_cheat_caller_address(actions_address);
 
     // Verify final state - all three trials complete
