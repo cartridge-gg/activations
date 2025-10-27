@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x57994b6a75fad550ca18b41ee82e2110e158c59028c4478109a67965a0e5b1e",
-    "address": "0x2dabc490f08e8a02cd8911eb943f70bc9c3f5b808798cc6fd131a6fd74a48e0",
-    "seed": "ronin_quest-v4",
+    "address": "0x20544cbfc50d1b4679eee11c50a73872e01a3a2f09636d8e165c7aa46e3b042",
+    "seed": "ronin_quest-v5",
     "name": "Ronin Quest",
     "entrypoints": [
       "uuid",
@@ -1479,8 +1479,8 @@
   },
   "contracts": [
     {
-      "address": "0x6c0d19bad7a20a8714a0cfb5b82353ea9cc6f8d0e3c69c987d69b9dbd3d89d0",
-      "class_hash": "0x2b2c77d99d036992aac5fa17c42bffbc782c8fb9e8cdbe9eef65ca95123c5e",
+      "address": "0x2874ebc9820abbb4cc98dbe3809881282c88f1d0ddf30f51e87d0735bdc590e",
+      "class_hash": "0x37875e176454ba39ff088bbc8df5adefa3fc71d7f8f871fb5d0919b55ed8440",
       "abi": [
         {
           "type": "impl",
@@ -1626,8 +1626,8 @@
                   "type": "core::integer::u256"
                 },
                 {
-                  "name": "vow_hash",
-                  "type": "core::felt252"
+                  "name": "vow",
+                  "type": "core::byte_array::ByteArray"
                 }
               ],
               "outputs": [],
@@ -1879,7 +1879,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x77560629e9cb416444bc8a2be41d759202fa8a2433a09eefd8630398be8ff91",
+      "class_hash": "0x5a715642be8a81717d9574c6a827da639e0c0d7b5855151198596e3ba3cc51c",
       "tag": "ronin_quest-ShinCompleted",
       "selector": "0x7742c51e8f70bded60692e88687676e974ebd00df1182fd5d53cde40b68cf44"
     },
@@ -1892,10 +1892,10 @@
   ],
   "external_contracts": [
     {
-      "class_hash": "0x291cc8e46bff4eb4065db1749136f7b03bebf162683d1ad8d048b054d6caa13",
+      "class_hash": "0x2540c52dec534a8a1d6a72b05f51d7123b7044210f3149e6278ea5a864693de",
       "contract_name": "RoninPact",
       "tag": "ronin_quest-ronin_pact",
-      "address": "0x35ef6ec2c2ae1fd2f571511aac62ad81810038405fa3a351d3ade15c6ad42f4",
+      "address": "0x28e74b3aee3c8515f0d44c35516e63a68a5b8aad36a9db2817abeea7b9c7ea0",
       "abi": [
         {
           "type": "impl",
@@ -2232,6 +2232,22 @@
             },
             {
               "type": "function",
+              "name": "get_vow_hash",
+              "inputs": [
+                {
+                  "name": "token_id",
+                  "type": "core::integer::u256"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u256"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
               "name": "complete_waza",
               "inputs": [
                 {
@@ -2260,6 +2276,10 @@
               "inputs": [
                 {
                   "name": "token_id",
+                  "type": "core::integer::u256"
+                },
+                {
+                  "name": "vow_hash",
                   "type": "core::integer::u256"
                 }
               ],
