@@ -4,9 +4,9 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "VITE_ENV=dev vite",
-    "dev:sepolia": "VITE_ENV=sepolia vite",
-    "dev:mainnet": "VITE_ENV=mainnet vite",
+    "dev": "VITE_CHAIN=dev vite",
+    "dev:sepolia": "VITE_CHAIN=sepolia vite",
+    "dev:mainnet": "VITE_CHAIN=mainnet vite",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",

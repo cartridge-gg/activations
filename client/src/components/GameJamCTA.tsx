@@ -8,7 +8,6 @@ export function GameJamCTA() {
       rel="noopener noreferrer"
       className="w-full bg-ronin-primary hover:bg-red-600 text-ronin-secondary font-semibold py-4 px-6 border-2 border-ronin-secondary/30 transition-all duration-300 flex items-center justify-center space-x-3"
     >
-      <span className="text-xl">⚔️</span>
       <span>{GAME_JAM_TEXT.button}</span>
     </a>
   );

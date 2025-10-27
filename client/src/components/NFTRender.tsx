@@ -246,7 +246,7 @@ export function NFTRender({ progress, tokenId }: NFTRenderProps) {
 
             {/* Action buttons */}
             <div className="space-y-3">
-              <ShareButton progress={progress} />
+              <ShareButton />
               <button
                 onClick={downloadAsPNG}
                 className="text-ronin-accent hover:text-ronin-secondary text-sm font-medium transition-colors flex items-center justify-center gap-2 mx-auto group border-b-2 border-ronin-accent/30 hover:border-ronin-secondary pb-1"

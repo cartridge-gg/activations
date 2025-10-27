@@ -187,15 +187,10 @@ export const GAME_JAM_TEXT = {
 
 export const SHARE_TEXT = {
   button: "Share on X",
-  messages: {
-    started: "I've begun forging The Ronin's Pact! 🗡️\n\nJoin me in proving mastery across three trials.",
-    oneTrial: "First blade forged on The Ronin's Pact! ⚔️\n\nThe journey continues...",
-    twoTrials: "Two blades forged on The Ronin's Pact! 🔥\n\nVictory is near...",
-    complete: "My Ronin's Pact is forged! 🥋\n\nI have proven myself a true warrior.",
-  },
-  tags: [],
-  hashtags: ['Starknet', 'FOCG', 'Dojo'],
-  url: 'ronin.cartridge.gg',
+  message: "⚒️🔥 My Ronin's Pact is forged!\n\n" +
+    "I have proven myself a true warrior.\n\n" +
+    "Forge your own to compete for $15k in prizes at Dojo Game Jam VII: ronin.cartridge.gg\n\n" +
+    "#Starknet #FOCG @ohayo_dojo",
 } as const;
 
 // ============================================================================
