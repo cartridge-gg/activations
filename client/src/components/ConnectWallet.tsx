@@ -77,7 +77,7 @@ export function ConnectWallet() {
       <button
         onClick={handleConnect}
         className="
-          px-6 py-3 font-semibold
+          w-full px-6 py-3 font-semibold
           transition-all duration-200
           bg-ronin-primary hover:bg-red-600 text-white border-2 border-ronin-secondary/30 hover:border-ronin-secondary
           md:px-8 md:py-3 text-sm md:text-base

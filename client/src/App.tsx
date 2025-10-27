@@ -86,14 +86,19 @@ function App() {
         {/* Footer */}
         <footer className="mt-20 text-center">
           <div className="flex flex-col items-center gap-3">
-            <div className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
+            <a
+              href="https://book.dojoengine.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity"
+            >
               <span className="text-ronin-accent text-sm">Powered by</span>
               <img
                 src="/dojo-word.svg"
                 alt="Dojo"
                 className="h-5 opacity-90"
               />
-            </div>
+            </a>
           </div>
         </footer>
       </div>
