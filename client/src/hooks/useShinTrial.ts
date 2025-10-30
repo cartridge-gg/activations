@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useReadContract } from '@starknet-react/core';
 import { Abi, byteArray } from 'starknet';
 
@@ -21,6 +21,7 @@ interface UseShinTrialReturn {
 export function useShinTrial(tokenId: string, onSuccess?: () => void): UseShinTrialReturn {
   const [vowText, setVowText] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(() => Math.floor(Date.now() / 1000));
 
   // Fetch time lock from Quest Manager contract
   const {
@@ -38,6 +39,15 @@ export function useShinTrial(tokenId: string, onSuccess?: () => void): UseShinTr
     return Number(timeLockData);
   }, [timeLockData]);
 
+  // Update current time every second for live countdown
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Math.floor(Date.now() / 1000));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Fetch mint timestamp from NFT contract
   const { data: mintTimestampData } = useReadContract({
     abi: RONIN_PACT_ABI as Abi,
@@ -54,8 +64,7 @@ export function useShinTrial(tokenId: string, onSuccess?: () => void): UseShinTr
     }
 
     const mintTimestamp = Number(mintTimestampData);
-    const currentTimestamp = Math.floor(Date.now() / 1000); // Current time in seconds
-    const timeElapsed = currentTimestamp - mintTimestamp;
+    const timeElapsed = currentTime - mintTimestamp;
 
     const remaining = timeLockDuration - timeElapsed;
 
@@ -63,7 +72,7 @@ export function useShinTrial(tokenId: string, onSuccess?: () => void): UseShinTr
       timeRemaining: remaining > 0 ? remaining : 0,
       canComplete: timeElapsed >= timeLockDuration,
     };
-  }, [mintTimestampData, tokenId, timeLockDuration]);
+  }, [mintTimestampData, tokenId, timeLockDuration, currentTime]);
 
   // Use the base transaction hook with custom error parsing
   const { execute, isLoading: txIsLoading, error: txError } = useTrialTransaction({
