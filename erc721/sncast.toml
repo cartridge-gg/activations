@@ -1,0 +1,5 @@
+[default]
+url = "https://api.cartridge.gg/x/starknet/mainnet"
+account = "<deployer-address>"
+keystore = "<path-to-keystore>"
+wait = true
