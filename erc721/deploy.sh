@@ -8,7 +8,7 @@ BASE_URI="https://silver-large-chinchilla-571.mypinata.cloud/ipfs/bafkreiccbxse3
 DESCRIPTION="An NFT to commemorate the Starknet Japan Meetup"
 
 REGISTRY="0x03eb03b8f2be0ec2aafd186d72f6d8f3dd320dbc89f2b6802bca7465f6ccaa43"
-DEPLOYER="0x05cb4ea8cc45dd51505a7e585b4a73d87d2f9448ed6a380155006229170e4819"
+DEPLOYER="0x079b01c7fe90414b153f0457471c33e166ff5eee381e8dcd90f3214a56a3770b"
 
 # --- Build ---
 echo "Building..."
@@ -25,7 +25,7 @@ echo "Class hash: $CLASS_HASH"
 # --- Deploy ---
 echo "Deploying..."
 DEPLOY_OUTPUT=$(sncast --wait deploy --class-hash "$CLASS_HASH" \
-    --arguments "$DEPLOYER, \"$NAME\", \"$SYMBOL\", \"$DESCRIPTION\", \"$BASE_URI\"" 2>&1) || true
+    --arguments "$DEPLOYER, \"$NAME\", \"$SYMBOL\", \"$DESCRIPTION\", \"$BASE_URI\"" --unique 2>&1) || true
 echo "$DEPLOY_OUTPUT"
 CONTRACT_ADDRESS=$(echo "$DEPLOY_OUTPUT" | grep "Contract Address:" | grep -oE '0x[0-9a-fA-F]+')
 echo "Contract address: $CONTRACT_ADDRESS"
