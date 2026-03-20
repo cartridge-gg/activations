@@ -40,6 +40,7 @@ mod ERC721 {
         src5: SRC5Component::Storage,
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
+        description: ByteArray,
         token_count: u256,
         token_owners: Map<ContractAddress, u256>,
         starterpack_id: u32,
@@ -62,10 +63,12 @@ mod ERC721 {
         owner: ContractAddress,
         name: ByteArray,
         symbol: ByteArray,
+        description: ByteArray,
         base_uri: ByteArray,
     ) {
         self.erc721.initializer(name, symbol, base_uri);
         self.access_control.initializer();
+        self.description.write(description);
 
         self.access_control._grant_role(DEFAULT_ADMIN_ROLE, owner);
         self.access_control._grant_role(MINTER_ROLE, owner);
@@ -151,7 +154,10 @@ mod ERC721 {
 
         fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
             self.erc721._require_owned(token_id);
-            self.erc721._base_uri()
+            let name = self.erc721.name();
+            let description = self.description.read();
+            let image = self.erc721._base_uri();
+            format!("data:application/json,{{\"name\":\"{name}\",\"description\":\"{description}\",\"image\":\"{image}\"}}")
         }
     }
 }

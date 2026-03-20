@@ -25,7 +25,7 @@ echo "Class hash: $CLASS_HASH"
 # --- Deploy ---
 echo "Deploying..."
 DEPLOY_OUTPUT=$(sncast --wait deploy --class-hash "$CLASS_HASH" \
-    --arguments "$DEPLOYER, \"$NAME\", \"$SYMBOL\", \"$BASE_URI\"" 2>&1) || true
+    --arguments "$DEPLOYER, \"$NAME\", \"$SYMBOL\", \"$DESCRIPTION\", \"$BASE_URI\"" 2>&1) || true
 echo "$DEPLOY_OUTPUT"
 CONTRACT_ADDRESS=$(echo "$DEPLOY_OUTPUT" | grep "Contract Address:" | grep -oE '0x[0-9a-fA-F]+')
 echo "Contract address: $CONTRACT_ADDRESS"
