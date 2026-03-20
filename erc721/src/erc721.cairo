@@ -5,7 +5,7 @@ mod ERC721 {
     use openzeppelin_token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
 
     use starknet::ContractAddress;
-    use starknet::storage::{Map, StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{Map, StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapReadAccess, StorageMapWriteAccess}; // Map still needed for token_owners
 
     use starterpack::interface::IStarterpackImplementation as IStarterpack;
     use starterpack::types::item::ItemTrait;
@@ -42,7 +42,7 @@ mod ERC721 {
         erc721: ERC721Component::Storage,
         token_count: u256,
         token_owners: Map<ContractAddress, u256>,
-        starterpacks: Map<u32, bool>,
+        starterpack_id: u32,
     }
 
     #[event]
@@ -59,6 +59,7 @@ mod ERC721 {
     #[constructor]
     fn constructor(
         ref self: ContractState,
+        owner: ContractAddress,
         name: ByteArray,
         symbol: ByteArray,
         base_uri: ByteArray,
@@ -66,9 +67,8 @@ mod ERC721 {
         self.erc721.initializer(name, symbol, base_uri);
         self.access_control.initializer();
 
-        let caller = starknet::get_caller_address();
-        self.access_control._grant_role(DEFAULT_ADMIN_ROLE, caller);
-        self.access_control._grant_role(MINTER_ROLE, caller);
+        self.access_control._grant_role(DEFAULT_ADMIN_ROLE, owner);
+        self.access_control._grant_role(MINTER_ROLE, owner);
     }
 
     #[abi(embed_v0)]
@@ -78,7 +78,7 @@ mod ERC721 {
             self.access_control._grant_role(MINTER_ROLE, minter);
         }
 
-        fn add_starterpack(ref self: ContractState, registry: ContractAddress, name: ByteArray, description: ByteArray, image_uri: ByteArray) -> u32 {
+        fn set_starterpack(ref self: ContractState, registry: ContractAddress, name: ByteArray, description: ByteArray, image_uri: ByteArray) -> u32 {
             self.access_control.assert_only_role(DEFAULT_ADMIN_ROLE);
             let dispatcher = IStarterpackRegistryDispatcher { contract_address: registry };
             let this = starknet::get_contract_address();
@@ -103,7 +103,7 @@ mod ERC721 {
                     metadata: metadata,
                 );
 
-            self.starterpacks.write(starterpack_id, true);
+            self.starterpack_id.write(starterpack_id);
             starterpack_id
         }
 
@@ -119,6 +119,10 @@ mod ERC721 {
         fn get_token_id(self: @ContractState, recipient: ContractAddress) -> u256 {
             self.token_owners.read(recipient)
         }
+
+        fn get_starterpack_id(self: @ContractState) -> u32 {
+            self.starterpack_id.read()
+        }
     }
 
     #[abi(embed_v0)]
@@ -126,7 +130,7 @@ mod ERC721 {
         fn on_issue(
             ref self: ContractState, recipient: ContractAddress, starterpack_id: u32, quantity: u32,
         ) {
-            assert(self.starterpacks.read(starterpack_id), 'Invalid starterpack');
+            assert(self.starterpack_id.read() == starterpack_id, 'Invalid starterpack');
             self.mint(recipient);
         }
 
