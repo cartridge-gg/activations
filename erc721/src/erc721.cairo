@@ -15,6 +15,7 @@ mod ERC721 {
     use crate::interface::{IERC721, IStarterpackRegistryDispatcher, IStarterpackRegistryDispatcherTrait};
 
     const MINTER_ROLE: felt252 = selector!("MINTER_ROLE");
+    const STRK_TOKEN: ContractAddress = 0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d.try_into().unwrap();
 
     component!(path: AccessControlComponent, storage: access_control, event: AccessControlEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -101,7 +102,7 @@ mod ERC721 {
                     referral_percentage: 0,
                     reissuable: true,
                     price: core::num::traits::Zero::zero(),
-                    payment_token: core::num::traits::Zero::zero(),
+                    payment_token: STRK_TOKEN,
                     payment_receiver: Option::Some(this),
                     metadata: metadata,
                 );
