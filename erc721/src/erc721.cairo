@@ -1,20 +1,18 @@
-#[starknet::interface]
-pub trait IERC721<TContractState> {
-    fn get_starterpack_id(self: @TContractState) -> u32;
-    fn set_base_uri(ref self: TContractState, base_uri: ByteArray);
-}
-
 #[starknet::contract]
 mod ERC721 {
     use openzeppelin_access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
+
     use starknet::ContractAddress;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::storage::{Map, StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapReadAccess, StorageMapWriteAccess};
+
     use starterpack::interface::IStarterpackImplementation as IStarterpack;
     use starterpack::types::item::ItemTrait;
     use starterpack::types::metadata::MetadataTrait;
-    use crate::interface::{IStarterpackRegistryDispatcher, IStarterpackRegistryDispatcherTrait};
+
+    use openzeppelin_token::erc721::interface::IERC721Metadata;
+    use crate::interface::{IERC721, IStarterpackRegistryDispatcher, IStarterpackRegistryDispatcherTrait};
 
     const MINTER_ROLE: felt252 = selector!("MINTER_ROLE");
 
@@ -22,12 +20,13 @@ mod ERC721 {
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
 
-    // ERC721 mixin includes SRC5, so embed AccessControl without its SRC5
     #[abi(embed_v0)]
     impl AccessControlImpl =
         AccessControlComponent::AccessControlImpl<ContractState>;
     #[abi(embed_v0)]
-    impl ERC721MixinImpl = ERC721Component::ERC721MixinImpl<ContractState>;
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC721CamelOnlyImpl = ERC721Component::ERC721CamelOnlyImpl<ContractState>;
 
     // Internal impls
     impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
@@ -41,8 +40,9 @@ mod ERC721 {
         src5: SRC5Component::Storage,
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
-        starterpack: u32,
-        token_id: u256,
+        token_count: u256,
+        token_owners: Map<ContractAddress, u256>,
+        starterpacks: Map<u32, bool>,
     }
 
     #[event]
@@ -62,37 +62,63 @@ mod ERC721 {
         name: ByteArray,
         symbol: ByteArray,
         base_uri: ByteArray,
-        owner: ContractAddress,
-        minter: ContractAddress, // 0x03eb03b8f2be0ec2aafd186d72f6d8f3dd320dbc89f2b6802bca7465f6ccaa43
-        price: u256,
     ) {
         self.erc721.initializer(name, symbol, base_uri);
         self.access_control.initializer();
-        self.access_control._grant_role(DEFAULT_ADMIN_ROLE, owner);
-        self.access_control._grant_role(MINTER_ROLE, minter);
 
-        let dispatcher = IStarterpackRegistryDispatcher { contract_address: minter };
-        let this = starknet::get_contract_address();
-        let item = ItemTrait::new(name: "name", description: "description", image_uri: "");
-        let metadata = MetadataTrait::new(
-            name: "Nums Starterpack",
-            description: "This starterpack contains Nums games",
-            image_uri: "",
-            items: [item].span(),
-            tokens: [].span(),
-        )
-            .jsonify();
-        let starterpack_id = dispatcher
-            .register(
-                implementation: this,
-                referral_percentage: 0,
-                reissuable: false,
-                price: price,
-                payment_token: core::num::traits::Zero::zero(),
-                payment_receiver: Option::Some(this),
-                metadata: metadata,
-            );
-        self.starterpack.write(starterpack_id);
+        let caller = starknet::get_caller_address();
+        self.access_control._grant_role(DEFAULT_ADMIN_ROLE, caller);
+        self.access_control._grant_role(MINTER_ROLE, caller);
+    }
+
+    #[abi(embed_v0)]
+    impl ERC721AdminImpl of IERC721<ContractState> {
+        fn add_minter(ref self: ContractState, minter: ContractAddress) {
+            self.access_control.assert_only_role(DEFAULT_ADMIN_ROLE);
+            self.access_control._grant_role(MINTER_ROLE, minter);
+        }
+
+        fn add_starterpack(ref self: ContractState, registry: ContractAddress, name: ByteArray, description: ByteArray, image_uri: ByteArray) -> u32 {
+            self.access_control.assert_only_role(DEFAULT_ADMIN_ROLE);
+            let dispatcher = IStarterpackRegistryDispatcher { contract_address: registry };
+            let this = starknet::get_contract_address();
+
+            let item = ItemTrait::new(name: name.clone(), description: description.clone(), image_uri: image_uri.clone());
+            let metadata = MetadataTrait::new(
+                name: name,
+                description: description,
+                image_uri: image_uri,
+                items: [item].span(),
+                tokens: [].span(),
+            ).jsonify();
+
+            let starterpack_id = dispatcher
+                .register(
+                    implementation: this,
+                    referral_percentage: 0,
+                    reissuable: true,
+                    price: core::num::traits::Zero::zero(),
+                    payment_token: core::num::traits::Zero::zero(),
+                    payment_receiver: Option::Some(this),
+                    metadata: metadata,
+                );
+
+            self.starterpacks.write(starterpack_id, true);
+            starterpack_id
+        }
+
+        fn mint(ref self: ContractState, recipient: ContractAddress) {
+            self.access_control.assert_only_role(MINTER_ROLE);
+
+            let token_count = self.token_count.read();
+            self.erc721.mint(recipient, token_count);
+            self.token_owners.write(recipient, token_count);
+            self.token_count.write(token_count + 1);
+        }
+
+        fn get_token_id(self: @ContractState, recipient: ContractAddress) -> u256 {
+            self.token_owners.read(recipient)
+        }
     }
 
     #[abi(embed_v0)]
@@ -100,19 +126,8 @@ mod ERC721 {
         fn on_issue(
             ref self: ContractState, recipient: ContractAddress, starterpack_id: u32, quantity: u32,
         ) {
-            // [Check] Starterpack ID
-            let stored_id = self.starterpack.read();
-            assert(stored_id == starterpack_id, 'Starterpack: ID mismatch');
-
-            // [Check] Caller is allowed
-            self.access_control.assert_only_role(MINTER_ROLE);
-
-            // [Effect] Read token ID
-            let token_id = self.token_id.read();
-            self.token_id.write(token_id + 1);
-
-            // [Effect] Mint token
-            self.erc721.mint(recipient, token_id);
+            assert(self.starterpacks.read(starterpack_id), 'Invalid starterpack');
+            self.mint(recipient);
         }
 
         fn supply(self: @ContractState, starterpack_id: u32) -> Option<u32> {
@@ -121,14 +136,18 @@ mod ERC721 {
     }
 
     #[abi(embed_v0)]
-    impl ERC721Impl of super::IERC721<ContractState> {
-        fn get_starterpack_id(self: @ContractState) -> u32 {
-            self.starterpack.read()
+    impl MetadataImpl of IERC721Metadata<ContractState> {
+        fn name(self: @ContractState) -> ByteArray {
+            self.erc721.name()
         }
 
-        fn set_base_uri(ref self: ContractState, base_uri: ByteArray) {
-            self.access_control.assert_only_role(DEFAULT_ADMIN_ROLE);
-            self.erc721._set_base_uri(base_uri);
+        fn symbol(self: @ContractState) -> ByteArray {
+            self.erc721.symbol()
+        }
+
+        fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
+            self.erc721._require_owned(token_id);
+            self.erc721._base_uri()
         }
     }
 }
